@@ -37,36 +37,44 @@ struct StorageOverviewHeaderView: View {
         MetricView(
             title: "Total",
             value: StorageFormatters.byteCount(snapshot.totalBytes),
-            symbolName: "externaldrive")
+            symbolName: "externaldrive",
+            tint: AppPalette.device)
         MetricView(
             title: "Reclaimable",
             value: StorageFormatters.byteCount(snapshot.reclaimableBytes),
-            symbolName: "trash")
+            symbolName: "trash",
+            tint: AppPalette.codex)
         MetricView(
             title: "Codex",
             value: StorageFormatters.byteCount(footprint.codexAttributedBytes),
-            symbolName: "terminal")
+            symbolName: "terminal",
+            tint: AppPalette.codex)
         MetricView(
             title: "Xcode",
             value: StorageFormatters.byteCount(footprint.xcodeRelatedBytes),
-            symbolName: "hammer")
+            symbolName: "hammer",
+            tint: AppPalette.xcode)
         MetricView(
             title: "Recent Growth",
             value: StorageFormatters.byteCount(lastDelta.growthBytes),
-            symbolName: "plus.circle")
+            symbolName: "plus.circle",
+            tint: AppPalette.caution)
         if let available = footprint.availableDiskBytes {
             MetricView(
                 title: "Free Disk",
                 value: StorageFormatters.byteCount(available),
-                symbolName: footprint.hasLowDiskSpace ? "exclamationmark.triangle" : "internaldrive")
+                symbolName: footprint.hasLowDiskSpace ? "exclamationmark.triangle" : "internaldrive",
+                tint: footprint.hasLowDiskSpace ? AppPalette.xcode : AppPalette.neutral)
         }
         MetricView(
             title: "Items",
             value: "\(snapshot.items.count)",
-            symbolName: "list.bullet.rectangle")
+            symbolName: "list.bullet.rectangle",
+            tint: AppPalette.neutral)
         MetricView(
             title: "Last Scan",
             value: snapshot.capturedAt == .distantPast ? "Never" : StorageFormatters.ageString(from: snapshot.capturedAt),
-            symbolName: "clock")
+            symbolName: "clock",
+            tint: AppPalette.neutral)
     }
 }

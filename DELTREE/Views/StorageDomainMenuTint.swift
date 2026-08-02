@@ -4,17 +4,17 @@ extension StorageDomain {
     var menuTint: Color {
         switch self {
         case .codexHome, .codexWorkspaces:
-            .green
+            AppPalette.codex
         case .coreSimulatorDevices, .xcTestDevices:
-            .blue
+            AppPalette.simulator
         case .derivedData, .xcodeProducts, .swiftPackageCaches, .coreSimulatorCaches:
-            .orange
+            AppPalette.xcode
         case .xcResults:
-            .purple
+            AppPalette.results
         case .deviceSupport, .simulatorRuntimes, .simulatorImages:
-            .teal
+            AppPalette.device
         case .archives:
-            .gray
+            AppPalette.archive
         }
     }
 }

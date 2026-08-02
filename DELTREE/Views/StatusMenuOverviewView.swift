@@ -30,13 +30,13 @@ struct StatusMenuOverviewView: View {
                     title: "Total",
                     value: StorageFormatters.byteCount(footprint.totalBytes),
                     systemImage: "externaldrive",
-                    tint: .teal)
+                    tint: AppPalette.device)
 
                 StatusMenuMetricTileView(
                     title: "Cleanable",
                     value: StorageFormatters.byteCount(footprint.reclaimableBytes),
                     systemImage: "trash",
-                    tint: .green)
+                    tint: AppPalette.codex)
             }
 
             StatusMenuGaugeRowView(
@@ -44,7 +44,7 @@ struct StatusMenuOverviewView: View {
                 value: StorageFormatters.byteCount(footprint.codexAttributedBytes),
                 detail: codexDetailText,
                 systemImage: "terminal",
-                tint: .green,
+                tint: AppPalette.codex,
                 share: footprint.totalBytes > 0 ? Double(footprint.codexAttributedBytes) / Double(footprint.totalBytes) : 0)
         }
         .padding(12)
@@ -62,12 +62,12 @@ struct StatusMenuOverviewView: View {
 
     private var statusTint: Color {
         if isScanning {
-            return .blue
+            return AppPalette.simulator
         }
         if footprint.hasLowDiskSpace {
-            return .orange
+            return AppPalette.xcode
         }
-        return .green
+        return AppPalette.codex
     }
 
     private var codexDetailText: String {

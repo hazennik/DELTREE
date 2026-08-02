@@ -35,15 +35,15 @@ struct SafetyBadgeView: View {
 
     private var color: Color {
         if isActive {
-            return .blue
+            return AppPalette.simulator
         }
         switch safety {
         case .safeToTrash:
-            return .green
+            return AppPalette.codex
         case .probablySafe:
-            return .yellow
+            return AppPalette.caution
         case .reviewRecommended:
-            return .orange
+            return AppPalette.xcode
         case .keep:
             return .secondary
         case .unknown:

@@ -4,11 +4,12 @@ struct MetricView: View {
     var title: String
     var value: String
     var symbolName: String
+    var tint: Color = .secondary
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: symbolName)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(tint)
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

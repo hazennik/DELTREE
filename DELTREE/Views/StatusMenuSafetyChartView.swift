@@ -24,7 +24,7 @@ struct StatusMenuSafetyChartView: View {
                 value: StorageFormatters.byteCount(footprint.reclaimableBytes),
                 detail: "\(safeItemCount) \(safeItemCount == 1 ? "item" : "items")",
                 systemImage: "checkmark.circle",
-                tint: .green,
+                tint: AppPalette.codex,
                 bytes: footprint.reclaimableBytes),
             StatusMenuSegment(
                 id: "needs-review",
@@ -32,7 +32,7 @@ struct StatusMenuSafetyChartView: View {
                 value: StorageFormatters.byteCount(footprint.reviewBytes),
                 detail: nil,
                 systemImage: "exclamationmark.triangle",
-                tint: .orange,
+                tint: AppPalette.xcode,
                 bytes: footprint.reviewBytes),
             StatusMenuSegment(
                 id: "active-or-kept",
@@ -40,7 +40,7 @@ struct StatusMenuSafetyChartView: View {
                 value: StorageFormatters.byteCount(footprint.activeBytes),
                 detail: nil,
                 systemImage: "lock",
-                tint: .blue,
+                tint: AppPalette.simulator,
                 bytes: footprint.activeBytes),
         ]
     }

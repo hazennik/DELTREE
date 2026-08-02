@@ -18,7 +18,7 @@ struct StorageBreakdownPanelView: View {
                                 .lineLimit(1)
                         } icon: {
                             Circle()
-                                .fill(color(for: breakdown.domain))
+                                .fill(breakdown.domain.menuTint)
                                 .frame(width: 8, height: 8)
                         }
                         .font(.caption)
@@ -32,22 +32,5 @@ struct StorageBreakdownPanelView: View {
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 12)
-    }
-
-    private func color(for domain: StorageDomain) -> Color {
-        switch domain {
-        case .codexHome, .codexWorkspaces:
-            .green
-        case .coreSimulatorDevices, .xcTestDevices:
-            .blue
-        case .derivedData, .xcodeProducts, .swiftPackageCaches, .coreSimulatorCaches:
-            .orange
-        case .xcResults:
-            .purple
-        case .deviceSupport, .simulatorRuntimes, .simulatorImages:
-            .teal
-        case .archives:
-            .gray
-        }
     }
 }
