@@ -17,8 +17,18 @@ struct ItemDetailView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Label(item.displayName, systemImage: item.domain.symbolName)
                             .font(.title3)
-                            .fontWeight(.semibold)
+                            .bold()
                             .lineLimit(2)
+
+                        ItemActionPanelView(
+                            item: item,
+                            revealAction: revealAction,
+                            copyPathAction: copyPathAction,
+                            cleanupAction: cleanupAction,
+                            markUserOwnedAction: markUserOwnedAction,
+                            togglePinnedAction: togglePinnedAction,
+                            toggleIgnoredAction: toggleIgnoredAction,
+                            resetAttributionAction: resetAttributionAction)
 
                         DetailGridView(item: item)
 
@@ -45,50 +55,6 @@ struct ItemDetailView: View {
                         if item.metadata.isEmpty == false {
                             MetadataListView(metadata: item.metadata)
                         }
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Actions")
-                                .font(.headline)
-                            Text(item.cleanupImpact)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-
-                            HStack {
-                                if item.suggestedAction.isCleanupExecutionAction {
-                                    Button(item.suggestedAction.displayName, systemImage: item.suggestedAction.systemImage) {
-                                        cleanupAction(item, item.suggestedAction)
-                                    }
-                                    .disabled(item.isActive || item.isPinned || item.isIgnored)
-                                }
-
-                                if item.kind == .simulatorDevice, item.metadata["udid"] != nil {
-                                    Button("Erase", systemImage: StorageAction.eraseSimulator.systemImage) {
-                                        cleanupAction(item, .eraseSimulator)
-                                    }
-                                    .disabled(item.isActive)
-                                }
-                            }
-                        }
-
-                        LazyVGrid(columns: buttonColumns, alignment: .leading, spacing: 8) {
-                            Button("Reveal", systemImage: "folder", action: { revealAction(item) })
-                            Button("Copy Path", systemImage: "doc.on.doc", action: { copyPathAction(item) })
-                        }
-
-                        LazyVGrid(columns: buttonColumns, alignment: .leading, spacing: 8) {
-                            Button("User-Owned", systemImage: StorageAction.markUserOwned.systemImage) {
-                                markUserOwnedAction(item)
-                            }
-                            Button(item.isPinned ? "Unpin" : "Pin", systemImage: item.isPinned ? "pin.slash" : "pin") {
-                                togglePinnedAction(item)
-                            }
-                            Button(item.isIgnored ? "Unignore" : "Ignore", systemImage: item.isIgnored ? "eye" : "eye.slash") {
-                                toggleIgnoredAction(item)
-                            }
-                            Button("Reset", systemImage: StorageAction.resetAttribution.systemImage) {
-                                resetAttributionAction(item)
-                            }
-                        }
                     }
                     .padding(16)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,9 +64,5 @@ struct ItemDetailView: View {
             }
         }
         .background(.background)
-    }
-
-    private var buttonColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 86), spacing: 8)]
     }
 }

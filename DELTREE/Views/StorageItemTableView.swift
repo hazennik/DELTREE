@@ -12,7 +12,7 @@ struct StorageItemTableView: View {
                     .lineLimit(1)
                     .help(item.path)
             }
-            .width(min: 120, ideal: 260)
+            .width(min: 120, ideal: 360)
 
             TableColumn("Size") { item in
                 Text(StorageFormatters.byteCount(item.bytes))

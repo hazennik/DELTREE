@@ -45,7 +45,7 @@ struct DashboardDetailContentView: View {
                             items: viewModel.filteredItems,
                             selectedItemID: $viewModel.selectedItemID,
                             sortOrder: $viewModel.tableSortOrder)
-                            .frame(minWidth: 220, idealWidth: 520)
+                            .frame(minWidth: 240, idealWidth: 640)
 
                         itemDetail
                     }
@@ -64,6 +64,6 @@ struct DashboardDetailContentView: View {
             togglePinnedAction: viewModel.togglePinned,
             toggleIgnoredAction: viewModel.toggleIgnored,
             resetAttributionAction: viewModel.resetAttribution)
-            .frame(minWidth: 180, idealWidth: 360, maxWidth: 420)
+            .frame(minWidth: 200, idealWidth: 240, maxWidth: 260)
     }
 }

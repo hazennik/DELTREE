@@ -31,7 +31,7 @@ struct CodexTasksView<Detail: View>: View {
                     selectedItemID: $selectedItemID,
                     sortOrder: $sortOrder)
             }
-            .frame(minWidth: 220, idealWidth: 520)
+            .frame(minWidth: 240, idealWidth: 640)
 
             itemDetail
         }
