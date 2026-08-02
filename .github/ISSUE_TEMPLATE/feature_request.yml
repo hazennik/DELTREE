@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should DELTREE do?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Scanning
+        - Attribution
+        - Safety policy
+        - Cleanup
+        - Dashboard
+        - Menu bar
+        - Packaging
+        - Other
+    validations:
+      required: true
+

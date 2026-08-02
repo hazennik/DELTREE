@@ -23,21 +23,22 @@ final class DELTREEUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testMenuBarAgentLaunches() throws {
         let app = XCUIApplication()
+        app.launchEnvironment["DELTREE_DISABLE_INITIAL_SCAN"] = "1"
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        XCTAssertTrue(
+            app.state == .runningForeground || app.state == .runningBackground,
+            "DELTREE should keep running as an LSUIElement menu-bar app.")
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testMenuBarAgentDoesNotOpenDashboardByDefault() throws {
+        let app = XCUIApplication()
+        app.launchEnvironment["DELTREE_DISABLE_INITIAL_SCAN"] = "1"
+        app.launch()
+
+        XCTAssertEqual(app.windows.count, 0, "DELTREE should launch as a menu-bar agent without opening a dashboard window.")
     }
 }

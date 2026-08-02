@@ -1,0 +1,40 @@
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# App packaging output
+Archives/
+Release/
+*.app.dSYM.zip
+*.dSYM
+*.xcarchive
+*.zip
+
+# Local secrets and signing state
+.env
+.env.*
+*.p8
+*.cer
+*.p12
+notarization-profile.json
+
+# Logs and reports
+*.log
+*.xcresult
+coverage/

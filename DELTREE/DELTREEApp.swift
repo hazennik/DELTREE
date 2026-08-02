@@ -1,18 +1,37 @@
-//
-//  DELTREEApp.swift
-//  DELTREE
-//
-//  Created by Ryan Nicoletti on 8/1/26.
-//
-
+import AppKit
 import SwiftUI
 import SwiftData
 
 @main
 struct DELTREEApp: App {
-    var sharedModelContainer: ModelContainer = {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    @State private var container: AppContainer
+
+    init() {
+        let modelContainer = Self.makeModelContainer()
+        let appContainer = AppContainer(modelContainer: modelContainer)
+        _container = State(wrappedValue: appContainer)
+        appDelegate.configure(appContainer)
+    }
+
+    var body: some Scene {
+        Settings {
+            SettingsView(
+                settings: container.settings,
+                viewModel: container.dashboardViewModel)
+                .frame(width: 520, height: 420)
+        }
+        .modelContainer(container.modelContainer)
+    }
+
+    private static func makeModelContainer() -> ModelContainer {
         let schema = Schema([
-            Item.self,
+            ScanHistoryRecord.self,
+            CleanupHistoryRecord.self,
+            AttributionEventRecord.self,
+            StorageDeltaRecord.self,
+            ManualOverrideRecord.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -21,12 +40,5 @@ struct DELTREEApp: App {
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
-
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-        .modelContainer(sharedModelContainer)
     }
 }

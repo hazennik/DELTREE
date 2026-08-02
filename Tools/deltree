@@ -1,0 +1,91 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+json=false
+dry_run=false
+
+usage() {
+  cat <<'EOF'
+deltree - local Codex/Xcode storage inventory helper
+
+Usage:
+  deltree [--json] [--dry-run]
+
+Options:
+  --json      Print JSON instead of text.
+  --dry-run   Show cleanup candidates without modifying anything.
+
+This CLI scans bounded developer paths only. It never deletes files.
+EOF
+}
+
+json_string() {
+  local value="$1"
+  value=${value//\\/\\\\}
+  value=${value//\"/\\\"}
+  value=${value//$'\n'/\\n}
+  value=${value//$'\r'/\\r}
+  value=${value//$'\t'/\\t}
+  printf '"%s"' "$value"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --json) json=true ;;
+    --dry-run) dry_run=true ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
+  esac
+  shift
+done
+
+roots=(
+  "$HOME/.codex"
+  "$HOME/Documents/Codex"
+  "$HOME/Library/Developer/CoreSimulator/Devices"
+  "$HOME/Library/Developer/XCTestDevices"
+  "$HOME/Library/Developer/Xcode/DerivedData"
+  "$HOME/Library/Developer/Xcode/Products"
+  "$HOME/Library/Developer/Xcode/iOS DeviceSupport"
+  "$HOME/Library/Developer/CoreSimulator/Caches"
+  "$HOME/Library/Developer/CoreSimulator/Profiles/Runtimes"
+  "/Library/Developer/CoreSimulator/Profiles/Runtimes"
+  "/Library/Developer/CoreSimulator/Images"
+  "$HOME/Library/Developer/CoreSimulator/Images"
+  "$HOME/Library/Developer/Xcode/Archives"
+  "$HOME/Library/Caches/org.swift.swiftpm"
+  "$HOME/Library/org.swift.swiftpm"
+  "$HOME/.swiftpm"
+)
+
+items=()
+total_kb=0
+for root in "${roots[@]}"; do
+  [[ -e "$root" ]] || continue
+  size_kb=$(du -sk "$root" 2>/dev/null | awk '{print $1}' || true)
+  [[ -n "${size_kb:-}" ]] || continue
+  total_kb=$((total_kb + size_kb))
+  items+=("${size_kb}|${root}")
+done
+
+if [[ "$json" == true ]]; then
+  printf '{"dryRun":%s,"totalBytes":%d,"items":[' "$dry_run" "$((total_kb * 1024))"
+  first=true
+  for entry in "${items[@]}"; do
+    size="${entry%%|*}"
+    path="${entry#*|}"
+    if [[ "$first" == false ]]; then printf ','; fi
+    first=false
+    printf '{"path":%s,"bytes":%d}' "$(json_string "$path")" "$((size * 1024))"
+  done
+  printf ']}\n'
+else
+  echo "DELTREE storage inventory"
+  echo "Total: $((total_kb / 1024)) MB"
+  if [[ "$dry_run" == true ]]; then
+    echo "Dry run: no files were modified."
+  fi
+  printf '%s\n' "${items[@]}" | sort -nr | while IFS='|' read -r size path; do
+    printf "%8d MB  %s\n" "$((size / 1024))" "$path"
+  done
+fi

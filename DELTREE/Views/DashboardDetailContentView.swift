@@ -1,0 +1,68 @@
+import SwiftUI
+
+struct DashboardDetailContentView: View {
+    var viewModel: DashboardViewModel
+
+    var body: some View {
+        @Bindable var viewModel = viewModel
+
+        switch viewModel.selectedSection {
+        case .cleanupHistory:
+            CleanupHistoryView(
+                cleanupHistory: viewModel.cleanupHistory,
+                deltaHistory: viewModel.deltaHistory)
+        case .rules:
+            RulesView(settings: viewModel.settings, viewModel: viewModel)
+        default:
+            VStack(spacing: 0) {
+                StorageOverviewHeaderView(
+                    snapshot: viewModel.snapshot,
+                    footprint: viewModel.footprint,
+                    lastDelta: viewModel.lastDelta,
+                    isScanning: viewModel.isScanning,
+                    scanAction: { viewModel.scan(force: true) },
+                    cleanupAction: viewModel.prepareSafeCleanup)
+
+                StorageBreakdownPanelView(footprint: viewModel.footprint)
+
+                StorageFilterBarView(
+                    selectedSafety: $viewModel.selectedSafety,
+                    selectedOwner: $viewModel.selectedOwner,
+                    includeIgnoredItems: $viewModel.includeIgnoredItems)
+
+                Divider()
+
+                if viewModel.selectedSection == .codexTasks {
+                    CodexTasksView(
+                        items: viewModel.filteredItems,
+                        selectedItemID: $viewModel.selectedItemID,
+                        sortOrder: $viewModel.tableSortOrder,
+                        itemDetail: itemDetail)
+                } else {
+                    HSplitView {
+                        StorageItemTableView(
+                            items: viewModel.filteredItems,
+                            selectedItemID: $viewModel.selectedItemID,
+                            sortOrder: $viewModel.tableSortOrder)
+                            .frame(minWidth: 680)
+
+                        itemDetail
+                    }
+                }
+            }
+        }
+    }
+
+    private var itemDetail: some View {
+        ItemDetailView(
+            item: viewModel.selectedItem,
+            revealAction: viewModel.reveal,
+            copyPathAction: viewModel.copyPath,
+            cleanupAction: viewModel.prepareCleanup,
+            markUserOwnedAction: viewModel.markUserOwned,
+            togglePinnedAction: viewModel.togglePinned,
+            toggleIgnoredAction: viewModel.toggleIgnored,
+            resetAttributionAction: viewModel.resetAttribution)
+            .frame(minWidth: 340, idealWidth: 380, maxWidth: 480)
+    }
+}

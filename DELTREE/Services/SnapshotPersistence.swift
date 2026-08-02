@@ -1,0 +1,149 @@
+import Foundation
+import SwiftData
+
+@MainActor
+protocol SnapshotPersisting: AnyObject {
+    func saveSnapshot(_ snapshot: StorageSnapshot)
+    func mostRecentSnapshot() -> StorageSnapshot?
+    func saveDelta(_ delta: StorageDelta)
+    func saveCleanup(
+        performedAt: Date,
+        totalBytes: Int64,
+        itemCount: Int,
+        status: String,
+        paths: [String],
+        skippedPaths: [String],
+        errors: [String: String],
+        initiator: String)
+    func saveAttributionEvent(owner: OwnerAttribution, confidence: Double, paths: [String], observedAt: Date)
+    func saveManualOverride(_ override: ManualStorageOverride)
+    func clearManualOverride(path: String)
+    func manualOverrides() -> [String: ManualStorageOverride]
+    func recentCleanupRecords(limit: Int) -> [CleanupHistoryRecord]
+    func recentScanRecords(limit: Int) -> [ScanHistoryRecord]
+    func recentDeltaRecords(limit: Int) -> [StorageDeltaRecord]
+}
+
+@MainActor
+final class SwiftDataSnapshotStore: SnapshotPersisting {
+    private let container: ModelContainer
+
+    init(container: ModelContainer) {
+        self.container = container
+    }
+
+    func saveSnapshot(_ snapshot: StorageSnapshot) {
+        let context = ModelContext(container)
+        context.insert(ScanHistoryRecord(snapshot: snapshot))
+        try? context.save()
+    }
+
+    func mostRecentSnapshot() -> StorageSnapshot? {
+        var descriptor = FetchDescriptor<ScanHistoryRecord>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)])
+        descriptor.fetchLimit = 1
+        guard let record = try? ModelContext(container).fetch(descriptor).first,
+              let data = record.encodedSnapshot
+        else {
+            return nil
+        }
+        return try? JSONDecoder.storage.decode(StorageSnapshot.self, from: data)
+    }
+
+    func saveDelta(_ delta: StorageDelta) {
+        guard delta.isEmpty == false else {
+            return
+        }
+
+        let context = ModelContext(container)
+        context.insert(StorageDeltaRecord(delta: delta))
+        try? context.save()
+    }
+
+    func saveCleanup(
+        performedAt: Date,
+        totalBytes: Int64,
+        itemCount: Int,
+        status: String,
+        paths: [String],
+        skippedPaths: [String],
+        errors: [String: String],
+        initiator: String)
+    {
+        let context = ModelContext(container)
+        context.insert(CleanupHistoryRecord(
+            performedAt: performedAt,
+            totalBytes: totalBytes,
+            itemCount: itemCount,
+            status: status,
+            paths: paths,
+            skippedPaths: skippedPaths,
+            errors: errors,
+            initiator: initiator))
+        try? context.save()
+    }
+
+    func saveAttributionEvent(owner: OwnerAttribution, confidence: Double, paths: [String], observedAt: Date) {
+        let context = ModelContext(container)
+        context.insert(AttributionEventRecord(
+            observedAt: observedAt,
+            owner: owner,
+            confidence: confidence,
+            paths: paths))
+        try? context.save()
+    }
+
+    func saveManualOverride(_ override: ManualStorageOverride) {
+        let context = ModelContext(container)
+        let standardizedPath = URL(fileURLWithPath: override.path).standardizedFileURL.path
+        let descriptor = FetchDescriptor<ManualOverrideRecord>(
+            predicate: #Predicate { $0.path == standardizedPath })
+
+        if let existing = try? context.fetch(descriptor).first {
+            existing.update(from: override)
+        } else {
+            context.insert(ManualOverrideRecord(override: override))
+        }
+        try? context.save()
+    }
+
+    func clearManualOverride(path: String) {
+        let context = ModelContext(container)
+        let standardizedPath = URL(fileURLWithPath: path).standardizedFileURL.path
+        let descriptor = FetchDescriptor<ManualOverrideRecord>(
+            predicate: #Predicate { $0.path == standardizedPath })
+        let records = (try? context.fetch(descriptor)) ?? []
+        for record in records {
+            context.delete(record)
+        }
+        try? context.save()
+    }
+
+    func manualOverrides() -> [String: ManualStorageOverride] {
+        let descriptor = FetchDescriptor<ManualOverrideRecord>(
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
+        let records = (try? ModelContext(container).fetch(descriptor)) ?? []
+        return Dictionary(uniqueKeysWithValues: records.map { ($0.path, $0.manualOverride) })
+    }
+
+    func recentCleanupRecords(limit: Int = 20) -> [CleanupHistoryRecord] {
+        var descriptor = FetchDescriptor<CleanupHistoryRecord>(
+            sortBy: [SortDescriptor(\.performedAt, order: .reverse)])
+        descriptor.fetchLimit = limit
+        return (try? ModelContext(container).fetch(descriptor)) ?? []
+    }
+
+    func recentScanRecords(limit: Int = 20) -> [ScanHistoryRecord] {
+        var descriptor = FetchDescriptor<ScanHistoryRecord>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)])
+        descriptor.fetchLimit = limit
+        return (try? ModelContext(container).fetch(descriptor)) ?? []
+    }
+
+    func recentDeltaRecords(limit: Int = 20) -> [StorageDeltaRecord] {
+        var descriptor = FetchDescriptor<StorageDeltaRecord>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)])
+        descriptor.fetchLimit = limit
+        return (try? ModelContext(container).fetch(descriptor)) ?? []
+    }
+}
