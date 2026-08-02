@@ -6,6 +6,7 @@ struct DefaultStorageScanner: StorageScanning {
     private let simctlClient: any SimctlClient
     private let codexSessionScanner: any CodexSessionScanning
     private let processSampler: any ProcessSampling
+    private let openFileChecker: any OpenFileChecking
     private let attributionTracker: any AttributionTracking
     private let safetyPolicy: any SafetyClassifying
     private let rootCatalog: StorageRootCatalog
@@ -17,6 +18,7 @@ struct DefaultStorageScanner: StorageScanning {
         simctlClient: any SimctlClient = LiveSimctlClient(),
         codexSessionScanner: any CodexSessionScanning = CodexThreadCatalogReader(),
         processSampler: any ProcessSampling = LiveProcessSampler(),
+        openFileChecker: any OpenFileChecking = LiveLsofOpenFileChecker(),
         attributionTracker: any AttributionTracking = LiveAttributionTracker(),
         safetyPolicy: any SafetyClassifying = DefaultSafetyPolicy())
     {
@@ -25,6 +27,7 @@ struct DefaultStorageScanner: StorageScanning {
         self.simctlClient = simctlClient
         self.codexSessionScanner = codexSessionScanner
         self.processSampler = processSampler
+        self.openFileChecker = openFileChecker
         self.attributionTracker = attributionTracker
         self.safetyPolicy = safetyPolicy
         self.rootCatalog = rootCatalog
@@ -60,16 +63,7 @@ struct DefaultStorageScanner: StorageScanning {
             unreadablePaths.append(contentsOf: result.unreadablePaths)
         }
 
-        let classifiedItems = deduplicated(items).map { item in
-            var item = item
-            let decision = safetyPolicy.classify(item: item, configuration: configuration, now: now)
-            item.safety = decision.classification
-            item.explanation = "\(item.explanation) \(decision.reason)"
-            if item.cleanupImpact.isEmpty {
-                item.cleanupImpact = item.suggestedAction.explanation
-            }
-            return item
-        }
+        let classifiedItems = await classify(items: deduplicated(items), configuration: configuration, now: now)
 
         return StorageSnapshot(
             capturedAt: now,
@@ -131,6 +125,58 @@ struct DefaultStorageScanner: StorageScanning {
                 roots: roots[.swiftPackageCaches] ?? [],
                 mode: .wholeRoots),
         ]
+    }
+
+    private func classify(
+        items: [StorageItem],
+        configuration: StorageScanConfiguration,
+        now: Date) async -> [StorageItem]
+    {
+        var classifiedItems: [StorageItem] = []
+
+        for item in items {
+            var item = item
+            var decision = safetyPolicy.classify(item: item, configuration: configuration, now: now)
+            if needsOpenFileCheck(item: item, decision: decision) {
+                switch await openFileChecker.checkOpenFiles(under: URL(fileURLWithPath: item.path)) {
+                case .clear:
+                    item.metadata["openFileCheck"] = "clear"
+                case .openFilesFound:
+                    item.isActive = true
+                    item.metadata["openFileCheck"] = "open"
+                    decision = safetyPolicy.classify(item: item, configuration: configuration, now: now)
+                case let .unavailable(reason):
+                    item.metadata["openFileCheck"] = "unavailable"
+                    item.metadata["openFileCheckReason"] = reason
+                    decision = SafetyDecision(
+                        classification: .keep,
+                        reason: "Open-file check with lsof could not be completed, so this item is excluded from cleanup.")
+                }
+            }
+
+            item.safety = decision.classification
+            item.explanation = "\(item.explanation) \(decision.reason)"
+            if item.cleanupImpact.isEmpty {
+                item.cleanupImpact = item.suggestedAction.explanation
+            }
+            classifiedItems.append(item)
+        }
+
+        return classifiedItems
+    }
+
+    private func needsOpenFileCheck(item: StorageItem, decision: SafetyDecision) -> Bool {
+        guard decision.classification == .safeToTrash || decision.classification == .probablySafe else {
+            return false
+        }
+
+        switch item.domain {
+        case .coreSimulatorDevices, .simulatorRuntimes, .simulatorImages:
+            return false
+        case .codexHome, .codexWorkspaces, .xcTestDevices, .derivedData, .xcResults, .xcodeProducts,
+             .deviceSupport, .coreSimulatorCaches, .archives, .swiftPackageCaches:
+            return true
+        }
     }
 
     private func deduplicated(_ items: [StorageItem]) -> [StorageItem] {

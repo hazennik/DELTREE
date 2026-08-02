@@ -8,6 +8,7 @@ DELTREE exists to explain and safely reclaim developer storage. It should never 
 - Never permanently delete files in v1.
 - Never silently clean anything.
 - Always revalidate cleanup plans before execution.
+- Check non-simulator cleanup candidates with `lsof` before labeling them safe.
 - Always use Trash for file and folder cleanup.
 - Only use `simctl delete` or `simctl erase` for explicit simulator actions.
 - Never include archives, dSYMs, runtimes, DeviceSupport, or simulator images in one-click safe cleanup.
@@ -39,6 +40,7 @@ These are usually not included in safe cleanup:
 These stay out of one-click cleanup:
 
 - active simulator devices
+- non-simulator items with open files, or whose open-file check cannot be completed
 - pinned or ignored items
 - Xcode archives
 - dSYMs
@@ -56,4 +58,3 @@ rg "removeItem|trashItem|simctl" DELTREE DELTREETests Tools Scripts
 ```
 
 Production code should show Trash usage and approved `simctl` actions, not permanent deletion.
-

@@ -50,3 +50,55 @@ struct LiveProcessSampler: ProcessSampling {
         }
     }
 }
+
+struct LiveLsofOpenFileChecker: OpenFileChecking, @unchecked Sendable {
+    private let fileManager: FileManager
+    private let lsofURL: URL
+
+    init(
+        fileManager: FileManager = .default,
+        lsofURL: URL = URL(fileURLWithPath: "/usr/sbin/lsof"))
+    {
+        self.fileManager = fileManager
+        self.lsofURL = lsofURL
+    }
+
+    func checkOpenFiles(under url: URL) async -> OpenFileCheckResult {
+        let path = url.standardizedFileURL.path
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: path, isDirectory: &isDirectory) else {
+            return .unavailable("Path no longer exists.")
+        }
+
+        var arguments = ["-nP", "-F", "p"]
+        if isDirectory.boolValue {
+            arguments.append(contentsOf: ["+D", path])
+        } else {
+            arguments.append(path)
+        }
+
+        do {
+            let output = try await ProcessRunner.run(executableURL: lsofURL, arguments: arguments)
+            let stdout = String(decoding: output.stdout, as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let stderr = String(decoding: output.stderr, as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if stdout.isEmpty == false {
+                return .openFilesFound
+            }
+
+            if output.terminationStatus == 1, stderr.isEmpty {
+                return .clear
+            }
+
+            if output.terminationStatus == 0 {
+                return .clear
+            }
+
+            return .unavailable(stderr.isEmpty ? "lsof exited with status \(output.terminationStatus)." : stderr)
+        } catch {
+            return .unavailable(error.localizedDescription)
+        }
+    }
+}

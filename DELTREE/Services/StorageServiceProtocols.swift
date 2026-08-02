@@ -17,6 +17,16 @@ protocol ProcessSampling: Sendable {
     func sample() async -> ProcessSnapshot
 }
 
+enum OpenFileCheckResult: Equatable, Sendable {
+    case clear
+    case openFilesFound
+    case unavailable(String)
+}
+
+protocol OpenFileChecking: Sendable {
+    func checkOpenFiles(under url: URL) async -> OpenFileCheckResult
+}
+
 protocol CodexSessionScanning: Sendable {
     func sessions(now: Date) async -> [CodexSessionRecord]
 }
