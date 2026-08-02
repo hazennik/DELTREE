@@ -32,6 +32,7 @@ enum StatusMenuItemDescriptor: Hashable, Sendable {
         safeItemCount: Int)
     case section(title: String)
     case summary(title: String, value: String, systemImage: String?)
+    case sources(StorageFootprint)
     case breakdown(StorageFootprint)
     case safety(footprint: StorageFootprint, safeItemCount: Int)
     case separator
@@ -63,7 +64,10 @@ enum StatusMenuDescriptorBuilder {
 
         if footprint.domainBreakdowns.isEmpty == false {
             items.append(.separator)
-            items.append(.section(title: "Storage Map"))
+            items.append(.section(title: "Storage Sources"))
+            items.append(.sources(footprint))
+            items.append(.separator)
+            items.append(.section(title: "Top Storage Areas"))
             items.append(.breakdown(footprint))
         }
 

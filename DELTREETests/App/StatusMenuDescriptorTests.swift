@@ -44,7 +44,14 @@ struct StatusMenuDescriptorTests {
             }
             return false
         })
-        #expect(descriptor.items.contains(.section(title: "Storage Map")))
+        #expect(descriptor.items.contains(.section(title: "Storage Sources")))
+        #expect(descriptor.items.contains { item in
+            if case .sources = item {
+                return true
+            }
+            return false
+        })
+        #expect(descriptor.items.contains(.section(title: "Top Storage Areas")))
         #expect(descriptor.items.contains { item in
             if case .breakdown = item {
                 return true

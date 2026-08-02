@@ -18,9 +18,9 @@ struct DashboardView: View {
                 selectedDomain: $viewModel.selectedDomain)
 
             DashboardDetailContentView(viewModel: viewModel)
-                .frame(minWidth: 0)
+                .frame(minWidth: 460, idealWidth: 880)
         }
-        .frame(minWidth: 0, minHeight: 0)
+        .frame(minWidth: 640, idealWidth: 1120, minHeight: 440, idealHeight: 720)
         .sheet(item: $viewModel.pendingCleanupPlan) { plan in
             CleanupPreflightView(
                 plan: plan,

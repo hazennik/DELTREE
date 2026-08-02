@@ -29,6 +29,8 @@ enum StatusMenuRenderer {
                     title: title,
                     value: value,
                     systemImage: systemImage)))
+            case let .sources(footprint):
+                menu.addItem(hostedItem(StatusMenuSourceBreakdownView(footprint: footprint)))
             case let .breakdown(footprint):
                 menu.addItem(hostedItem(StorageBreakdownMenuView(footprint: footprint)))
             case let .safety(footprint, safeItemCount):
