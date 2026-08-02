@@ -7,7 +7,11 @@ struct CodexTasksView<Detail: View>: View {
     var itemDetail: Detail
 
     var body: some View {
-        HSplitView {
+        ResizableSplitView(
+            leadingMinWidth: 240,
+            leadingIdealWidth: 640,
+            trailingMinWidth: 200)
+        {
             VStack(spacing: 0) {
                 List(taskSummaries) { summary in
                     VStack(alignment: .leading, spacing: 4) {
@@ -32,7 +36,7 @@ struct CodexTasksView<Detail: View>: View {
                     sortOrder: $sortOrder)
             }
             .frame(minWidth: 240, idealWidth: 640)
-
+        } trailing: {
             itemDetail
         }
     }

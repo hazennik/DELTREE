@@ -14,7 +14,7 @@ struct StorageSegmentedBarView: View {
             HStack(spacing: segmentSpacing) {
                 ForEach(Array(visibleBreakdowns.enumerated()), id: \.element.id) { index, breakdown in
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(color(for: breakdown.domain))
+                        .fill(breakdown.domain.menuTint)
                         .frame(width: widths[index])
                         .help("\(breakdown.domain.displayName): \(StorageFormatters.byteCount(breakdown.bytes))")
                 }
@@ -37,20 +37,4 @@ struct StorageSegmentedBarView: View {
         return breakdowns.map { max(0, drawableWidth * $0.share(of: totalBytes)) }
     }
 
-    private func color(for domain: StorageDomain) -> Color {
-        switch domain {
-        case .codexHome, .codexWorkspaces:
-            .green
-        case .coreSimulatorDevices, .xcTestDevices:
-            .blue
-        case .derivedData, .xcodeProducts, .swiftPackageCaches, .coreSimulatorCaches:
-            .orange
-        case .xcResults:
-            .purple
-        case .deviceSupport, .simulatorRuntimes, .simulatorImages:
-            .teal
-        case .archives:
-            .gray
-        }
-    }
 }

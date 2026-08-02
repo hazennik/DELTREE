@@ -4,29 +4,22 @@ struct StatusMenuSourceBreakdownView: View {
     var footprint: StorageFootprint
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            StatusMenuGaugeRowView(
-                title: "Codex Native",
-                value: StorageFormatters.byteCount(codexNativeBytes),
-                detail: "Home, sessions, workspaces",
-                systemImage: "terminal",
-                tint: .green,
-                share: share(for: codexNativeBytes))
-
-            StatusMenuGaugeRowView(
-                title: "Xcode Generated",
-                value: StorageFormatters.byteCount(xcodeGeneratedBytes),
-                detail: "Simulators, builds, archives",
-                systemImage: "hammer",
-                tint: .orange,
-                share: share(for: xcodeGeneratedBytes))
+        VStack(alignment: .leading, spacing: 7) {
+            StatusMenuSegmentedListView(
+                segments: sourceSegments,
+                totalBytes: max(1, codexNativeBytes + xcodeGeneratedBytes))
 
             if codexLinkedXcodeBytes > 0 {
                 HStack(spacing: 8) {
-                    Label("Codex-linked Xcode", systemImage: "link")
+                    Image(systemName: "link")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16)
+                    Text("Codex-linked Xcode")
+                        .lineLimit(1)
                     Spacer(minLength: 8)
                     Text(StorageFormatters.byteCount(codexLinkedXcodeBytes))
                         .monospacedDigit()
+                        .lineLimit(1)
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -50,10 +43,24 @@ struct StatusMenuSourceBreakdownView: View {
         max(0, footprint.codexAttributedBytes - codexNativeBytes)
     }
 
-    private func share(for bytes: Int64) -> Double {
-        guard footprint.totalBytes > 0 else {
-            return 0
-        }
-        return Double(max(0, bytes)) / Double(footprint.totalBytes)
+    private var sourceSegments: [StatusMenuSegment] {
+        [
+            StatusMenuSegment(
+                id: "codex-native",
+                title: "Codex Native",
+                value: StorageFormatters.byteCount(codexNativeBytes),
+                detail: "Home, sessions, workspaces",
+                systemImage: "terminal",
+                tint: .green,
+                bytes: codexNativeBytes),
+            StatusMenuSegment(
+                id: "xcode-generated",
+                title: "Xcode Generated",
+                value: StorageFormatters.byteCount(xcodeGeneratedBytes),
+                detail: "Simulators, builds, archives",
+                systemImage: "hammer",
+                tint: .orange,
+                bytes: xcodeGeneratedBytes),
+        ]
     }
 }

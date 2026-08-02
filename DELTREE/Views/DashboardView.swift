@@ -10,13 +10,17 @@ struct DashboardView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
 
-        HSplitView {
+        ResizableSplitView(
+            leadingMinWidth: 160,
+            leadingIdealWidth: 240,
+            trailingMinWidth: 460)
+        {
             DomainSidebarView(
                 summaries: viewModel.domainSummaries,
                 totalBytes: viewModel.snapshot.totalBytes,
                 selectedSection: $viewModel.selectedSection,
                 selectedDomain: $viewModel.selectedDomain)
-
+        } trailing: {
             DashboardDetailContentView(viewModel: viewModel)
                 .frame(minWidth: 460, idealWidth: 880)
         }

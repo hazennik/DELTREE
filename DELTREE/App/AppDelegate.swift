@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var container: AppContainer?
     private var statusItemController: StatusItemController?
     private var dashboardWindowController: DashboardWindowController?
+    private var settingsWindowController: SettingsWindowController?
 
     func configure(_ container: AppContainer) {
         self.container = container
@@ -19,11 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         ProcessInfo.processInfo.disableAutomaticTermination(Self.automaticTerminationReason)
         let dashboardWindowController = DashboardWindowController(viewModel: container.dashboardViewModel)
+        let settingsWindowController = SettingsWindowController(container: container)
         self.dashboardWindowController = dashboardWindowController
+        self.settingsWindowController = settingsWindowController
         statusItemController = StatusItemController(
             viewModel: container.dashboardViewModel,
             openDashboard: { dashboardWindowController.show() },
-            openSettings: { Self.openSettingsWindow() })
+            openSettings: { settingsWindowController.show() })
         if ProcessInfo.processInfo.environment["DELTREE_DISABLE_INITIAL_SCAN"] != "1" {
             container.dashboardViewModel.start()
         }
@@ -32,17 +35,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         container?.dashboardViewModel.stop()
         ProcessInfo.processInfo.enableAutomaticTermination(Self.automaticTerminationReason)
-    }
-
-    private static func openSettingsWindow() {
-        NSApp.activate(ignoringOtherApps: true)
-        let selectors = [
-            Selector(("showSettingsWindow:")),
-            Selector(("showPreferencesWindow:")),
-        ]
-
-        for selector in selectors where NSApp.sendAction(selector, to: nil, from: nil) {
-            return
-        }
     }
 }

@@ -40,13 +40,17 @@ struct DashboardDetailContentView: View {
                         sortOrder: $viewModel.tableSortOrder,
                         itemDetail: itemDetail)
                 } else {
-                    HSplitView {
+                    ResizableSplitView(
+                        leadingMinWidth: 240,
+                        leadingIdealWidth: 640,
+                        trailingMinWidth: 200)
+                    {
                         StorageItemTableView(
                             items: viewModel.filteredItems,
                             selectedItemID: $viewModel.selectedItemID,
                             sortOrder: $viewModel.tableSortOrder)
                             .frame(minWidth: 240, idealWidth: 640)
-
+                    } trailing: {
                         itemDetail
                     }
                 }
@@ -64,6 +68,6 @@ struct DashboardDetailContentView: View {
             togglePinnedAction: viewModel.togglePinned,
             toggleIgnoredAction: viewModel.toggleIgnored,
             resetAttributionAction: viewModel.resetAttribution)
-            .frame(minWidth: 200, idealWidth: 240, maxWidth: 260)
+            .frame(minWidth: 200, idealWidth: 240)
     }
 }
