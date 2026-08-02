@@ -59,12 +59,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func descriptor() -> StatusMenuDescriptor {
-        StatusMenuDescriptorBuilder.make(
+        let cleanupEligibleItems = viewModel.snapshot.items.filter(\.isCleanupEligible)
+        return StatusMenuDescriptorBuilder.make(
             title: viewModel.menuBarTitle,
             footprint: viewModel.footprint,
             lastDelta: viewModel.lastDelta,
             isScanning: viewModel.isScanning,
-            safeItemCount: viewModel.snapshot.items.filter(\.isCleanupEligible).count)
+            safeItemCount: cleanupEligibleItems.count,
+            cleanupSuggestions: cleanupEligibleItems.map(StatusMenuCleanupSuggestion.make))
     }
 
     @objc private func performMenuCommand(_ item: NSMenuItem) {

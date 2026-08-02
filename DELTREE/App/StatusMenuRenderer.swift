@@ -33,6 +33,11 @@ enum StatusMenuRenderer {
                 menu.addItem(hostedItem(StatusMenuSourceBreakdownView(footprint: footprint)))
             case let .breakdown(footprint):
                 menu.addItem(hostedItem(StorageBreakdownMenuView(footprint: footprint)))
+            case let .cleanupSuggestions(suggestions, totalCount, totalBytes):
+                menu.addItem(hostedItem(StatusMenuSuggestedCleanupView(
+                    suggestions: suggestions,
+                    totalCount: totalCount,
+                    totalBytes: totalBytes)))
             case let .safety(footprint, safeItemCount):
                 menu.addItem(hostedItem(StatusMenuSafetyChartView(
                     footprint: footprint,

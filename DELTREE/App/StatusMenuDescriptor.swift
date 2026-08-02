@@ -34,6 +34,7 @@ enum StatusMenuItemDescriptor: Hashable, Sendable {
     case summary(title: String, value: String, systemImage: String?)
     case sources(StorageFootprint)
     case breakdown(StorageFootprint)
+    case cleanupSuggestions(suggestions: [StatusMenuCleanupSuggestion], totalCount: Int, totalBytes: Int64)
     case safety(footprint: StorageFootprint, safeItemCount: Int)
     case separator
     case command(title: String, command: StatusMenuCommand, keyEquivalent: String, isEnabled: Bool)
@@ -51,7 +52,8 @@ enum StatusMenuDescriptorBuilder {
         footprint: StorageFootprint,
         lastDelta: StorageDelta,
         isScanning: Bool,
-        safeItemCount: Int) -> StatusMenuDescriptor
+        safeItemCount: Int,
+        cleanupSuggestions: [StatusMenuCleanupSuggestion] = []) -> StatusMenuDescriptor
     {
         var items: [StatusMenuItemDescriptor] = [
             .overview(
@@ -77,6 +79,24 @@ enum StatusMenuDescriptorBuilder {
             items.append(.separator)
             items.append(.section(title: "Cleanup Readiness"))
             items.append(.safety(footprint: footprint, safeItemCount: safeItemCount))
+        }
+
+        let visibleCleanupSuggestions = cleanupSuggestions
+            .sorted { lhs, rhs in
+                if lhs.bytes == rhs.bytes {
+                    return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+                }
+                return lhs.bytes > rhs.bytes
+            }
+            .prefix(3)
+
+        if visibleCleanupSuggestions.isEmpty == false {
+            items.append(.separator)
+            items.append(.section(title: "Suggested Cleanup"))
+            items.append(.cleanupSuggestions(
+                suggestions: Array(visibleCleanupSuggestions),
+                totalCount: safeItemCount,
+                totalBytes: footprint.reclaimableBytes))
         }
 
         if footprint.unreadablePaths.isEmpty == false || footprint.missingPaths.isEmpty == false {

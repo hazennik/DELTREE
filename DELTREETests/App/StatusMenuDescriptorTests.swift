@@ -34,7 +34,8 @@ struct StatusMenuDescriptorTests {
             footprint: footprint,
             lastDelta: delta,
             isScanning: true,
-            safeItemCount: 1)
+            safeItemCount: 1,
+            cleanupSuggestions: [StatusMenuCleanupSuggestion.make(from: item)])
 
         #expect(descriptor.title == "Scanning...")
         #expect(descriptor.isWarning)
@@ -62,6 +63,16 @@ struct StatusMenuDescriptorTests {
         #expect(descriptor.items.contains { item in
             if case let .safety(_, safeItemCount) = item {
                 return safeItemCount == 1
+            }
+            return false
+        })
+        #expect(descriptor.items.contains(.section(title: "Suggested Cleanup")))
+        #expect(descriptor.items.contains { item in
+            if case let .cleanupSuggestions(suggestions, totalCount, totalBytes) = item {
+                return suggestions.map(\.title) == ["result.xcresult"] &&
+                    suggestions.first?.consequence == "Removes old test logs and attachments." &&
+                    totalCount == 1 &&
+                    totalBytes == 1_000
             }
             return false
         })
