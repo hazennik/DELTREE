@@ -26,6 +26,7 @@ struct DashboardDetailContentView: View {
                 StorageBreakdownPanelView(footprint: viewModel.footprint)
 
                 StorageFilterBarView(
+                    searchText: $viewModel.searchText,
                     selectedSafety: $viewModel.selectedSafety,
                     selectedOwner: $viewModel.selectedOwner,
                     includeIgnoredItems: $viewModel.includeIgnoredItems)
@@ -44,7 +45,7 @@ struct DashboardDetailContentView: View {
                             items: viewModel.filteredItems,
                             selectedItemID: $viewModel.selectedItemID,
                             sortOrder: $viewModel.tableSortOrder)
-                            .frame(minWidth: 680)
+                            .frame(minWidth: 240)
 
                         itemDetail
                     }
@@ -63,6 +64,6 @@ struct DashboardDetailContentView: View {
             togglePinnedAction: viewModel.togglePinned,
             toggleIgnoredAction: viewModel.toggleIgnored,
             resetAttributionAction: viewModel.resetAttribution)
-            .frame(minWidth: 340, idealWidth: 380, maxWidth: 480)
+            .frame(minWidth: 180, idealWidth: 320, maxWidth: 460)
     }
 }

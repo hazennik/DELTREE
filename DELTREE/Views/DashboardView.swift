@@ -10,16 +10,17 @@ struct DashboardView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
 
-        NavigationSplitView {
+        HSplitView {
             DomainSidebarView(
                 summaries: viewModel.domainSummaries,
                 totalBytes: viewModel.snapshot.totalBytes,
                 selectedSection: $viewModel.selectedSection,
                 selectedDomain: $viewModel.selectedDomain)
-        } detail: {
+
             DashboardDetailContentView(viewModel: viewModel)
-            .searchable(text: $viewModel.searchText, prompt: "Filter by name, path, kind, or owner")
+                .frame(minWidth: 0)
         }
+        .frame(minWidth: 0, minHeight: 0)
         .sheet(item: $viewModel.pendingCleanupPlan) { plan in
             CleanupPreflightView(
                 plan: plan,

@@ -10,32 +10,25 @@ struct LiveProcessSampler: ProcessSampling {
     ]
 
     func sample() async -> ProcessSnapshot {
-        await Task.detached(priority: .utility) {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/bin/ps")
-            process.arguments = ["-axo", "pid=,comm=,args="]
-
-            let output = Pipe()
-            process.standardOutput = output
-            process.standardError = Pipe()
-
-            do {
-                try process.run()
-                process.waitUntilExit()
-                let data = output.fileHandleForReading.readDataToEndOfFile()
-                let text = String(decoding: data, as: UTF8.self)
-                return ProcessSnapshot(
-                    sampledAt: Date(),
-                    processes: parse(text: text).filter { observed in
-                        watchedTerms.contains { term in
-                            observed.command.localizedCaseInsensitiveContains(term) ||
-                                observed.arguments.localizedCaseInsensitiveContains(term)
-                        }
-                    })
-            } catch {
+        do {
+            let output = try await ProcessRunner.run(
+                executableURL: URL(fileURLWithPath: "/bin/ps"),
+                arguments: ["-axo", "pid=,comm=,args="])
+            guard output.terminationStatus == 0 else {
                 return ProcessSnapshot(sampledAt: Date(), processes: [])
             }
-        }.value
+            let text = String(decoding: output.stdout, as: UTF8.self)
+            return ProcessSnapshot(
+                sampledAt: Date(),
+                processes: parse(text: text).filter { observed in
+                    watchedTerms.contains { term in
+                        observed.command.localizedCaseInsensitiveContains(term) ||
+                            observed.arguments.localizedCaseInsensitiveContains(term)
+                    }
+                })
+        } catch {
+            return ProcessSnapshot(sampledAt: Date(), processes: [])
+        }
     }
 
     nonisolated private func parse(text: String) -> [ObservedProcess] {

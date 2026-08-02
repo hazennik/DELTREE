@@ -40,6 +40,6 @@ struct DomainSidebarView: View {
             }
         }
         .navigationTitle("DELTREE")
-        .frame(minWidth: 240)
+        .frame(minWidth: 160, idealWidth: 240)
     }
 }

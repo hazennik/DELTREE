@@ -6,6 +6,8 @@ import UniformTypeIdentifiers
 @MainActor
 @Observable
 final class DashboardViewModel {
+    private static let minimumAutomaticScanInterval: TimeInterval = 60
+
     var snapshot: StorageSnapshot = .empty {
         didSet { onStateChange?() }
     }
@@ -51,6 +53,7 @@ final class DashboardViewModel {
     @ObservationIgnored private var cleanupTask: Task<Void, Never>?
     @ObservationIgnored private var lastSnapshotFingerprint = ""
     @ObservationIgnored private var lastScanStartedAt: Date?
+    @ObservationIgnored private var lastScanFinishedAt: Date?
     @ObservationIgnored private var pendingScanAfterCurrent = false
     @ObservationIgnored private var lastNotificationFingerprint = ""
 
@@ -178,12 +181,18 @@ final class DashboardViewModel {
             return
         }
 
-        if force == false,
-           let lastScanStartedAt,
-           Date().timeIntervalSince(lastScanStartedAt) < 2
-        {
-            scheduleDebouncedScan()
-            return
+        if force == false, let lastScanFinishedAt {
+            let elapsed = Date().timeIntervalSince(lastScanFinishedAt)
+            if elapsed < Self.minimumAutomaticScanInterval {
+                scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval - elapsed)
+                return
+            }
+        } else if force == false, let lastScanStartedAt {
+            let elapsed = Date().timeIntervalSince(lastScanStartedAt)
+            if elapsed < Self.minimumAutomaticScanInterval {
+                scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval - elapsed)
+                return
+            }
         }
 
         lastScanStartedAt = Date()
@@ -218,10 +227,11 @@ final class DashboardViewModel {
             self.persistence.saveDelta(delta)
             self.refreshHistory()
             await self.notifyIfNeeded(delta: delta, snapshot: snapshot)
+            self.lastScanFinishedAt = Date()
 
             if self.pendingScanAfterCurrent {
                 self.pendingScanAfterCurrent = false
-                self.scheduleDebouncedScan()
+                self.scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval)
             }
         }
     }
@@ -349,10 +359,10 @@ final class DashboardViewModel {
         }
     }
 
-    private func scheduleDebouncedScan() {
+    private func scheduleDebouncedScan(after seconds: TimeInterval = 2) {
         debounceTask?.cancel()
         debounceTask = Task {
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: .seconds(seconds))
             guard Task.isCancelled == false else {
                 return
             }

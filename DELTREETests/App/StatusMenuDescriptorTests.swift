@@ -38,8 +38,26 @@ struct StatusMenuDescriptorTests {
 
         #expect(descriptor.title == "Scanning...")
         #expect(descriptor.isWarning)
-        #expect(descriptor.items.contains(.summary(title: "Status", value: "Scanning...", systemImage: "arrow.clockwise")))
-        #expect(descriptor.items.contains(.summary(title: "Last Codex Run Impact", value: StorageFormatters.byteCount(1_000), systemImage: "plus.circle")))
+        #expect(descriptor.items.contains { item in
+            if case let .overview(_, lastCodexImpactBytes, hasRecentGrowth, isScanning, safeItemCount) = item {
+                return lastCodexImpactBytes == 1_000 && hasRecentGrowth && isScanning && safeItemCount == 1
+            }
+            return false
+        })
+        #expect(descriptor.items.contains(.section(title: "Storage Map")))
+        #expect(descriptor.items.contains { item in
+            if case .breakdown = item {
+                return true
+            }
+            return false
+        })
+        #expect(descriptor.items.contains(.section(title: "Cleanup Readiness")))
+        #expect(descriptor.items.contains { item in
+            if case let .safety(_, safeItemCount) = item {
+                return safeItemCount == 1
+            }
+            return false
+        })
         #expect(descriptor.items.contains(.command(title: "Scan Now", command: .scanNow, keyEquivalent: "r", isEnabled: false)))
         #expect(descriptor.items.contains(.command(title: "Clean Safe Items...", command: .cleanSafe, keyEquivalent: "", isEnabled: true)))
     }

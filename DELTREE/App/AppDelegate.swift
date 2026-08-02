@@ -2,6 +2,8 @@ import AppKit
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private static let automaticTerminationReason = "DELTREE menu bar agent"
+
     private var container: AppContainer?
     private var statusItemController: StatusItemController?
     private var dashboardWindowController: DashboardWindowController?
@@ -15,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        ProcessInfo.processInfo.disableAutomaticTermination(Self.automaticTerminationReason)
         let dashboardWindowController = DashboardWindowController(viewModel: container.dashboardViewModel)
         self.dashboardWindowController = dashboardWindowController
         statusItemController = StatusItemController(
@@ -28,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         container?.dashboardViewModel.stop()
+        ProcessInfo.processInfo.enableAutomaticTermination(Self.automaticTerminationReason)
     }
 
     private static func openSettingsWindow() {

@@ -35,6 +35,7 @@ struct DetailGridView: View {
                 .foregroundStyle(.secondary)
             Text(value)
                 .textSelection(.enabled)
+                .lineLimit(2)
         }
     }
 }

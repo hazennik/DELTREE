@@ -10,23 +10,14 @@ struct LiveSimctlCommandClient: SimctlCommanding {
     }
 
     private func run(arguments: [String]) async throws {
-        try await Task.detached(priority: .utility) {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
-            process.arguments = arguments
-            process.standardOutput = Pipe()
-            let errorOutput = Pipe()
-            process.standardError = errorOutput
+        let output = try await ProcessRunner.run(
+            executableURL: URL(fileURLWithPath: "/usr/bin/xcrun"),
+            arguments: arguments)
 
-            try process.run()
-            process.waitUntilExit()
-
-            guard process.terminationStatus == 0 else {
-                let data = errorOutput.fileHandleForReading.readDataToEndOfFile()
-                let message = String(decoding: data, as: UTF8.self)
-                throw SimctlCommandError.failed(status: process.terminationStatus, message: message)
-            }
-        }.value
+        guard output.terminationStatus == 0 else {
+            let message = String(decoding: output.stderr, as: UTF8.self)
+            throw SimctlCommandError.failed(status: output.terminationStatus, message: message)
+        }
     }
 }
 

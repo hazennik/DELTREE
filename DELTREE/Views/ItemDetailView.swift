@@ -18,6 +18,7 @@ struct ItemDetailView: View {
                         Label(item.displayName, systemImage: item.domain.symbolName)
                             .font(.title3)
                             .fontWeight(.semibold)
+                            .lineLimit(2)
 
                         DetailGridView(item: item)
 
@@ -69,12 +70,12 @@ struct ItemDetailView: View {
                             }
                         }
 
-                        HStack {
+                        LazyVGrid(columns: buttonColumns, alignment: .leading, spacing: 8) {
                             Button("Reveal", systemImage: "folder", action: { revealAction(item) })
                             Button("Copy Path", systemImage: "doc.on.doc", action: { copyPathAction(item) })
                         }
 
-                        HStack {
+                        LazyVGrid(columns: buttonColumns, alignment: .leading, spacing: 8) {
                             Button("User-Owned", systemImage: StorageAction.markUserOwned.systemImage) {
                                 markUserOwnedAction(item)
                             }
@@ -97,5 +98,9 @@ struct ItemDetailView: View {
             }
         }
         .background(.background)
+    }
+
+    private var buttonColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 86), spacing: 8)]
     }
 }
