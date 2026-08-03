@@ -44,6 +44,22 @@ struct CodexWorkspaceDomainScanner: DomainScanning {
                     "state": state(for: candidate, context: context),
                 ]
                 metadata.merge(CodexSessionMatcher.metadata(for: candidate.path, sessions: context.codexSessions)) { current, _ in current }
+                metadata.merge(
+                    CodexSessionMatcher.sessionStorageMetadata(
+                        for: candidate.path,
+                        sessions: context.codexSessions,
+                        now: context.now,
+                        staleAgeDays: context.configuration.staleAgeDays))
+                { _, new in new }
+
+                let latestSessionActivityDate = CodexSessionMatcher.latestSessionActivityDate(
+                    for: candidate.path,
+                    sessions: context.codexSessions)
+                if let latestSessionActivityDate {
+                    metadata["state"] = DirectoryScannerHelpers.state(
+                        ageDays: DirectoryScannerHelpers.ageDays(since: latestSessionActivityDate, now: context.now),
+                        staleThreshold: context.configuration.staleAgeDays)
+                }
 
                 let item = await StorageItemFactory.makeItem(
                     url: candidate,
@@ -52,7 +68,7 @@ struct CodexWorkspaceDomainScanner: DomainScanning {
                     size: size,
                     metadata: metadata,
                     isActive: false,
-                    explicitLastUsedAt: nil,
+                    explicitLastUsedAt: latestSessionActivityDate,
                     context: context)
                 result.items.append(item)
             }

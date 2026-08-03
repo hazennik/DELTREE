@@ -32,6 +32,7 @@ These are usually not included in safe cleanup:
 - DerivedData without strong Codex attribution
 - SwiftPM caches
 - recent result bundles
+- Codex session history, even when stale, because it can affect local chat resume/audit history
 - Codex workspaces that may contain deliverables
 - Xcode Products
 

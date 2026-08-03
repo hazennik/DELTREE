@@ -27,6 +27,7 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
     nonisolated private func scanSessions(now: Date) -> [CodexSessionRecord] {
         let roots = [
             homeDirectory.appendingPathComponent(".codex/sessions", isDirectory: true),
+            homeDirectory.appendingPathComponent(".codex/archived_sessions", isDirectory: true),
             homeDirectory.appendingPathComponent(".codex/tasks", isDirectory: true),
             homeDirectory.appendingPathComponent(".codex/history.jsonl"),
         ]
@@ -140,7 +141,7 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
             keys: ["id", "session_id", "sessionId", "thread_id", "threadId", "conversation_id", "conversationId"])
         let title = firstString(
             in: flattened,
-            keys: ["title", "name", "objective", "summary", "prompt"])
+            keys: ["title", "name", "objective", "summary", "prompt"]) ?? firstDescription(in: flattened)
         let workingDirectory = firstString(
             in: flattened,
             keys: ["cwd", "workdir", "working_directory", "workingDirectory", "workspace", "path"])
@@ -187,6 +188,25 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
         for key in keys {
             if let value = values[key]?.first, value.isEmpty == false {
                 return value
+            }
+        }
+        return nil
+    }
+
+    nonisolated private func firstDescription(in values: [String: [String]]) -> String? {
+        for key in ["text", "content", "message"] {
+            for value in values[key] ?? [] {
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard trimmed.count >= 4,
+                      trimmed.hasPrefix("/") == false,
+                      trimmed.hasPrefix("{") == false
+                else {
+                    continue
+                }
+                if trimmed.count > 140 {
+                    return "\(trimmed.prefix(139))..."
+                }
+                return trimmed
             }
         }
         return nil

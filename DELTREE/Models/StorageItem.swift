@@ -43,11 +43,19 @@ struct StorageItem: Identifiable, Hashable, Codable, Sendable {
     }
 
     var relatedProject: String {
-        metadata["relatedProject"] ?? metadata["projectName"] ?? ""
+        metadata["relatedProject"] ?? metadata["projectName"] ?? metadata["codexSessionProjectSummary"] ?? ""
     }
 
     var relatedCodexTask: String {
         metadata["codexTaskTitle"] ?? metadata["codexSessionID"] ?? ""
+    }
+
+    var codexSessionDescription: String {
+        metadata["codexSessionSummary"] ?? ""
+    }
+
+    var codexSessionCleanupEffect: String {
+        metadata["codexSessionCleanupEffect"] ?? ""
     }
 
     var runtimeOrDevice: String {

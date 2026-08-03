@@ -17,6 +17,12 @@ struct DetailGridView: View {
             if item.relatedCodexTask.isEmpty == false {
                 row("Codex Task", item.relatedCodexTask)
             }
+            if item.codexSessionDescription.isEmpty == false {
+                row("Session", item.codexSessionDescription)
+            }
+            if item.codexSessionCleanupEffect.isEmpty == false {
+                row("Cleanup Effect", item.codexSessionCleanupEffect)
+            }
             if item.runtimeOrDevice.isEmpty == false {
                 row("Runtime / Device", item.runtimeOrDevice)
             }
