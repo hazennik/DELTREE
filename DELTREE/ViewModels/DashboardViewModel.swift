@@ -3,11 +3,14 @@ import Foundation
 import Observation
 import UniformTypeIdentifiers
 
+typealias DashboardScanDelayScheduler = @MainActor (
+    _ seconds: TimeInterval,
+    _ operation: @escaping @MainActor () -> Void)
+    -> @MainActor () -> Void
+
 @MainActor
 @Observable
 final class DashboardViewModel {
-    private static let minimumAutomaticScanInterval: TimeInterval = 60
-
     var snapshot: StorageSnapshot = .empty {
         didSet { onStateChange?() }
     }
@@ -46,16 +49,21 @@ final class DashboardViewModel {
     @ObservationIgnored private let diskSpaceProvider: any DiskSpaceProviding
     @ObservationIgnored private let notificationService: any NotificationServicing
     @ObservationIgnored private let mainThreadHangWatchdog: MainThreadHangWatchdog
+    @ObservationIgnored private let powerStateProvider: any PowerStateProviding
+    @ObservationIgnored private let backgroundScanPolicy: BackgroundScanPolicy
+    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored private let scheduleScanDelay: DashboardScanDelayScheduler
 
     @ObservationIgnored private var hasStarted = false
     @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var refreshLoopTask: Task<Void, Never>?
-    @ObservationIgnored private var debounceTask: Task<Void, Never>?
+    @ObservationIgnored private var cancelDebouncedScan: (@MainActor () -> Void)?
     @ObservationIgnored private var cleanupTask: Task<Void, Never>?
     @ObservationIgnored private var lastSnapshotFingerprint = ""
     @ObservationIgnored private var lastScanStartedAt: Date?
     @ObservationIgnored private var lastScanFinishedAt: Date?
     @ObservationIgnored private var pendingScanAfterCurrent = false
+    @ObservationIgnored private var pendingScanAfterCurrentIsForced = false
     @ObservationIgnored private var lastNotificationFingerprint = ""
 
     init(
@@ -70,7 +78,11 @@ final class DashboardViewModel {
         attributionTracker: any AttributionTracking,
         diskSpaceProvider: any DiskSpaceProviding,
         notificationService: any NotificationServicing,
-        mainThreadHangWatchdog: MainThreadHangWatchdog = .disabled())
+        mainThreadHangWatchdog: MainThreadHangWatchdog = .disabled(),
+        powerStateProvider: any PowerStateProviding = LivePowerStateProvider(),
+        backgroundScanPolicy: BackgroundScanPolicy = .production,
+        now: @escaping () -> Date = { Date() },
+        scheduleScanDelay: @escaping DashboardScanDelayScheduler = DashboardViewModel.defaultScanDelayScheduler)
     {
         self.scanner = scanner
         self.cleanupPlanner = cleanupPlanner
@@ -84,6 +96,10 @@ final class DashboardViewModel {
         self.diskSpaceProvider = diskSpaceProvider
         self.notificationService = notificationService
         self.mainThreadHangWatchdog = mainThreadHangWatchdog
+        self.powerStateProvider = powerStateProvider
+        self.backgroundScanPolicy = backgroundScanPolicy
+        self.now = now
+        self.scheduleScanDelay = scheduleScanDelay
     }
 
     var menuBarTitle: String {
@@ -174,31 +190,24 @@ final class DashboardViewModel {
         watcher.stop()
         scanTask?.cancel()
         refreshLoopTask?.cancel()
-        debounceTask?.cancel()
+        cancelDebouncedScan?()
+        cancelDebouncedScan = nil
         cleanupTask?.cancel()
     }
 
     func scan(force: Bool = true) {
         if isScanning {
             pendingScanAfterCurrent = true
+            pendingScanAfterCurrentIsForced = pendingScanAfterCurrentIsForced || force
             return
         }
 
-        if force == false, let lastScanFinishedAt {
-            let elapsed = Date().timeIntervalSince(lastScanFinishedAt)
-            if elapsed < Self.minimumAutomaticScanInterval {
-                scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval - elapsed)
-                return
-            }
-        } else if force == false, let lastScanStartedAt {
-            let elapsed = Date().timeIntervalSince(lastScanStartedAt)
-            if elapsed < Self.minimumAutomaticScanInterval {
-                scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval - elapsed)
-                return
-            }
+        if force == false, let delay = automaticScanDelaySinceMostRecentScan() {
+            scheduleDebouncedScan(after: delay)
+            return
         }
 
-        let scanDate = Date()
+        let scanDate = now()
         lastScanStartedAt = scanDate
         isScanning = true
         errorMessage = nil
@@ -234,11 +243,17 @@ final class DashboardViewModel {
                 self.refreshHistory()
             }
             await self.notifyIfNeeded(delta: delta, snapshot: snapshot)
-            self.lastScanFinishedAt = Date()
+            self.lastScanFinishedAt = self.now()
 
             if self.pendingScanAfterCurrent {
+                let forcePendingScan = self.pendingScanAfterCurrentIsForced
                 self.pendingScanAfterCurrent = false
-                self.scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval)
+                self.pendingScanAfterCurrentIsForced = false
+                if forcePendingScan {
+                    self.scan(force: true)
+                } else {
+                    self.scheduleDebouncedScan(after: self.backgroundScanInterval())
+                }
             }
         }
     }
@@ -260,7 +275,7 @@ final class DashboardViewModel {
         }
         configureWatcher()
         startRefreshLoop()
-        scheduleDebouncedScan()
+        scheduleBackgroundScan()
     }
 
     func performCleanup(_ plan: CleanupPlan) {
@@ -348,7 +363,7 @@ final class DashboardViewModel {
 
     private func handleFilesystemChange(paths: [String]) async {
         let processes = await processSampler.sample()
-        await attributionTracker.recordFilesystemEvents(paths: paths, processes: processes, at: Date())
+        await attributionTracker.recordFilesystemEvents(paths: paths, processes: processes, at: now())
 
         let owner: OwnerAttribution
         let confidence: Double
@@ -367,21 +382,21 @@ final class DashboardViewModel {
         }
 
         mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
-            persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: Date())
+            persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: now())
         }
         if settings.autoScanAfterActivity {
-            scheduleDebouncedScan()
+            scheduleBackgroundScan()
         }
     }
 
-    private func scheduleDebouncedScan(after seconds: TimeInterval = 2) {
-        debounceTask?.cancel()
-        debounceTask = Task {
-            try? await Task.sleep(for: .seconds(seconds))
-            guard Task.isCancelled == false else {
-                return
-            }
-            scan(force: false)
+    private func scheduleBackgroundScan() {
+        scheduleDebouncedScan(after: backgroundScanInterval())
+    }
+
+    private func scheduleDebouncedScan(after seconds: TimeInterval) {
+        cancelDebouncedScan?()
+        cancelDebouncedScan = scheduleScanDelay(max(0, seconds)) { [weak self] in
+            self?.scan(force: false)
         }
     }
 
@@ -389,13 +404,52 @@ final class DashboardViewModel {
         refreshLoopTask?.cancel()
         refreshLoopTask = Task {
             while Task.isCancelled == false {
-                let seconds = max(60, settings.scanIntervalMinutes * 60)
+                let seconds = backgroundScanInterval()
                 try? await Task.sleep(for: .seconds(seconds))
                 guard Task.isCancelled == false else {
                     break
                 }
                 scan(force: false)
             }
+        }
+    }
+
+    private func automaticScanDelaySinceMostRecentScan() -> TimeInterval? {
+        let minimumInterval = backgroundScanInterval()
+        let referenceDate = lastScanFinishedAt ?? lastScanStartedAt
+        guard let referenceDate else {
+            return nil
+        }
+
+        let elapsed = now().timeIntervalSince(referenceDate)
+        guard elapsed < minimumInterval else {
+            return nil
+        }
+        return minimumInterval - elapsed
+    }
+
+    private func backgroundScanInterval() -> TimeInterval {
+        backgroundScanPolicy.effectiveInterval(
+            userInterval: settings.scanIntervalMinutes * 60,
+            powerState: powerStateProvider.currentPowerState)
+    }
+
+    private static func defaultScanDelayScheduler(
+        seconds: TimeInterval,
+        operation: @escaping @MainActor () -> Void)
+        -> @MainActor () -> Void
+    {
+        let task = Task { @MainActor in
+            if seconds > 0 {
+                try? await Task.sleep(for: .seconds(seconds))
+            }
+            guard Task.isCancelled == false else {
+                return
+            }
+            operation()
+        }
+        return {
+            task.cancel()
         }
     }
 

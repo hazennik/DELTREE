@@ -17,6 +17,7 @@ final class AppContainer {
         let attributionTracker = LiveAttributionTracker()
         let processSampler = LiveProcessSampler()
         let trashService = FileManagerTrashService()
+        let powerStateProvider = LivePowerStateProvider()
         let storageScanner = DefaultStorageScanner(
             rootCatalog: rootCatalog,
             codexSessionScanner: CodexThreadCatalogReader(homeDirectory: rootCatalog.homeDirectory),
@@ -37,7 +38,9 @@ final class AppContainer {
             attributionTracker: attributionTracker,
             diskSpaceProvider: LiveDiskSpaceProvider(),
             notificationService: UserNotificationService(),
-            mainThreadHangWatchdog: mainThreadHangWatchdog)
+            mainThreadHangWatchdog: mainThreadHangWatchdog,
+            powerStateProvider: powerStateProvider,
+            backgroundScanPolicy: .production)
         self.mainThreadHangWatchdog = mainThreadHangWatchdog
     }
 }
