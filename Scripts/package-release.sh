@@ -24,6 +24,9 @@ EOF
 dry_run=0
 notarize=0
 staple=1
+script_dir="${0:A:h}"
+repo_root="${script_dir:h}"
+source "$repo_root/Scripts/release-artifacts.sh"
 
 while (($#)); do
   case "$1" in
@@ -61,7 +64,7 @@ team_id="${DELTREE_TEAM_ID:-}"
 notary_profile="${DELTREE_NOTARY_PROFILE:-}"
 notary_keychain="${DELTREE_NOTARY_KEYCHAIN:-}"
 app_path="$archive_path/Products/Applications/DELTREE.app"
-zip_path="$export_path/DELTREE.zip"
+zip_path="$(deltree_app_zip_path "$export_path")"
 
 if ((dry_run)); then
   identity="${identity:-Developer ID Application: Example}"
@@ -91,7 +94,6 @@ archive_command=(
   CODE_SIGN_IDENTITY="$identity"
   CODE_SIGNING_ALLOWED=YES
 )
-zip_command=(ditto -c -k --keepParent "$app_path" "$zip_path")
 notary_command=(xcrun notarytool submit "$zip_path" --keychain-profile "$notary_profile" --wait)
 if [[ -n "$notary_keychain" ]]; then
   notary_command+=(--keychain "$notary_keychain")
@@ -99,12 +101,14 @@ fi
 
 if ((dry_run)); then
   print -r -- "Dry run: ${archive_command[*]}"
-  print -r -- "Dry run: ${zip_command[*]}"
+  deltree_create_zip "$app_path" "$zip_path" 1
+  print -r -- "Dry run: verify packaged app \"$app_path\""
   if ((notarize)); then
     print -r -- "Dry run: ${notary_command[*]}"
     if ((staple)); then
       print -r -- "Dry run: xcrun stapler staple \"$app_path\""
-      print -r -- "Dry run: ${zip_command[*]}"
+      print -r -- "Dry run: verify notarized app \"$app_path\""
+      deltree_create_zip "$app_path" "$zip_path" 1
     fi
   fi
   print -r -- "Dry run complete."
@@ -112,13 +116,15 @@ if ((dry_run)); then
 fi
 
 "${archive_command[@]}"
-"${zip_command[@]}"
+deltree_create_zip "$app_path" "$zip_path"
+deltree_verify_packaged_app "$app_path"
 
 if ((notarize)); then
   "${notary_command[@]}"
   if ((staple)); then
     xcrun stapler staple "$app_path"
-    "${zip_command[@]}"
+    deltree_verify_notarized_app "$app_path"
+    deltree_create_zip "$app_path" "$zip_path"
   fi
 fi
 
