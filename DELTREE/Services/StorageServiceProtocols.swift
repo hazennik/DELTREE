@@ -57,7 +57,7 @@ protocol DomainScanning: Sendable {
 }
 
 protocol StorageScanning: Sendable {
-    func scan(configuration: StorageScanConfiguration, now: Date) async -> StorageSnapshot
+    @concurrent func scan(configuration: StorageScanConfiguration, now: Date) async -> StorageSnapshot
 }
 
 protocol CleanupPlanning: Sendable {

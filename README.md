@@ -45,8 +45,8 @@ Totals and explanations live in the dropdown and dashboard so the menu bar stays
 
 Requirements:
 
-- macOS with Xcode installed.
-- Xcode 17 or newer for the current project settings.
+- macOS 14 or newer.
+- Xcode 17 or newer for Swift 6 strict-concurrency project settings.
 - Swift 6-era toolchain from Xcode.
 
 Open the project:
@@ -58,7 +58,7 @@ open DELTREE.xcodeproj
 Run tests:
 
 ```sh
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS'
+xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
 ```
 
 ## CLI Helper
@@ -99,4 +99,3 @@ DELTREE is local-only. It reads known developer paths, local Codex metadata when
 ## License
 
 MIT. See [LICENSE](LICENSE).
-

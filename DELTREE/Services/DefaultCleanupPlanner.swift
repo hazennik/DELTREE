@@ -1,6 +1,6 @@
 import Foundation
 
-struct DefaultCleanupPlanner: CleanupPlanning {
+struct DefaultCleanupPlanner: CleanupPlanning, @unchecked Sendable {
     private let fileManager: FileManager
 
     init(fileManager: FileManager = .default) {

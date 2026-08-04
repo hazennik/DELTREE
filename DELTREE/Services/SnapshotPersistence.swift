@@ -26,15 +26,31 @@ protocol SnapshotPersisting: AnyObject {
 
 @MainActor
 final class SwiftDataSnapshotStore: SnapshotPersisting {
-    private let container: ModelContainer
+    struct RetentionLimits: Sendable {
+        var scanHistory: Int
+        var deltaHistory: Int
+        var cleanupHistory: Int
+        var attributionEvents: Int
 
-    init(container: ModelContainer) {
+        nonisolated static let production = RetentionLimits(
+            scanHistory: 500,
+            deltaHistory: 500,
+            cleanupHistory: 200,
+            attributionEvents: 500)
+    }
+
+    private let container: ModelContainer
+    private let retentionLimits: RetentionLimits
+
+    init(container: ModelContainer, retentionLimits: RetentionLimits = .production) {
         self.container = container
+        self.retentionLimits = retentionLimits
     }
 
     func saveSnapshot(_ snapshot: StorageSnapshot) {
         let context = ModelContext(container)
         context.insert(ScanHistoryRecord(snapshot: snapshot))
+        pruneScanHistory(in: context, keeping: retentionLimits.scanHistory)
         try? context.save()
     }
 
@@ -57,6 +73,7 @@ final class SwiftDataSnapshotStore: SnapshotPersisting {
 
         let context = ModelContext(container)
         context.insert(StorageDeltaRecord(delta: delta))
+        pruneDeltaHistory(in: context, keeping: retentionLimits.deltaHistory)
         try? context.save()
     }
 
@@ -80,6 +97,7 @@ final class SwiftDataSnapshotStore: SnapshotPersisting {
             skippedPaths: skippedPaths,
             errors: errors,
             initiator: initiator))
+        pruneCleanupHistory(in: context, keeping: retentionLimits.cleanupHistory)
         try? context.save()
     }
 
@@ -90,6 +108,7 @@ final class SwiftDataSnapshotStore: SnapshotPersisting {
             owner: owner,
             confidence: confidence,
             paths: paths))
+        pruneAttributionEvents(in: context, keeping: retentionLimits.attributionEvents)
         try? context.save()
     }
 
@@ -145,5 +164,45 @@ final class SwiftDataSnapshotStore: SnapshotPersisting {
             sortBy: [SortDescriptor(\.capturedAt, order: .reverse)])
         descriptor.fetchLimit = limit
         return (try? ModelContext(container).fetch(descriptor)) ?? []
+    }
+
+    private func pruneScanHistory(in context: ModelContext, keeping limit: Int) {
+        var descriptor = FetchDescriptor<ScanHistoryRecord>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)])
+        descriptor.includePendingChanges = true
+        let records = (try? context.fetch(descriptor)) ?? []
+        for record in records.dropFirst(max(0, limit)) {
+            context.delete(record)
+        }
+    }
+
+    private func pruneDeltaHistory(in context: ModelContext, keeping limit: Int) {
+        var descriptor = FetchDescriptor<StorageDeltaRecord>(
+            sortBy: [SortDescriptor(\.capturedAt, order: .reverse)])
+        descriptor.includePendingChanges = true
+        let records = (try? context.fetch(descriptor)) ?? []
+        for record in records.dropFirst(max(0, limit)) {
+            context.delete(record)
+        }
+    }
+
+    private func pruneCleanupHistory(in context: ModelContext, keeping limit: Int) {
+        var descriptor = FetchDescriptor<CleanupHistoryRecord>(
+            sortBy: [SortDescriptor(\.performedAt, order: .reverse)])
+        descriptor.includePendingChanges = true
+        let records = (try? context.fetch(descriptor)) ?? []
+        for record in records.dropFirst(max(0, limit)) {
+            context.delete(record)
+        }
+    }
+
+    private func pruneAttributionEvents(in context: ModelContext, keeping limit: Int) {
+        var descriptor = FetchDescriptor<AttributionEventRecord>(
+            sortBy: [SortDescriptor(\.observedAt, order: .reverse)])
+        descriptor.includePendingChanges = true
+        let records = (try? context.fetch(descriptor)) ?? []
+        for record in records.dropFirst(max(0, limit)) {
+            context.delete(record)
+        }
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct FileManagerTrashService: TrashServicing {
+struct FileManagerTrashService: TrashServicing, @unchecked Sendable {
     private let fileManager: FileManager
 
     init(fileManager: FileManager = .default) {

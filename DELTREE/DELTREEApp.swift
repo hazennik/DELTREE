@@ -38,7 +38,11 @@ struct DELTREEApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            if let fallback = try? ModelContainer(for: schema, configurations: [fallbackConfiguration]) {
+                return fallback
+            }
+            preconditionFailure("Could not create ModelContainer: \(error)")
         }
     }
 }

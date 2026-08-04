@@ -1,6 +1,6 @@
 import Foundation
 
-struct DefaultStorageScanner: StorageScanning {
+struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
     private let fileManager: FileManager
     private let fileSizeScanner: any FileSizeScanning
     private let simctlClient: any SimctlClient
@@ -33,7 +33,7 @@ struct DefaultStorageScanner: StorageScanning {
         self.rootCatalog = rootCatalog
     }
 
-    func scan(configuration: StorageScanConfiguration, now: Date = Date()) async -> StorageSnapshot {
+    @concurrent func scan(configuration: StorageScanConfiguration, now: Date = Date()) async -> StorageSnapshot {
         async let devices = simctlClient.devices()
         async let sessions = codexSessionScanner.sessions(now: now)
         async let processes = processSampler.sample()

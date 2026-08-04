@@ -195,7 +195,8 @@ final class DashboardViewModel {
             }
         }
 
-        lastScanStartedAt = Date()
+        let scanDate = Date()
+        lastScanStartedAt = scanDate
         isScanning = true
         errorMessage = nil
         var configuration = settings.scanConfiguration
@@ -205,9 +206,7 @@ final class DashboardViewModel {
         let previousSnapshot = persistence.mostRecentSnapshot()
 
         scanTask = Task {
-            let snapshot = await Task.detached(priority: .utility) {
-                await scanner.scan(configuration: configuration, now: Date())
-            }.value
+            let snapshot = await scanner.scan(configuration: configuration, now: scanDate)
 
             guard Task.isCancelled == false else {
                 return

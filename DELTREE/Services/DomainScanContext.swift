@@ -1,6 +1,6 @@
 import Foundation
 
-struct DomainScanContext: Sendable {
+struct DomainScanContext: @unchecked Sendable {
     var fileManager: FileManager
     var fileSizeScanner: any FileSizeScanning
     var simctlDevices: [SimctlDevice]

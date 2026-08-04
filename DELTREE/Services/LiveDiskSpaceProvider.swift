@@ -1,6 +1,6 @@
 import Foundation
 
-struct LiveDiskSpaceProvider: DiskSpaceProviding {
+struct LiveDiskSpaceProvider: DiskSpaceProviding, @unchecked Sendable {
     private let fileManager: FileManager
 
     init(fileManager: FileManager = .default) {

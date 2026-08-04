@@ -37,4 +37,5 @@ notarization-profile.json
 # Logs and reports
 *.log
 *.xcresult
+*.profraw
 coverage/

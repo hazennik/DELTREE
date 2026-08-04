@@ -12,15 +12,31 @@ enum ProcessRunner {
         arguments: [String],
         priority: TaskPriority = .utility) async throws -> ProcessOutput
     {
-        try await Task.detached(priority: priority) {
-            try runSynchronously(executableURL: executableURL, arguments: arguments)
-        }.value
+        let cancellation = ProcessCancellationState()
+        return try await withTaskCancellationHandler {
+            try await Task.detached(priority: priority) {
+                try runSynchronously(
+                    executableURL: executableURL,
+                    arguments: arguments,
+                    cancellation: cancellation)
+            }.value
+        } onCancel: {
+            cancellation.cancel()
+        }
     }
 
-    nonisolated private static func runSynchronously(executableURL: URL, arguments: [String]) throws -> ProcessOutput {
+    nonisolated private static func runSynchronously(
+        executableURL: URL,
+        arguments: [String],
+        cancellation: ProcessCancellationState) throws -> ProcessOutput
+    {
+        try cancellation.checkCancellation()
+
         let process = Process()
         process.executableURL = executableURL
         process.arguments = arguments
+        cancellation.attach(process)
+        defer { cancellation.detach(process) }
 
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
@@ -28,6 +44,9 @@ enum ProcessRunner {
         process.standardError = stderrPipe
 
         try process.run()
+        if cancellation.isCancelled {
+            process.terminate()
+        }
 
         let stdout = LockedDataBox()
         let stderr = LockedDataBox()
@@ -38,6 +57,7 @@ enum ProcessRunner {
 
         process.waitUntilExit()
         group.wait()
+        try cancellation.checkCancellation()
 
         return ProcessOutput(
             terminationStatus: process.terminationStatus,
@@ -51,6 +71,56 @@ enum ProcessRunner {
         DispatchQueue.global(qos: .utility).async {
             output.append(handle.fileHandle.readDataToEndOfFile())
             group.leave()
+        }
+    }
+}
+
+private final class ProcessCancellationState: @unchecked Sendable {
+    private let lock = NSLock()
+    private var process: Process?
+    private var cancelled = false
+
+    var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+
+    func attach(_ process: Process) {
+        let shouldTerminate: Bool
+        lock.lock()
+        self.process = process
+        shouldTerminate = cancelled
+        lock.unlock()
+
+        if shouldTerminate, process.isRunning {
+            process.terminate()
+        }
+    }
+
+    func detach(_ process: Process) {
+        lock.lock()
+        if self.process === process {
+            self.process = nil
+        }
+        lock.unlock()
+    }
+
+    func cancel() {
+        let runningProcess: Process?
+        lock.lock()
+        cancelled = true
+        runningProcess = process
+        lock.unlock()
+
+        if runningProcess?.isRunning == true {
+            runningProcess?.terminate()
+        }
+    }
+
+    func checkCancellation() throws {
+        if isCancelled {
+            throw CancellationError()
         }
     }
 }

@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 struct ResizableSplitView<Leading: View, Trailing: View>: NSViewRepresentable {
     var leadingMinWidth: CGFloat
     var leadingIdealWidth: CGFloat
@@ -66,6 +67,7 @@ struct ResizableSplitView<Leading: View, Trailing: View>: NSViewRepresentable {
         }
     }
 
+    @MainActor
     final class Coordinator: NSObject, NSSplitViewDelegate {
         var leadingMinWidth: CGFloat
         var leadingIdealWidth: CGFloat

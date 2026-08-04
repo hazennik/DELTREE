@@ -11,7 +11,7 @@ open DELTREE.xcodeproj
 Run all tests:
 
 ```sh
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS'
+xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
 ```
 
 Run the CLI helper:
@@ -46,8 +46,7 @@ Tools/deltree --dry-run
 
 ```sh
 git status -sb
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS'
+xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
 Tools/deltree --dry-run --json
 rg "removeItem|trashItem|simctl" DELTREE DELTREETests Tools Scripts
 ```
-
