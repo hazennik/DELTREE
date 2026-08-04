@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: Scripts/package-release.sh [--dry-run] [--notarize] [--no-notarize] [--skip-staple]
+Usage: Scripts/package-release.sh [--dry-run] [--notarize] [--no-notarize] [--skip-staple] [--distribution developer-id|homebrew]
 
 Builds the signed Developer ID archive and release zip for DELTREE.
 
@@ -18,12 +18,14 @@ Environment:
   DELTREE_NOTARY_KEYCHAIN              Optional keychain containing the notarytool profile.
 
 Dry runs validate arguments and print the commands without requiring Apple credentials.
+Developer ID distribution is the default. Use --distribution homebrew only for Homebrew Cask artifacts.
 EOF
 }
 
 dry_run=0
 notarize=0
 staple=1
+distribution="developer-id"
 script_dir="${0:A:h}"
 repo_root="${script_dir:h}"
 source "$repo_root/Scripts/release-artifacts.sh"
@@ -42,6 +44,15 @@ while (($#)); do
     --skip-staple)
       staple=0
       ;;
+    --distribution)
+      shift
+      if (($# == 0)); then
+        echo "--distribution requires developer-id or homebrew." >&2
+        usage >&2
+        exit 2
+      fi
+      distribution="$1"
+      ;;
     -h|--help)
       usage
       exit 0
@@ -54,6 +65,16 @@ while (($#)); do
   esac
   shift
 done
+
+case "$distribution" in
+  developer-id|homebrew)
+    ;;
+  *)
+    echo "Unsupported distribution: $distribution" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
 
 scheme="${DELTREE_SCHEME:-DELTREE}"
 project="${DELTREE_PROJECT:-DELTREE.xcodeproj}"
@@ -93,6 +114,7 @@ archive_command=(
   DEVELOPMENT_TEAM="$team_id"
   CODE_SIGN_IDENTITY="$identity"
   CODE_SIGNING_ALLOWED=YES
+  DELTREE_DISTRIBUTION_CHANNEL="$distribution"
 )
 notary_command=(xcrun notarytool submit "$zip_path" --keychain-profile "$notary_profile" --wait)
 if [[ -n "$notary_keychain" ]]; then

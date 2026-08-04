@@ -27,6 +27,7 @@ make appcast-check
 ```
 
 `make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` when validating launch behavior on a trusted local machine.
+`make package-check` performs dry-run package validation for both Developer ID and Homebrew distribution channels.
 
 ## Project Layout
 

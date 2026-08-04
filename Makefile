@@ -36,7 +36,11 @@ package-check:
 	DELTREE_DEVELOPER_ID_APPLICATION='Developer ID Application: Example' \
 	DELTREE_TEAM_ID='TEAMID1234' \
 	DELTREE_NOTARY_PROFILE='deltree-notary-profile' \
-	zsh Scripts/package-release.sh --dry-run --notarize
+	zsh Scripts/package-release.sh --dry-run --notarize --distribution developer-id
+	DELTREE_DEVELOPER_ID_APPLICATION='Developer ID Application: Example' \
+	DELTREE_TEAM_ID='TEAMID1234' \
+	DELTREE_NOTARY_PROFILE='deltree-notary-profile' \
+	zsh Scripts/package-release.sh --dry-run --notarize --distribution homebrew
 
 repository-check:
 	zsh Scripts/check-repository-size.sh

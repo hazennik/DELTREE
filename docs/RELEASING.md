@@ -28,10 +28,11 @@ brew install swiftformat swiftlint
 DELTREE_DEVELOPER_ID_APPLICATION="Developer ID Application: Example" \
 DELTREE_TEAM_ID="TEAMID1234" \
 DELTREE_NOTARY_PROFILE="deltree-notary-profile" \
-Scripts/package-release.sh --notarize
+Scripts/package-release.sh --notarize --distribution developer-id
 ```
 
 The packaging script builds a signed archive and zip, submits the zip to Apple notarization when `--notarize` is present, staples the app, and recreates the zip.
+Developer ID is the default distribution channel. The archive writes `DELTREEDistributionChannel=developer-id` into the app Info.plist, and `DistributionChannel.allowsSparkleUpdates` returns `true` for that channel.
 
 CI and pull requests use dry runs to validate the command path without real credentials:
 
@@ -74,6 +75,17 @@ Set `DELTREE_RELEASE_ZIP_URL` as a repository variable if release assets are hos
 
 Homebrew Cask distribution should wait until signed, notarized GitHub Releases and Sparkle appcasts are stable. The cask will need the release zip URL, SHA-256 checksum, bundle identifier, and uninstall/zap paths.
 
+Build Homebrew artifacts with the explicit Homebrew channel:
+
+```sh
+DELTREE_DEVELOPER_ID_APPLICATION="Developer ID Application: Example" \
+DELTREE_TEAM_ID="TEAMID1234" \
+DELTREE_NOTARY_PROFILE="deltree-notary-profile" \
+Scripts/package-release.sh --notarize --distribution homebrew
+```
+
+Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app and `DistributionChannel.allowsSparkleUpdates` returns `false`, so a future Sparkle runtime integration can avoid self-updating apps that are managed by Homebrew.
+
 ## Release Checklist
 
 - Confirm cleanup safety tests pass.
@@ -82,5 +94,6 @@ Homebrew Cask distribution should wait until signed, notarized GitHub Releases a
 - Confirm no production hard-delete path.
 - Confirm `DELTREE.xcodeproj` does not contain a personal hardcoded Team ID.
 - Sign and notarize with Developer ID.
+- Confirm the selected distribution channel matches the release artifact owner.
 - Generate Sparkle appcast only after signing the final zip.
 - Attach `DELTREE.zip` and `appcast.xml` to the GitHub Release.

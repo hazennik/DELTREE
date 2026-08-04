@@ -2,6 +2,17 @@
 
 Homebrew Cask distribution should start after DELTREE has repeatable signed and notarized GitHub Releases.
 
+Build Homebrew-owned artifacts with:
+
+```sh
+DELTREE_DEVELOPER_ID_APPLICATION="Developer ID Application: Example" \
+DELTREE_TEAM_ID="TEAMID1234" \
+DELTREE_NOTARY_PROFILE="deltree-notary-profile" \
+Scripts/package-release.sh --notarize --distribution homebrew
+```
+
+The Homebrew channel writes `DELTREEDistributionChannel=homebrew` into the app. `DistributionChannel.allowsSparkleUpdates` is false for Homebrew builds so future Sparkle update UI can defer to `brew upgrade`.
+
 ## Required Inputs
 
 - Public `DELTREE.zip` release URL.

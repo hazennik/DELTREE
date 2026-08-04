@@ -17,6 +17,7 @@ let package = Package(
                 "App",
                 "Assets.xcassets",
                 "DELTREEApp.swift",
+                "Info.plist",
                 "ViewModels",
                 "Views",
             ],
