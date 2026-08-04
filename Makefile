@@ -6,7 +6,7 @@ DESTINATION ?= platform=macOS
 DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
 
-.PHONY: analyze appcast-check build check cli-dry-run format lint package-check release swift-test test ui-test
+.PHONY: analyze appcast-check build check cli-dry-run format lint package-check release repository-check swift-test test ui-test
 
 build:
 	$(XCODEBUILD) build -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=NO
@@ -38,6 +38,9 @@ package-check:
 	DELTREE_NOTARY_PROFILE='deltree-notary-profile' \
 	zsh Scripts/package-release.sh --dry-run --notarize
 
+repository-check:
+	zsh Scripts/check-repository-size.sh
+
 appcast-check:
 	zsh Scripts/generate-appcast.sh --dry-run
 
@@ -45,4 +48,4 @@ release:
 	zsh Scripts/package-release.sh --notarize
 	zsh Scripts/generate-appcast.sh
 
-check: lint build test swift-test analyze cli-dry-run package-check appcast-check
+check: lint repository-check build test swift-test analyze cli-dry-run package-check appcast-check

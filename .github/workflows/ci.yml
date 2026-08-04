@@ -24,6 +24,9 @@ jobs:
       - name: Run Swift lint
         run: make lint
 
+      - name: Check repository artifacts
+        run: make repository-check
+
       - name: Check shell scripts
         run: zsh -n Scripts/*.sh Tools/deltree
 
