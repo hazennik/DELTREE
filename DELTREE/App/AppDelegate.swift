@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItemController: StatusItemController?
     private var dashboardWindowController: DashboardWindowController?
     private var settingsWindowController: SettingsWindowController?
+    private var didDisableAutomaticTermination = false
 
     func configure(_ container: AppContainer) {
         self.container = container
@@ -17,8 +18,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let container else {
             return
         }
+        guard Self.isRunningUnitTests == false else {
+            return
+        }
 
         ProcessInfo.processInfo.disableAutomaticTermination(Self.automaticTerminationReason)
+        didDisableAutomaticTermination = true
         let dashboardWindowController = DashboardWindowController(viewModel: container.dashboardViewModel)
         let settingsWindowController = SettingsWindowController(container: container)
         self.dashboardWindowController = dashboardWindowController
@@ -34,6 +39,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         container?.dashboardViewModel.stop()
-        ProcessInfo.processInfo.enableAutomaticTermination(Self.automaticTerminationReason)
+        if didDisableAutomaticTermination {
+            ProcessInfo.processInfo.enableAutomaticTermination(Self.automaticTerminationReason)
+        }
+    }
+
+    private static var isRunningUnitTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 }

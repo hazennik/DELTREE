@@ -2,7 +2,7 @@ SHELL := /bin/zsh
 
 PROJECT ?= DELTREE.xcodeproj
 SCHEME ?= DELTREE
-DESTINATION ?= platform=macOS
+DESTINATION ?= platform=macOS,arch=arm64
 DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
 
@@ -12,7 +12,7 @@ build:
 	$(XCODEBUILD) build -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=NO
 
 test:
-	$(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -skip-testing:DELTREEUITests CODE_SIGNING_ALLOWED=NO
+	DELTREE_DISABLE_INITIAL_SCAN=1 $(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -parallel-testing-enabled NO -skip-testing:DELTREEUITests CODE_SIGNING_ALLOWED=NO
 
 ui-test:
 	$(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -only-testing:DELTREEUITests

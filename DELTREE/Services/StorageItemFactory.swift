@@ -13,6 +13,13 @@ enum StorageItemFactory {
     {
         let fileMetadata = FileMetadataReader.metadata(for: url)
         var metadata = metadata
+        if size.isComplete == false {
+            metadata["scanComplete"] = "false"
+            metadata["scannedEntryCount"] = "\(size.scannedEntryCount)"
+            if let incompleteReason = size.incompleteReason {
+                metadata["scanIncompleteReason"] = incompleteReason
+            }
+        }
         let override = context.configuration.manualOverride(for: url.path)
         let suggestedAction = StorageAction(rawValue: metadata["suggestedAction"] ?? "") ?? .none
         let attribution = await context.attributionTracker.attribution(
