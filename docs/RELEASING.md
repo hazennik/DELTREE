@@ -33,6 +33,7 @@ Scripts/package-release.sh --notarize --distribution developer-id
 
 The packaging script builds a signed archive and zip, submits the zip to Apple notarization when `--notarize` is present, staples the app, and recreates the zip.
 Developer ID is the default distribution channel. The archive writes `DELTREEDistributionChannel=developer-id` into the app Info.plist, and `DistributionChannel.allowsSparkleUpdates` returns `true` for that channel.
+The same package step also verifies that the archived dSYM UUIDs match the app binary for each architecture and writes `build/export/DELTREE.dSYM.zip` with `ditto --norsrc`.
 
 CI and pull requests use dry runs to validate the command path without real credentials:
 
@@ -54,6 +55,12 @@ Scripts/generate-appcast.sh
 ```
 
 The appcast is written to `build/export/appcast.xml` by default.
+
+## dSYM Symbols
+
+`Scripts/package-release.sh` packages `build/export/DELTREE.dSYM.zip` from the Xcode archive. The script locates `DELTREE.xcarchive/dSYMs/DELTREE.app.dSYM`, compares `dwarfdump --uuid` output against `DELTREE.app/Contents/MacOS/DELTREE`, and fails the release if any architecture UUID is missing or mismatched.
+
+Upload `DELTREE.dSYM.zip` with every release. It is not part of the Sparkle appcast payload, but it is required for future crash symbolication.
 
 ## GitHub Release Automation
 
@@ -96,4 +103,4 @@ Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app and `Di
 - Sign and notarize with Developer ID.
 - Confirm the selected distribution channel matches the release artifact owner.
 - Generate Sparkle appcast only after signing the final zip.
-- Attach `DELTREE.zip` and `appcast.xml` to the GitHub Release.
+- Attach `DELTREE.zip`, `DELTREE.dSYM.zip`, and `appcast.xml` to the GitHub Release.

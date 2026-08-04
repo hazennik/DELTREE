@@ -86,6 +86,7 @@ notary_profile="${DELTREE_NOTARY_PROFILE:-}"
 notary_keychain="${DELTREE_NOTARY_KEYCHAIN:-}"
 app_path="$archive_path/Products/Applications/DELTREE.app"
 zip_path="$(deltree_app_zip_path "$export_path")"
+dsym_zip_path="$(deltree_dsym_zip_path "$export_path")"
 
 if ((dry_run)); then
   identity="${identity:-Developer ID Application: Example}"
@@ -124,6 +125,7 @@ fi
 if ((dry_run)); then
   print -r -- "Dry run: ${archive_command[*]}"
   deltree_create_zip "$app_path" "$zip_path" 1
+  deltree_package_dsym "$archive_path" "$app_path" "$export_path" 1
   print -r -- "Dry run: verify packaged app \"$app_path\""
   if ((notarize)); then
     print -r -- "Dry run: ${notary_command[*]}"
@@ -139,6 +141,7 @@ fi
 
 "${archive_command[@]}"
 deltree_create_zip "$app_path" "$zip_path"
+deltree_package_dsym "$archive_path" "$app_path" "$export_path"
 deltree_verify_packaged_app "$app_path"
 
 if ((notarize)); then
@@ -152,6 +155,7 @@ fi
 
 cat <<EOF
 Created $zip_path
+Created $dsym_zip_path
 
 Sparkle appcast generation requires DELTREE_SPARKLE_SIGNATURE and DELTREE_RELEASE_ZIP_URL:
   Scripts/generate-appcast.sh

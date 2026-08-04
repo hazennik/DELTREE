@@ -143,6 +143,7 @@ jobs:
           name: deltree-release
           path: |
             build/export/DELTREE.zip
+            build/export/DELTREE.dSYM.zip
             build/export/appcast.xml
 
       - name: Publish GitHub Release
@@ -151,6 +152,7 @@ jobs:
         run: |
           gh release create "$DELTREE_RELEASE_TAG" \
             build/export/DELTREE.zip \
+            build/export/DELTREE.dSYM.zip \
             build/export/appcast.xml \
             --title "DELTREE $DELTREE_RELEASE_VERSION" \
             --generate-notes \

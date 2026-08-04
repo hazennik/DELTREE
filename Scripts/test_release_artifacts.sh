@@ -9,8 +9,12 @@ trap 'rm -rf "$temp_dir"' EXIT
 
 bin_dir="$temp_dir/bin"
 app="$temp_dir/DELTREE.app"
+archive="$temp_dir/DELTREE.xcarchive"
+dsym="$archive/dSYMs/DELTREE.app.dSYM"
 log="$temp_dir/calls.log"
-mkdir -p "$bin_dir" "$app/Contents/MacOS"
+mkdir -p "$bin_dir" "$app/Contents/MacOS" "$dsym/Contents/Resources/DWARF"
+: >"$app/Contents/MacOS/DELTREE"
+: >"$dsym/Contents/Resources/DWARF/DELTREE"
 : >"$log"
 
 mock_tool() {
@@ -35,6 +39,22 @@ mock_tool syspolicy_check 'print -r -- "syspolicy_check $*" >>"$log_file"; exit 
 mock_tool spctl 'print -r -- "spctl $*" >>"$log_file"; exit 0'
 mock_tool stapler 'print -r -- "stapler $*" >>"$log_file"; exit 0'
 mock_tool stapler_fail 'print -r -- "stapler_fail $*" >>"$log_file"; exit 1'
+mock_tool dwarfdump '
+print -r -- "dwarfdump $*" >>"$log_file"
+print -r -- "UUID: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE (arm64) $2"
+print -r -- "UUID: FFFFFFFF-1111-2222-3333-444444444444 (x86_64) $2"
+'
+mock_tool dwarfdump_mismatch '
+print -r -- "dwarfdump_mismatch $*" >>"$log_file"
+case "$*" in
+  *DELTREE.app.dSYM/Contents/Resources/DWARF/DELTREE*)
+    print -r -- "UUID: 00000000-1111-2222-3333-444444444444 (arm64) $2"
+    ;;
+  *)
+    print -r -- "UUID: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE (arm64) $2"
+    ;;
+esac
+'
 
 export DITTO_BIN="$bin_dir/ditto"
 export CODESIGN_BIN="$bin_dir/codesign"
@@ -42,12 +62,32 @@ export XATTR_BIN="$bin_dir/xattr"
 export SYSPOLICY_CHECK_BIN="$bin_dir/syspolicy_check"
 export SPCTL_BIN="$bin_dir/spctl"
 export STAPLER_BIN="$bin_dir/stapler"
+export DWARFDUMP_BIN="$bin_dir/dwarfdump"
 
 [[ "$(deltree_app_zip_path "$temp_dir")" == "$temp_dir/DELTREE.zip" ]]
 [[ "$(deltree_dsym_zip_path "$temp_dir")" == "$temp_dir/DELTREE.dSYM.zip" ]]
 
 deltree_create_zip "$app" "$temp_dir/DELTREE.zip"
 grep -Fq -- 'ditto --norsrc -c -k --keepParent' "$log"
+
+[[ "$(deltree_locate_app_dsym "$archive")" == "$dsym" ]]
+[[ "$(deltree_dsym_dwarf_binary_path "$dsym")" == "$dsym/Contents/Resources/DWARF/DELTREE" ]]
+deltree_verify_dsym_uuids "$app/Contents/MacOS/DELTREE" "$dsym"
+deltree_package_dsym "$archive" "$app" "$temp_dir"
+grep -Fq -- 'dwarfdump --uuid' "$log"
+grep -Fq -- 'DELTREE.dSYM.zip' "$log"
+
+export DWARFDUMP_BIN="$bin_dir/dwarfdump_mismatch"
+if deltree_verify_dsym_uuids "$app/Contents/MacOS/DELTREE" "$dsym" 2>/dev/null; then
+  echo "Mismatched dSYM unexpectedly passed UUID verification." >&2
+  exit 1
+fi
+export DWARFDUMP_BIN="$bin_dir/dwarfdump"
+
+if deltree_locate_app_dsym "$temp_dir/Missing.xcarchive" 2>/dev/null; then
+  echo "Missing dSYM unexpectedly passed discovery." >&2
+  exit 1
+fi
 
 deltree_verify_packaged_app "$app"
 grep -Fq -- 'codesign --verify --deep --strict --verbose=2' "$log"
