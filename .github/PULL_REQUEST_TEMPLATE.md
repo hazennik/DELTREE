@@ -16,10 +16,15 @@
 - [ ] `make lint`
 - [ ] `make workflow-check`
 - [ ] `make repository-check`
+- [ ] `make docs-check`
+- [ ] `make icon-check`
+- [ ] `make homebrew-check`
 - [ ] `make script-test`
 - [ ] `make test`
 - [ ] `make swift-test`
 - [ ] `make analyze`
 - [ ] `make cli-dry-run`
 - [ ] `make package-check`
+- [ ] `make appcast-check`
+- [ ] `make spark-sign-check`
 - [ ] `make ui-test` when UI launch behavior changed

@@ -12,6 +12,10 @@ Environment:
   DELTREE_PROJECT                      Xcode project. Defaults to DELTREE.xcodeproj.
   DELTREE_ARCHIVE_PATH                 Archive output. Defaults to build/DELTREE.xcarchive.
   DELTREE_EXPORT_PATH                  Export directory. Defaults to build/export.
+  DELTREE_MARKETING_VERSION            CFBundleShortVersionString for release archives. Defaults to 1.0.0.
+  DELTREE_BUILD_VERSION                CFBundleVersion for release archives. Defaults to 1.
+  DELTREE_SPARKLE_FEED_URL             Sparkle feed URL embedded in Info.plist.
+  DELTREE_SPARKLE_PUBLIC_ED_KEY        Sparkle public EdDSA key embedded in Info.plist.
   DELTREE_DEVELOPER_ID_APPLICATION     Developer ID Application signing identity.
   DELTREE_TEAM_ID                      Apple Developer Team ID.
   DELTREE_NOTARY_PROFILE               notarytool keychain profile.
@@ -80,12 +84,16 @@ scheme="${DELTREE_SCHEME:-DELTREE}"
 project="${DELTREE_PROJECT:-DELTREE.xcodeproj}"
 archive_path="${DELTREE_ARCHIVE_PATH:-build/DELTREE.xcarchive}"
 export_path="${DELTREE_EXPORT_PATH:-build/export}"
+marketing_version="${DELTREE_MARKETING_VERSION:-1.0.0}"
+build_version="${DELTREE_BUILD_VERSION:-1}"
+sparkle_feed_url="${DELTREE_SPARKLE_FEED_URL:-https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml}"
+sparkle_public_ed_key="${DELTREE_SPARKLE_PUBLIC_ED_KEY:-}"
 identity="${DELTREE_DEVELOPER_ID_APPLICATION:-}"
 team_id="${DELTREE_TEAM_ID:-}"
 notary_profile="${DELTREE_NOTARY_PROFILE:-}"
 notary_keychain="${DELTREE_NOTARY_KEYCHAIN:-}"
 app_path="$archive_path/Products/Applications/DELTREE.app"
-zip_path="$(deltree_app_zip_path "$export_path")"
+zip_path="$(deltree_app_zip_path "$export_path" "$distribution")"
 dsym_zip_path="$(deltree_dsym_zip_path "$export_path")"
 
 if ((dry_run)); then
@@ -115,7 +123,11 @@ archive_command=(
   DEVELOPMENT_TEAM="$team_id"
   CODE_SIGN_IDENTITY="$identity"
   CODE_SIGNING_ALLOWED=YES
+  MARKETING_VERSION="$marketing_version"
+  CURRENT_PROJECT_VERSION="$build_version"
   DELTREE_DISTRIBUTION_CHANNEL="$distribution"
+  DELTREE_SPARKLE_FEED_URL="$sparkle_feed_url"
+  DELTREE_SPARKLE_PUBLIC_ED_KEY="$sparkle_public_ed_key"
 )
 notary_command=(xcrun notarytool submit "$zip_path" --keychain-profile "$notary_profile" --wait)
 if [[ -n "$notary_keychain" ]]; then
@@ -125,7 +137,9 @@ fi
 if ((dry_run)); then
   print -r -- "Dry run: ${archive_command[*]}"
   deltree_create_zip "$app_path" "$zip_path" 1
+  print -r -- "Dry run: write SHA-256 \"$(deltree_sha256_path "$zip_path")\""
   deltree_package_dsym "$archive_path" "$app_path" "$export_path" 1
+  print -r -- "Dry run: write SHA-256 \"$(deltree_sha256_path "$dsym_zip_path")\""
   print -r -- "Dry run: verify packaged app \"$app_path\""
   if ((notarize)); then
     print -r -- "Dry run: ${notary_command[*]}"
@@ -133,6 +147,7 @@ if ((dry_run)); then
       print -r -- "Dry run: xcrun stapler staple \"$app_path\""
       print -r -- "Dry run: verify notarized app \"$app_path\""
       deltree_create_zip "$app_path" "$zip_path" 1
+      print -r -- "Dry run: write SHA-256 \"$(deltree_sha256_path "$zip_path")\""
     fi
   fi
   print -r -- "Dry run complete."
@@ -142,6 +157,8 @@ fi
 "${archive_command[@]}"
 deltree_create_zip "$app_path" "$zip_path"
 deltree_package_dsym "$archive_path" "$app_path" "$export_path"
+deltree_write_sha256 "$zip_path"
+deltree_write_sha256 "$dsym_zip_path"
 deltree_verify_packaged_app "$app_path"
 
 if ((notarize)); then
@@ -150,13 +167,16 @@ if ((notarize)); then
     xcrun stapler staple "$app_path"
     deltree_verify_notarized_app "$app_path"
     deltree_create_zip "$app_path" "$zip_path"
+    deltree_write_sha256 "$zip_path"
   fi
 fi
 
 cat <<EOF
 Created $zip_path
+Created $(deltree_sha256_path "$zip_path")
 Created $dsym_zip_path
+Created $(deltree_sha256_path "$dsym_zip_path")
 
-Sparkle appcast generation requires DELTREE_SPARKLE_SIGNATURE and DELTREE_RELEASE_ZIP_URL:
+Sparkle appcast generation requires a signature from Scripts/sign-sparkle-update.sh and DELTREE_RELEASE_ZIP_URL:
   Scripts/generate-appcast.sh
 EOF

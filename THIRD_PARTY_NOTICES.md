@@ -14,3 +14,9 @@ DELTREE intentionally follows selected product and architecture patterns from Co
 No CodexBar source file is vendored wholesale in this repository. If future changes copy or adapt MIT-licensed CodexBar source directly, keep the original copyright/license notice with the derived file and update this notice.
 
 CodexBar repository: https://github.com/steipete/CodexBar
+
+## Sparkle
+
+DELTREE uses Sparkle 2 for Developer ID app updates. Sparkle is distributed under the MIT license.
+
+Sparkle repository: https://github.com/sparkle-project/Sparkle

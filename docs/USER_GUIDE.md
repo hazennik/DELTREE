@@ -64,3 +64,12 @@ Use the detail inspector to:
 
 Overrides persist across scans.
 
+## Updates
+
+Direct Developer ID installs use `Check for Updates...` from the app menu when Sparkle is configured for the build.
+
+Homebrew installs should update with:
+
+```sh
+brew upgrade --cask deltree
+```

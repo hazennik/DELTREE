@@ -30,7 +30,7 @@ mock_tool() {
   chmod +x "$tool_path"
 }
 
-mock_tool ditto 'print -r -- "ditto $*" >>"$log_file"'
+mock_tool ditto 'print -r -- "ditto $*" >>"$log_file"; : >"${@: -1}"'
 mock_tool codesign 'print -r -- "codesign $*" >>"$log_file"; exit 0'
 mock_tool codesign_fail 'print -r -- "codesign_fail $*" >>"$log_file"; exit 1'
 mock_tool xattr 'print -r -- "xattr $*" >>"$log_file"; exit 1'
@@ -39,6 +39,13 @@ mock_tool syspolicy_check 'print -r -- "syspolicy_check $*" >>"$log_file"; exit 
 mock_tool spctl 'print -r -- "spctl $*" >>"$log_file"; exit 0'
 mock_tool stapler 'print -r -- "stapler $*" >>"$log_file"; exit 0'
 mock_tool stapler_fail 'print -r -- "stapler_fail $*" >>"$log_file"; exit 1'
+mock_tool zipinfo '
+print -r -- "zipinfo $*" >>"$log_file"
+case "$*" in
+  *forbidden.zip*) print -r -- "__MACOSX/._DELTREE"; exit 0 ;;
+  *) exit 1 ;;
+esac
+'
 mock_tool dwarfdump '
 print -r -- "dwarfdump $*" >>"$log_file"
 print -r -- "UUID: AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE (arm64) $2"
@@ -63,12 +70,24 @@ export SYSPOLICY_CHECK_BIN="$bin_dir/syspolicy_check"
 export SPCTL_BIN="$bin_dir/spctl"
 export STAPLER_BIN="$bin_dir/stapler"
 export DWARFDUMP_BIN="$bin_dir/dwarfdump"
+export ZIPINFO_BIN="$bin_dir/zipinfo"
 
 [[ "$(deltree_app_zip_path "$temp_dir")" == "$temp_dir/DELTREE.zip" ]]
+[[ "$(deltree_app_zip_path "$temp_dir" homebrew)" == "$temp_dir/DELTREE-homebrew.zip" ]]
 [[ "$(deltree_dsym_zip_path "$temp_dir")" == "$temp_dir/DELTREE.dSYM.zip" ]]
+[[ "$(deltree_sha256_path "$temp_dir/DELTREE.zip")" == "$temp_dir/DELTREE.zip.sha256" ]]
 
 deltree_create_zip "$app" "$temp_dir/DELTREE.zip"
 grep -Fq -- 'ditto --norsrc -c -k --keepParent' "$log"
+
+deltree_write_sha256 "$temp_dir/DELTREE.zip"
+grep -Eq '^[0-9a-f]{64}  DELTREE.zip$' "$temp_dir/DELTREE.zip.sha256"
+
+: >"$temp_dir/forbidden.zip"
+if deltree_verify_zip_metadata_clean "$temp_dir/forbidden.zip" 2>/dev/null; then
+  echo "Zip with AppleDouble metadata unexpectedly passed verification." >&2
+  exit 1
+fi
 
 [[ "$(deltree_locate_app_dsym "$archive")" == "$dsym" ]]
 [[ "$(deltree_dsym_dwarf_binary_path "$dsym")" == "$dsym/Contents/Resources/DWARF/DELTREE" ]]

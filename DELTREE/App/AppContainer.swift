@@ -8,6 +8,7 @@ final class AppContainer {
     let dashboardViewModel: DashboardViewModel
     let mainThreadHangWatchdog: MainThreadHangWatchdog
     let memoryPressureMonitor: MemoryPressureMonitor
+    let updateService: AppUpdateService
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -44,6 +45,10 @@ final class AppContainer {
             backgroundScanPolicy: .production)
         self.dashboardViewModel = dashboardViewModel
         self.mainThreadHangWatchdog = mainThreadHangWatchdog
+        updateService = AppUpdateService(
+            distributionChannel: .current(),
+            configuration: .current(),
+            makeUpdater: SparkleAppUpdater.init)
         memoryPressureMonitor = MemoryPressureMonitor { [weak dashboardViewModel] level in
             Task { @MainActor in
                 dashboardViewModel?.trimTransientStateForMemoryPressure(level: level)

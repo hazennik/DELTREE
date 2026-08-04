@@ -78,7 +78,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   quality:
-    name: Lint And CLI
+    name: Lint, Docs, Icon, And CLI
     runs-on: macos-latest
     timeout-minutes: 20
     steps:
@@ -92,6 +92,18 @@ jobs:
         name: Run Swift lint
         run: make lint
 
+      - id: docs-check
+        name: Validate documentation links
+        run: make docs-check
+
+      - id: icon-check
+        name: Validate icon assets
+        run: make icon-check
+
+      - id: homebrew-check
+        name: Validate Homebrew cask generation
+        run: make homebrew-check
+
       - id: cli-dry-run
         name: Run CLI dry run
         run: make cli-dry-run
@@ -100,9 +112,12 @@ jobs:
         if: always()
         run: |
           {
-            echo "### Lint And CLI"
+            echo "### Lint, Docs, Icon, And CLI"
             echo "- Status: ${{ job.status }}"
             echo "- Swift lint: ${{ steps.lint.outcome }}"
+            echo "- Docs links: ${{ steps.docs-check.outcome }}"
+            echo "- Icon assets: ${{ steps.icon-check.outcome }}"
+            echo "- Homebrew cask generation: ${{ steps.homebrew-check.outcome }}"
             echo "- CLI dry run: ${{ steps.cli-dry-run.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -185,6 +200,10 @@ jobs:
         name: Validate appcast generation
         run: make appcast-check
 
+      - id: spark-sign-check
+        name: Validate Sparkle signing command path
+        run: make spark-sign-check
+
       - name: Write job summary
         if: always()
         run: |
@@ -193,4 +212,5 @@ jobs:
             echo "- Status: ${{ job.status }}"
             echo "- Package dry-run: ${{ steps.package-check.outcome }}"
             echo "- Appcast dry-run: ${{ steps.appcast-check.outcome }}"
+            echo "- Sparkle signing dry-run: ${{ steps.spark-sign-check.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"

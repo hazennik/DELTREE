@@ -8,6 +8,12 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 ### Added
 
+- Public release readiness automation and documentation refinements.
+
+## [1.0.0-rc.1] - 2026-08-04
+
+### Added
+
 - Initial LSUIElement menu-bar app shell.
 - Abstract icon-only menu-bar state indicator.
 - Storage scanners for Codex and Xcode developer paths.
@@ -19,4 +25,3 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 - Dashboard, filters, details, rules, settings, and cleanup history.
 - Bounded `deltree` CLI dry-run helper.
 - Packaging and release scaffolding.
-

@@ -2,12 +2,63 @@
 
 deltree_app_zip_path() {
   local export_path="$1"
-  printf '%s/DELTREE.zip\n' "$export_path"
+  local distribution="${2:-developer-id}"
+
+  case "$distribution" in
+    homebrew)
+      printf '%s/DELTREE-homebrew.zip\n' "$export_path"
+      ;;
+    *)
+      printf '%s/DELTREE.zip\n' "$export_path"
+      ;;
+  esac
 }
 
 deltree_dsym_zip_path() {
   local export_path="$1"
   printf '%s/DELTREE.dSYM.zip\n' "$export_path"
+}
+
+deltree_sha256_path() {
+  local artifact_path="$1"
+  printf '%s.sha256\n' "$artifact_path"
+}
+
+deltree_write_sha256() {
+  local artifact_path="$1"
+  local checksum_path="${2:-$(deltree_sha256_path "$artifact_path")}"
+
+  if [[ ! -f "$artifact_path" ]]; then
+    echo "Cannot checksum missing artifact: $artifact_path" >&2
+    return 1
+  fi
+
+  shasum -a 256 "$artifact_path" | awk -v name="$(basename "$artifact_path")" '{ print $1 "  " name }' >"$checksum_path"
+}
+
+deltree_zip_has_forbidden_metadata() {
+  local zip_path="$1"
+  local zipinfo_bin="${ZIPINFO_BIN:-/usr/bin/zipinfo}"
+
+  "$zipinfo_bin" -1 "$zip_path" | awk '
+    /(^|\/)\._/ { print; found = 1 }
+    /^__MACOSX\// { print; found = 1 }
+    END { exit found ? 0 : 1 }
+  '
+}
+
+deltree_verify_zip_metadata_clean() {
+  local zip_path="$1"
+  local forbidden
+
+  forbidden="$(deltree_zip_has_forbidden_metadata "$zip_path" || true)"
+  if [[ -n "$forbidden" ]]; then
+    {
+      echo "Zip contains unsafe AppleDouble or __MACOSX metadata: $zip_path"
+      print -r -- "$forbidden"
+    } >&2
+    return 1
+  fi
 }
 
 deltree_create_zip() {
@@ -23,6 +74,7 @@ deltree_create_zip() {
 
   rm -f "$zip_path"
   "$ditto_bin" --norsrc -c -k --keepParent "$source_path" "$zip_path"
+  deltree_verify_zip_metadata_clean "$zip_path"
 }
 
 deltree_locate_app_dsym() {

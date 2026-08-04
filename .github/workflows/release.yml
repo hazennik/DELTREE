@@ -27,7 +27,9 @@ jobs:
       DELTREE_NOTARY_PROFILE: deltree-notary
       DELTREE_DEVELOPER_ID_APPLICATION: ${{ secrets.DELTREE_DEVELOPER_ID_APPLICATION }}
       DELTREE_TEAM_ID: ${{ secrets.DELTREE_TEAM_ID }}
-      DELTREE_SPARKLE_SIGNATURE: ${{ secrets.DELTREE_SPARKLE_SIGNATURE }}
+      DELTREE_SPARKLE_PRIVATE_KEY_BASE64: ${{ secrets.DELTREE_SPARKLE_PRIVATE_KEY_BASE64 }}
+      DELTREE_SPARKLE_PUBLIC_ED_KEY: ${{ vars.DELTREE_SPARKLE_PUBLIC_ED_KEY }}
+      DELTREE_SPARKLE_FEED_URL: ${{ vars.DELTREE_SPARKLE_FEED_URL }}
       RELEASE_ZIP_URL_OVERRIDE: ${{ vars.DELTREE_RELEASE_ZIP_URL }}
     steps:
       - name: Check out repository
@@ -54,18 +56,34 @@ jobs:
           git checkout --detach "$release_tag"
 
           version="${release_tag#v}"
+          marketing_version="${version%%-*}"
           zip_url="${RELEASE_ZIP_URL_OVERRIDE:-https://github.com/$GITHUB_REPOSITORY/releases/download/$release_tag/DELTREE.zip}"
+          feed_url="${DELTREE_SPARKLE_FEED_URL:-https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml}"
+
+          mkdir -p build/release
+          zsh Scripts/validate-changelog.sh "$release_tag" \
+            --notes-output build/release/release-notes.md \
+            --html-output build/release/release-notes.html \
+            --env-output "$GITHUB_ENV"
 
           echo "DELTREE_RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
           echo "DELTREE_RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "DELTREE_MARKETING_VERSION=$marketing_version" >> "$GITHUB_ENV"
+          echo "DELTREE_BUILD_VERSION=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           echo "DELTREE_RELEASE_BUILD=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           echo "DELTREE_RELEASE_ZIP_URL=$zip_url" >> "$GITHUB_ENV"
+          echo "DELTREE_RELEASE_NOTES_MARKDOWN=build/release/release-notes.md" >> "$GITHUB_ENV"
+          echo "DELTREE_RELEASE_NOTES_HTML_PATH=build/release/release-notes.html" >> "$GITHUB_ENV"
+          echo "DELTREE_SPARKLE_FEED_URL=$feed_url" >> "$GITHUB_ENV"
 
       - id: validate-repository
         name: Validate repository
         run: |
           make workflow-check
           make repository-check
+          make docs-check
+          make icon-check
+          make homebrew-check
           make script-test
           make lint
           make swift-test
@@ -74,6 +92,7 @@ jobs:
           make cli-dry-run
           make package-check
           make appcast-check
+          make spark-sign-check
 
       - name: Validate signing secrets
         env:
@@ -94,7 +113,8 @@ jobs:
             DELTREE_APP_STORE_CONNECT_KEY_ID
             DELTREE_APP_STORE_CONNECT_ISSUER_ID
             DELTREE_APP_STORE_CONNECT_API_KEY_BASE64
-            DELTREE_SPARKLE_SIGNATURE
+            DELTREE_SPARKLE_PRIVATE_KEY_BASE64
+            DELTREE_SPARKLE_PUBLIC_ED_KEY
           )
           for name in "${required[@]}"; do
             if [[ -z "${!name:-}" ]]; then
@@ -142,6 +162,10 @@ jobs:
         name: Build, sign, and notarize
         run: zsh Scripts/package-release.sh --notarize
 
+      - id: sign-sparkle-update
+        name: Sign Sparkle update
+        run: zsh Scripts/sign-sparkle-update.sh --zip build/export/DELTREE.zip --env-output "$GITHUB_ENV"
+
       - id: generate-appcast
         name: Generate Sparkle appcast
         run: zsh Scripts/generate-appcast.sh
@@ -153,7 +177,9 @@ jobs:
           name: deltree-release
           path: |
             build/export/DELTREE.zip
+            build/export/DELTREE.zip.sha256
             build/export/DELTREE.dSYM.zip
+            build/export/DELTREE.dSYM.zip.sha256
             build/export/appcast.xml
 
       - id: publish-release
@@ -163,11 +189,19 @@ jobs:
         run: |
           gh release create "$DELTREE_RELEASE_TAG" \
             build/export/DELTREE.zip \
+            build/export/DELTREE.zip.sha256 \
             build/export/DELTREE.dSYM.zip \
+            build/export/DELTREE.dSYM.zip.sha256 \
             build/export/appcast.xml \
             --title "DELTREE $DELTREE_RELEASE_VERSION" \
-            --generate-notes \
+            --notes-file "$DELTREE_RELEASE_NOTES_MARKDOWN" \
             --verify-tag
+
+      - id: verify-release-assets
+        name: Verify published release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: zsh Scripts/check-release-assets.sh "$DELTREE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
 
       - name: Write job summary
         if: always()
@@ -177,7 +211,9 @@ jobs:
             echo "- Status: ${{ job.status }}"
             echo "- Repository validation: ${{ steps.validate-repository.outcome }}"
             echo "- Package, sign, notarize: ${{ steps.package-release.outcome }}"
+            echo "- Sparkle signature: ${{ steps.sign-sparkle-update.outcome }}"
             echo "- Appcast: ${{ steps.generate-appcast.outcome }}"
             echo "- Artifact upload: ${{ steps.upload-artifacts.outcome }}"
             echo "- GitHub Release: ${{ steps.publish-release.outcome }}"
+            echo "- Post-release asset verification: ${{ steps.verify-release-assets.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"

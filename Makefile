@@ -6,7 +6,7 @@ DESTINATION ?= platform=macOS,arch=arm64
 DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
 
-.PHONY: analyze appcast-check build check cli-dry-run format lint package-check release repository-check script-test swift-test test ui-test workflow-check
+.PHONY: analyze appcast-check build check cli-dry-run docs-check format homebrew-check icon-check lint package-check release repository-check script-test spark-sign-check swift-test test ui-test workflow-check
 
 build:
 	$(XCODEBUILD) build -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=NO
@@ -35,6 +35,7 @@ workflow-check:
 script-test:
 	zsh -n Scripts/*.sh Tools/deltree
 	zsh Scripts/test_release_artifacts.sh
+	zsh Scripts/test_release_pipeline.sh
 	zsh Scripts/test_repository_size.sh
 	zsh Scripts/test_cli_diagnostics.sh
 
@@ -57,8 +58,20 @@ repository-check:
 appcast-check:
 	zsh Scripts/generate-appcast.sh --dry-run
 
+spark-sign-check:
+	zsh Scripts/sign-sparkle-update.sh --dry-run
+
+docs-check:
+	ruby Scripts/check-docs-links.rb
+
+icon-check:
+	zsh Scripts/build-icon.sh --check
+
+homebrew-check:
+	zsh Scripts/generate-homebrew-cask.sh --version 1.0.0 --sha256 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa >/dev/null
+
 release:
 	zsh Scripts/package-release.sh --notarize
 	zsh Scripts/generate-appcast.sh
 
-check: lint workflow-check repository-check script-test build test swift-test analyze cli-dry-run package-check appcast-check
+check: lint workflow-check repository-check docs-check icon-check homebrew-check script-test build test swift-test analyze cli-dry-run package-check appcast-check spark-sign-check

@@ -22,10 +22,13 @@ make test
 make swift-test
 make analyze
 make workflow-check
+make docs-check
+make icon-check
 make script-test
 make cli-dry-run
 make package-check
 make appcast-check
+make spark-sign-check
 ```
 
 `make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` when validating launch behavior on a trusted local machine.
@@ -64,6 +67,8 @@ make check
 make lint
 make format
 make workflow-check
+make docs-check
+make icon-check
 make script-test
 swift test
 make ui-test

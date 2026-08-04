@@ -10,9 +10,15 @@ DELTREE is a local-only macOS menu-bar utility for understanding and safely mana
 
 It scans bounded Codex and Xcode storage locations, explains what it found, labels cleanup risk, and only performs cleanup after explicit confirmation.
 
-![DELTREE preview](docs/assets/deltree-preview.svg)
+```text
+C:\> DELTREE
+SCAN CODEX + XCODE STORAGE
+TRASH ONLY. LOCAL ONLY. NO TELEMETRY.
+```
 
-> Status: private development repository. The app is functional, and the public release pipeline is scaffolded, but production distribution still needs real Developer ID, notarization, Sparkle, and release-hosting credentials.
+![DELTREE command-prompt icon](docs/assets/deltree-icon-preview.png)
+
+> Status: production-candidate/private beta. The app and repository now include the public release gates, but GA still requires a real signed/notarized release run, Sparkle update smoke test, and clean-machine QA.
 
 ## Install
 
@@ -66,6 +72,7 @@ Release dry-runs validate the packaging, notarization, and appcast command paths
 ```sh
 make package-check
 make appcast-check
+make spark-sign-check
 ```
 
 ## Privacy
@@ -140,7 +147,10 @@ Packaging notes live in [Packaging/README.md](Packaging/README.md) and release s
 - [Safety Policy](docs/SAFETY.md)
 - [CLI](docs/CLI.md)
 - [Release Process](docs/RELEASING.md)
+- [Release QA](docs/RELEASE_QA.md)
 - [Homebrew Cask Plan](docs/HOMEBREW.md)
+- [Support Workflow](docs/SUPPORT_WORKFLOW.md)
+- [Icon Pipeline](docs/ICON.md)
 - [Privacy](PRIVACY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Third-Party Notices](THIRD_PARTY_NOTICES.md)

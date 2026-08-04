@@ -8,9 +8,10 @@ Required local configuration:
 - `DELTREE_TEAM_ID`: Apple Developer Team ID.
 - `DELTREE_NOTARY_PROFILE`: notarization keychain profile for `xcrun notarytool`.
 - `DELTREE_RELEASE_ZIP_URL`: public URL for the final zip.
-- `DELTREE_SPARKLE_SIGNATURE`: Sparkle EdDSA signature for the final zip.
+- `DELTREE_SPARKLE_PRIVATE_KEY_FILE` or `DELTREE_SPARKLE_PRIVATE_KEY_BASE64`: Sparkle EdDSA private key material used only by `Scripts/sign-sparkle-update.sh`.
+- `DELTREE_SPARKLE_PUBLIC_ED_KEY`: Sparkle public key embedded in the app Info.plist.
 
-The package script builds a signed archive and zip, optionally submits it for notarization, and staples the app before recreating the zip.
+The package script builds a signed archive and zip, optionally submits it for notarization, staples the app before recreating the zip, packages matching dSYMs, and writes SHA-256 checksum files.
 
 ```sh
 DELTREE_DEVELOPER_ID_APPLICATION="Developer ID Application: Example" \
@@ -22,8 +23,10 @@ Scripts/package-release.sh --notarize
 Generate the Sparkle appcast after signing the final zip with Sparkle's `sign_update` tool:
 
 ```sh
+Scripts/sign-sparkle-update.sh --zip build/export/DELTREE.zip --env-output build/release/sparkle.env
+source build/release/sparkle.env
+
 DELTREE_RELEASE_ZIP_URL="https://github.com/hazennik/DELTREE/releases/download/v1.0/DELTREE.zip" \
-DELTREE_SPARKLE_SIGNATURE="..." \
 Scripts/generate-appcast.sh
 ```
 
@@ -32,6 +35,7 @@ CI can validate the release command path without secrets:
 ```sh
 make package-check
 make appcast-check
+make spark-sign-check
 ```
 
 The scripts do not invent production credentials, notarization profiles, Sparkle keys, or update-feed URLs outside explicit dry runs.

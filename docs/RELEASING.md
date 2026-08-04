@@ -7,7 +7,7 @@ DELTREE is intended for Developer ID distribution outside the Mac App Store.
 - Developer ID Application certificate installed locally.
 - Apple Developer Team ID.
 - Notarization keychain profile configured for `xcrun notarytool`.
-- Sparkle EdDSA keys and a real appcast URL before public updates are enabled.
+- Sparkle EdDSA public key, private key file/secret, and a real appcast URL before public updates are enabled.
 - `DELTREE_DEVELOPMENT_TEAM` configured locally only when opening the Xcode project with signing enabled.
 
 ## Build And Test
@@ -34,6 +34,10 @@ Scripts/package-release.sh --notarize --distribution developer-id
 The packaging script builds a signed archive and zip, submits the zip to Apple notarization when `--notarize` is present, staples the app, and recreates the zip.
 Developer ID is the default distribution channel. The archive writes `DELTREEDistributionChannel=developer-id` into the app Info.plist, and `DistributionChannel.allowsSparkleUpdates` returns `true` for that channel.
 The same package step also verifies that the archived dSYM UUIDs match the app binary for each architecture and writes `build/export/DELTREE.dSYM.zip` with `ditto --norsrc`.
+Packaging writes checksums beside the artifacts:
+
+- `build/export/DELTREE.zip.sha256`
+- `build/export/DELTREE.dSYM.zip.sha256`
 
 CI and pull requests use dry runs to validate the command path without real credentials:
 
@@ -44,13 +48,23 @@ make appcast-check
 
 ## Appcast
 
-Generate the Sparkle EdDSA signature from the final notarized zip with Sparkle's `sign_update` tool, then generate the appcast:
+Validate the changelog, generate the Sparkle EdDSA signature from the final notarized zip, then generate the appcast:
 
 ```sh
-DELTREE_RELEASE_VERSION="1.0" \
-DELTREE_RELEASE_BUILD="1" \
-DELTREE_RELEASE_ZIP_URL="https://github.com/hazennik/DELTREE/releases/download/v1.0/DELTREE.zip" \
-DELTREE_SPARKLE_SIGNATURE="..." \
+Scripts/validate-changelog.sh v1.0.0-rc.1 \
+  --notes-output build/release/release-notes.md \
+  --html-output build/release/release-notes.html
+
+DELTREE_SPARKLE_PRIVATE_KEY_FILE="/path/to/sparkle-private-key" \
+Scripts/sign-sparkle-update.sh --zip build/export/DELTREE.zip --env-output build/release/sparkle.env
+
+source build/release/sparkle.env
+
+DELTREE_RELEASE_VERSION="1.0.0-rc.1" \
+DELTREE_MARKETING_VERSION="1.0.0" \
+DELTREE_BUILD_VERSION="42" \
+DELTREE_RELEASE_ZIP_URL="https://github.com/hazennik/DELTREE/releases/download/v1.0.0-rc.1/DELTREE.zip" \
+DELTREE_RELEASE_NOTES_HTML_PATH="build/release/release-notes.html" \
 Scripts/generate-appcast.sh
 ```
 
@@ -74,9 +88,20 @@ The `Release` workflow runs on `v*` tags and manual dispatch. It expects these r
 - `DELTREE_APP_STORE_CONNECT_KEY_ID`
 - `DELTREE_APP_STORE_CONNECT_ISSUER_ID`
 - `DELTREE_APP_STORE_CONNECT_API_KEY_BASE64`
-- `DELTREE_SPARKLE_SIGNATURE`
+- `DELTREE_SPARKLE_PRIVATE_KEY_BASE64`
+
+It also expects these repository variables:
+
+- `DELTREE_SPARKLE_PUBLIC_ED_KEY`
+- `DELTREE_SPARKLE_FEED_URL` when not using `https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml`
 
 Set `DELTREE_RELEASE_ZIP_URL` as a repository variable if release assets are hosted somewhere other than GitHub Releases.
+
+The workflow validates the matching `CHANGELOG.md` section, signs/notarizes/staples the app, generates checksums, signs the Sparkle update, publishes GitHub Release assets, and then runs:
+
+```sh
+Scripts/check-release-assets.sh "$DELTREE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
+```
 
 ## Homebrew
 
@@ -91,7 +116,7 @@ DELTREE_NOTARY_PROFILE="deltree-notary-profile" \
 Scripts/package-release.sh --notarize --distribution homebrew
 ```
 
-Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app and `DistributionChannel.allowsSparkleUpdates` returns `false`, so a future Sparkle runtime integration can avoid self-updating apps that are managed by Homebrew.
+Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app, create `build/export/DELTREE-homebrew.zip`, and `DistributionChannel.allowsSparkleUpdates` returns `false`, so Homebrew-managed apps do not self-update through Sparkle.
 
 ## Release Checklist
 
@@ -102,5 +127,8 @@ Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app and `Di
 - Confirm `DELTREE.xcodeproj` does not contain a personal hardcoded Team ID.
 - Sign and notarize with Developer ID.
 - Confirm the selected distribution channel matches the release artifact owner.
+- Validate the matching dated `CHANGELOG.md` section.
 - Generate Sparkle appcast only after signing the final zip.
-- Attach `DELTREE.zip`, `DELTREE.dSYM.zip`, and `appcast.xml` to the GitHub Release.
+- Attach `DELTREE.zip`, `DELTREE.zip.sha256`, `DELTREE.dSYM.zip`, `DELTREE.dSYM.zip.sha256`, and `appcast.xml` to the GitHub Release.
+- Run the post-release asset verifier against the published release.
+- Complete [Release QA](RELEASE_QA.md) before marking the release public GA.

@@ -25,6 +25,8 @@ Operational history is retained with bounded limits. Manual overrides persist un
 - It does not permanently delete files in v1.
 - It does not perform silent cleanup.
 
+Developer ID builds may use Sparkle to check the public appcast for software updates. Homebrew builds disable in-app Sparkle update UI. Sparkle update checks do not include DELTREE scan results or cleanup history.
+
 ## Permissions
 
 DELTREE is intended for Developer ID distribution outside the Mac App Store because it needs to inspect developer folders and move approved items to Trash. macOS may still prompt for access when protected folders are involved.

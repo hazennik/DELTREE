@@ -1,7 +1,7 @@
 name: Bug report
 description: Report a reproducible DELTREE problem.
 title: "[Bug]: "
-labels: ["bug"]
+labels: ["bug", "needs-diagnostics"]
 body:
   - type: textarea
     id: summary
@@ -33,10 +33,20 @@ body:
       label: Xcode version
     validations:
       required: true
+  - type: dropdown
+    id: install-source
+    attributes:
+      label: Install source
+      options:
+        - GitHub Release
+        - Homebrew Cask
+        - Built from source
+        - Unknown
+    validations:
+      required: true
   - type: textarea
     id: diagnostics
     attributes:
       label: Diagnostics
-      description: Paste safe diagnostic output, such as `Tools/deltree --dry-run`.
+      description: Paste redacted diagnostic output from `Tools/deltree diagnose --json`. Do not paste `--raw-paths` output in public issues.
       render: text
-

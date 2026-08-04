@@ -19,9 +19,10 @@ Please treat these as security-sensitive:
 - local process inspection
 - Codex task/session metadata parsing
 - release signing and notarization
+- Sparkle update signing and appcast generation
 
 ## Data Handling
 
 DELTREE should not upload paths, scan results, project names, Codex metadata, account data, or cleanup history.
 
-Do not add analytics, crash reporting, network upload, or telemetry without explicit product review and a privacy update.
+Do not add analytics, crash reporting, network upload, or telemetry without explicit product review and a privacy update. Sparkle update checks are allowed only for Developer ID builds and must use signed update artifacts.

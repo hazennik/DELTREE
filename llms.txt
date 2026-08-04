@@ -1,0 +1,32 @@
+# DELTREE
+
+DELTREE is a local-only macOS menu-bar utility for understanding and safely managing disk space created by Codex-driven iOS and macOS development.
+
+## Key Documents
+
+- README: ./README.md
+- Privacy policy: ./PRIVACY.md
+- Safety policy: ./docs/SAFETY.md
+- Architecture: ./docs/ARCHITECTURE.md
+- CLI diagnostics: ./docs/CLI.md
+- Release process: ./docs/RELEASING.md
+- Release QA: ./docs/RELEASE_QA.md
+- Homebrew plan: ./docs/HOMEBREW.md
+- Support workflow: ./docs/SUPPORT_WORKFLOW.md
+- Icon pipeline: ./docs/ICON.md
+- Documentation index: ./docs/INDEX.md
+
+## Useful Commands
+
+- Full local check: `make check`
+- SwiftPM core tests: `make swift-test`
+- Xcode tests: `make test`
+- Release dry run: `make package-check && make appcast-check`
+- Safe diagnostics: `Tools/deltree diagnose --json`
+
+## Guardrails
+
+- No telemetry or remote upload of scan data.
+- No permanent delete path in v1.
+- Cleanup defaults to Trash or approved simulator commands.
+- Public distribution requires Developer ID signing, notarization, Sparkle signing, and clean-machine QA.

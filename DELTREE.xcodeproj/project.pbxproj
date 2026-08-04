@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C0DE0001301ED4B300ABB102 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = C0DE0002301ED4B300ABB102 /* Sparkle */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		94BAA280301ED4B300ABB102 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0DE0001301ED4B300ABB102 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = DELTREE;
 			packageProductDependencies = (
+				C0DE0002301ED4B300ABB102 /* Sparkle */,
 			);
 			productName = DELTREE;
 			productReference = 94BAA270301ED4B200ABB102 /* DELTREE.app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = 94BAA267301ED4B200ABB102;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C0DE0003301ED4B300ABB102 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 94BAA271301ED4B200ABB102 /* Products */;
 			projectDirPath = "";
@@ -280,6 +289,25 @@
 			targetProxy = 94BAA28A301ED4B300ABB102 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C0DE0003301ED4B300ABB102 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.5;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C0DE0002301ED4B300ABB102 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0DE0003301ED4B300ABB102 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		94BAA291301ED4B300ABB102 /* Debug */ = {
@@ -413,6 +441,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "$(DELTREE_DEVELOPMENT_TEAM)";
 				DELTREE_DISTRIBUTION_CHANNEL = debug;
+				DELTREE_SPARKLE_FEED_URL = "https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml";
+				DELTREE_SPARKLE_PUBLIC_ED_KEY = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -447,6 +477,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "$(DELTREE_DEVELOPMENT_TEAM)";
 				DELTREE_DISTRIBUTION_CHANNEL = "developer-id";
+				DELTREE_SPARKLE_FEED_URL = "https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml";
+				DELTREE_SPARKLE_PUBLIC_ED_KEY = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;

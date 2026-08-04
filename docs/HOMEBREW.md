@@ -11,15 +11,24 @@ DELTREE_NOTARY_PROFILE="deltree-notary-profile" \
 Scripts/package-release.sh --notarize --distribution homebrew
 ```
 
-The Homebrew channel writes `DELTREEDistributionChannel=homebrew` into the app. `DistributionChannel.allowsSparkleUpdates` is false for Homebrew builds so future Sparkle update UI can defer to `brew upgrade`.
+The Homebrew channel writes `DELTREEDistributionChannel=homebrew` into the app and produces `build/export/DELTREE-homebrew.zip`. `DistributionChannel.allowsSparkleUpdates` is false for Homebrew builds so Sparkle update UI defers to `brew upgrade`.
 
 ## Required Inputs
 
-- Public `DELTREE.zip` release URL.
+- Public `DELTREE-homebrew.zip` release URL.
 - SHA-256 checksum for the release zip.
 - Stable bundle identifier: `com.Infrallabs.DELTREE`.
 - Minimum macOS version.
 - Sparkle appcast URL if Homebrew should include update metadata.
+
+Generate the cask after a stable GA release:
+
+```sh
+Scripts/generate-homebrew-cask.sh \
+  --version 1.0.0 \
+  --sha256 "$(shasum -a 256 build/export/DELTREE-homebrew.zip | awk '{print $1}')" \
+  --output Casks/deltree.rb
+```
 
 ## Draft Cask Shape
 
@@ -28,7 +37,7 @@ cask "deltree" do
   version "1.0.0"
   sha256 "<release zip sha256>"
 
-  url "https://github.com/hazennik/DELTREE/releases/download/v#{version}/DELTREE.zip"
+  url "https://github.com/hazennik/DELTREE/releases/download/v#{version}/DELTREE-homebrew.zip"
   name "DELTREE"
   desc "Local-only macOS utility for safely managing Codex and Xcode storage"
   homepage "https://github.com/hazennik/DELTREE"
@@ -44,4 +53,13 @@ cask "deltree" do
 end
 ```
 
-Do not publish a cask until the release workflow signs, notarizes, staples, and verifies every attached app artifact.
+Do not publish a cask until the release workflow signs, notarizes, staples, and verifies every attached app artifact. Do not point the cask at `DELTREE.zip`; that artifact is Sparkle-enabled for direct Developer ID installs.
+
+Validate in the tap before opening or merging the cask update:
+
+```sh
+HOMEBREW_NO_INSTALL_FROM_API=1 brew install --cask deltree
+brew uninstall --cask deltree
+brew audit --new --cask deltree
+brew style --fix --cask deltree
+```
