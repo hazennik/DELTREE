@@ -1,0 +1,10 @@
+# SwiftFormat configuration for DELTREE.
+
+--swiftversion 6.0
+--indent 4
+--linebreaks lf
+--trimwhitespace always
+--header ignore
+--rules blankLinesBetweenImports,consecutiveBlankLines,duplicateImports,linebreakAtEndOfFile,linebreaks,semicolons,trailingSpace
+
+--exclude .build,.swiftpm,DerivedData,build,Archives,Release,DELTREE.xcodeproj

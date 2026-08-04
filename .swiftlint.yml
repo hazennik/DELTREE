@@ -1,0 +1,51 @@
+included:
+  - DELTREE
+  - DELTREETests
+  - DELTREEUITests
+  - Tests
+
+excluded:
+  - .build
+  - .swiftpm
+  - build
+  - Archives
+  - Release
+  - DELTREE.xcodeproj
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - first_where
+  - last_where
+  - sorted_first_last
+  - redundant_nil_coalescing
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_first_not_nil
+
+disabled_rules:
+  - cyclomatic_complexity
+  - file_header
+  - file_length
+  - for_where
+  - force_try
+  - function_body_length
+  - function_parameter_count
+  - identifier_name
+  - line_length
+  - nesting
+  - opening_brace
+  - optional_data_string_conversion
+  - static_over_final_class
+  - todo
+  - trailing_comma
+  - type_body_length
+
+force_cast: warning
+large_tuple: warning
+
+type_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 80

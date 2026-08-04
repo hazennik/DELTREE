@@ -1,23 +1,80 @@
 # DELTREE
 
+[![CI](https://github.com/hazennik/DELTREE/actions/workflows/ci.yml/badge.svg)](https://github.com/hazennik/DELTREE/actions/workflows/ci.yml)
+[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-0f766e)](https://www.apple.com/macos/)
+[![Swift 6](https://img.shields.io/badge/Swift-6-f05138)](https://swift.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/hazennik/DELTREE?display_name=tag&sort=semver)](https://github.com/hazennik/DELTREE/releases)
+
 DELTREE is a local-only macOS menu-bar utility for understanding and safely managing the disk space created by Codex-driven iOS and macOS development.
 
 It scans bounded Codex and Xcode storage locations, explains what it found, labels cleanup risk, and only performs cleanup after explicit confirmation.
 
-> Status: private development repository. The app is functional, but the release process still needs real Developer ID, notarization, and Sparkle credentials.
+![DELTREE preview](docs/assets/deltree-preview.svg)
 
-## What It Does
+> Status: private development repository. The app is functional, and the public release pipeline is scaffolded, but production distribution still needs real Developer ID, notarization, Sparkle, and release-hosting credentials.
 
-- Shows Codex/Xcode storage impact from a quiet menu-bar icon.
-- Scans CoreSimulator devices, XCTest devices, DerivedData, result bundles, archives, DeviceSupport, simulator runtimes/images, SwiftPM caches, `~/.codex`, and Codex workspaces.
-- Enriches simulator rows with `simctl` metadata.
-- Correlates filesystem changes with Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
-- Labels items as `Safe to Remove`, `Probably Safe`, `Review First`, `Do Not Remove`, or `Unknown`.
-- Moves approved files to Trash instead of hard-deleting them.
-- Uses approved `simctl delete` and `simctl erase` commands for simulator-specific actions.
-- Persists scan history, recent growth, manual overrides, and cleanup records with SwiftData.
+## Install
 
-## Safety Defaults
+Signed public downloads are not published yet. For now, build from source:
+
+```sh
+git clone https://github.com/hazennik/DELTREE.git
+cd DELTREE
+make build
+open build/DerivedData/Build/Products/Debug/DELTREE.app
+```
+
+When the first public release is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases). Homebrew Cask support is planned after notarized releases stabilize.
+
+## Build
+
+Requirements:
+
+- macOS 14 or newer.
+- Xcode 17 or newer for the Swift 6 strict-concurrency project settings.
+- Swift 6-era toolchain from Xcode.
+
+Common commands:
+
+```sh
+make build
+make test
+make swift-test
+make analyze
+make cli-dry-run
+```
+
+`make test` runs the unit test bundle. UI tests launch a generated macOS runner app and may require local signing trust, so run them explicitly with `make ui-test`.
+
+Formatting and linting use SwiftFormat and SwiftLint:
+
+```sh
+brew install swiftformat swiftlint
+make lint
+make format
+```
+
+The SwiftPM package exposes the app's core models and services as `DELTREECore`, so contributors can run focused tests without opening Xcode:
+
+```sh
+swift test
+```
+
+Release dry-runs validate the packaging, notarization, and appcast command paths without signing credentials:
+
+```sh
+make package-check
+make appcast-check
+```
+
+## Privacy
+
+DELTREE is local-only. It reads known developer paths, local Codex metadata when present, and local process state for attribution. It does not upload scan results, cleanup history, paths, account data, or project metadata.
+
+Read the full policy in [PRIVACY.md](PRIVACY.md).
+
+## Safety
 
 DELTREE is intentionally conservative.
 
@@ -30,6 +87,17 @@ DELTREE is intentionally conservative.
 
 Read the full policy in [docs/SAFETY.md](docs/SAFETY.md).
 
+## What It Does
+
+- Shows Codex/Xcode storage impact from a quiet menu-bar icon.
+- Scans CoreSimulator devices, XCTest devices, DerivedData, result bundles, archives, DeviceSupport, simulator runtimes/images, SwiftPM caches, `~/.codex`, and Codex workspaces.
+- Enriches simulator rows with `simctl` metadata.
+- Correlates filesystem changes with Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
+- Labels items as `Safe to Remove`, `Probably Safe`, `Review First`, `Do Not Remove`, or `Unknown`.
+- Moves approved files to Trash instead of hard-deleting them.
+- Uses approved `simctl delete` and `simctl erase` commands for simulator-specific actions.
+- Persists scan history, recent growth, manual overrides, and cleanup records with SwiftData.
+
 ## Menu Bar States
 
 The menu-bar item is icon-only:
@@ -40,26 +108,6 @@ The menu-bar item is icon-only:
 - Orange dot: warning, low disk, or unreadable paths.
 
 Totals and explanations live in the dropdown and dashboard so the menu bar stays quiet.
-
-## Build
-
-Requirements:
-
-- macOS 14 or newer.
-- Xcode 17 or newer for Swift 6 strict-concurrency project settings.
-- Swift 6-era toolchain from Xcode.
-
-Open the project:
-
-```sh
-open DELTREE.xcodeproj
-```
-
-Run tests:
-
-```sh
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
-```
 
 ## CLI Helper
 
@@ -80,21 +128,22 @@ Scripts/install-cli.sh
 
 DELTREE is intended for Developer ID distribution outside the Mac App Store because it needs to inspect developer folders and move approved items to Trash.
 
-Packaging notes live in [Packaging/README.md](Packaging/README.md) and release steps live in [docs/RELEASING.md](docs/RELEASING.md).
+Packaging notes live in [Packaging/README.md](Packaging/README.md) and release steps live in [docs/RELEASING.md](docs/RELEASING.md). Public distribution requires repository secrets for Developer ID signing, notarization, Sparkle appcast signing, and release asset hosting.
 
 ## Documentation
 
+- [Vision](VISION.md)
+- [Roadmap](ROADMAP.md)
 - [User Guide](docs/USER_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Safety Policy](docs/SAFETY.md)
 - [CLI](docs/CLI.md)
 - [Release Process](docs/RELEASING.md)
+- [Homebrew Cask Plan](docs/HOMEBREW.md)
+- [Privacy](PRIVACY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 - [Third-Party Notices](THIRD_PARTY_NOTICES.md)
-
-## Privacy
-
-DELTREE is local-only. It reads known developer paths, local Codex metadata when present, and local process state for attribution. It does not upload scan results, cleanup history, paths, account data, or project metadata.
 
 ## License
 

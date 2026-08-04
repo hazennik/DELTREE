@@ -8,17 +8,25 @@ Clone the repository and open the Xcode project:
 open DELTREE.xcodeproj
 ```
 
-Run all tests:
+Install optional formatting and linting tools:
 
 ```sh
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+brew install swiftformat swiftlint
 ```
 
-Run the CLI helper:
+Run the standard checks:
 
 ```sh
-Tools/deltree --dry-run
+make build
+make test
+make swift-test
+make analyze
+make cli-dry-run
+make package-check
+make appcast-check
 ```
+
+`make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` when validating launch behavior on a trusted local machine.
 
 ## Project Layout
 
@@ -27,6 +35,8 @@ Tools/deltree --dry-run
 - `DELTREE/Services`: scanners, attribution, cleanup, persistence adapters
 - `DELTREE/ViewModels`: dashboard and preview view models
 - `DELTREE/Views`: SwiftUI dashboard, settings, tables, inspectors
+- `Package.swift`: SwiftPM `DELTREECore` target for non-UI model and service tests
+- `Tests/DELTREECoreTests`: SwiftPM tests runnable without Xcode project loading
 - `DELTREETests`: unit and integration-style tests
 - `DELTREEUITests`: LSUIElement launch coverage
 - `Tools`: bundled CLI helper
@@ -41,12 +51,17 @@ Tools/deltree --dry-run
 - Prefer service protocols for filesystem, process, simctl, Trash, and persistence behavior.
 - Keep UI state testable through descriptors and view models.
 - Add tests for safety policy changes.
+- Keep signing configuration environment-driven. Use `DELTREE_DEVELOPMENT_TEAM` locally instead of committing a personal Team ID.
 
 ## Useful Commands
 
 ```sh
 git status -sb
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+make check
+make lint
+make format
+swift test
+make ui-test
 Tools/deltree --dry-run --json
 rg "removeItem|trashItem|simctl" DELTREE DELTREETests Tools Scripts
 ```
