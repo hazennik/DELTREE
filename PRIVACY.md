@@ -31,4 +31,6 @@ DELTREE is intended for Developer ID distribution outside the Mac App Store beca
 
 ## Reports
 
-When filing issues, redact private project names, usernames, and paths unless they are necessary for reproducing the problem. Prefer `Tools/deltree --dry-run --json` output after removing sensitive path segments.
+When filing issues, prefer `Tools/deltree diagnose --json`. Diagnostic output redacts private path prefixes, usernames, email-like strings, UUIDs, DerivedData hashes, temporary folders, and Codex session identifiers by default.
+
+Raw inventory output from `Tools/deltree --dry-run --json` is intended for local scripting and may include private paths. Add `--redact` before sharing it.

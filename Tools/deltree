@@ -3,19 +3,25 @@ set -euo pipefail
 
 json=false
 dry_run=false
+command="inventory"
+redact=false
 
 usage() {
   cat <<'EOF'
 deltree - local Codex/Xcode storage inventory helper
 
 Usage:
-  deltree [--json] [--dry-run]
+  deltree [--json] [--dry-run] [--redact]
+  deltree diagnose [--json] [--raw-paths]
 
 Options:
-  --json      Print JSON instead of text.
-  --dry-run   Show cleanup candidates without modifying anything.
+  --json       Print JSON instead of text.
+  --dry-run    Show cleanup candidates without modifying anything.
+  --redact     Redact paths and identifiers in inventory output.
+  --raw-paths  Keep raw paths in diagnose output.
 
 This CLI scans bounded developer paths only. It never deletes files.
+Diagnostic output is redacted by default for issue reports.
 EOF
 }
 
@@ -29,10 +35,42 @@ json_string() {
   printf '"%s"' "$value"
 }
 
+redact_value() {
+  local value="$1"
+  value="${value//$HOME/~}"
+  value="${value//\/Users\/$USER/~}"
+  value="${value//$USER/<user>}"
+  value="$(printf '%s' "$value" | sed -E \
+    -e 's#[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}#<email>#Ig' \
+    -e 's#\b[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\b#<uuid>#g' \
+    -e 's#\b((task|session|thread|conversation)-)[A-Za-z0-9_-]{6,}\b#\1<codex-session>#g' \
+    -e 's#([A-Za-z0-9_. -]+)-[A-Za-z0-9]{16,}(/|$)#\1-<derived-data-id>\2#g' \
+    -e 's#/(private/)?var/folders/[^[:space:]"'\'']+#<temp>#g')"
+  printf '%s' "$value"
+}
+
+display_value() {
+  local value="$1"
+  if [[ "$redact" == true ]]; then
+    redact_value "$value"
+  else
+    printf '%s' "$value"
+  fi
+}
+
+if [[ "${1:-}" == "diagnose" ]]; then
+  command="diagnose"
+  redact=true
+  dry_run=true
+  shift
+fi
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --json) json=true ;;
     --dry-run) dry_run=true ;;
+    --redact) redact=true ;;
+    --raw-paths) redact=false ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
   esac
@@ -69,23 +107,33 @@ for root in "${roots[@]}"; do
 done
 
 if [[ "$json" == true ]]; then
-  printf '{"dryRun":%s,"totalBytes":%d,"items":[' "$dry_run" "$((total_kb * 1024))"
+  printf '{"command":%s,"dryRun":%s,"redacted":%s,"totalBytes":%d' "$(json_string "$command")" "$dry_run" "$redact" "$((total_kb * 1024))"
+  if [[ "$command" == "diagnose" ]]; then
+    printf ',"home":%s,"user":%s' "$(json_string "$(display_value "$HOME")")" "$(json_string "$(display_value "$USER")")"
+  fi
+  printf ',"items":['
   first=true
   for entry in "${items[@]}"; do
     size="${entry%%|*}"
-    path="${entry#*|}"
+    item_path="${entry#*|}"
     if [[ "$first" == false ]]; then printf ','; fi
     first=false
-    printf '{"path":%s,"bytes":%d}' "$(json_string "$path")" "$((size * 1024))"
+    printf '{"path":%s,"bytes":%d}' "$(json_string "$(display_value "$item_path")")" "$((size * 1024))"
   done
   printf ']}\n'
 else
-  echo "DELTREE storage inventory"
+  if [[ "$command" == "diagnose" ]]; then
+    echo "DELTREE diagnostics"
+    echo "Redacted: $redact"
+    echo "Home: $(display_value "$HOME")"
+  else
+    echo "DELTREE storage inventory"
+  fi
   echo "Total: $((total_kb / 1024)) MB"
   if [[ "$dry_run" == true ]]; then
     echo "Dry run: no files were modified."
   fi
-  printf '%s\n' "${items[@]}" | sort -nr | while IFS='|' read -r size path; do
-    printf "%8d MB  %s\n" "$((size / 1024))" "$path"
+  printf '%s\n' "${items[@]}" | sort -nr | while IFS='|' read -r size item_path; do
+    printf "%8d MB  %s\n" "$((size / 1024))" "$(display_value "$item_path")"
   done
 fi
