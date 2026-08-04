@@ -98,6 +98,82 @@ struct DashboardViewModelScanPolicyTests {
 
         #expect(harness.scheduler.scheduledDelays.isEmpty)
     }
+
+    @Test func memoryPressureTrimDropsOnlyRebuildableState() async throws {
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false))
+        let currentSnapshot = Self.snapshot(index: 100)
+        let previousSnapshot = Self.snapshot(index: 99)
+        let pendingPlan = CleanupPlan(actions: [], blockedItems: [Self.item(index: 200)])
+
+        harness.viewModel.snapshot = currentSnapshot
+        harness.viewModel.previousSnapshot = previousSnapshot
+        harness.viewModel.pendingCleanupPlan = pendingPlan
+        harness.viewModel.scanHistory = (0..<6).map { ScanHistoryRecord(snapshot: Self.snapshot(index: $0)) }
+        harness.viewModel.cleanupHistory = (0..<5).map {
+            CleanupHistoryRecord(
+                performedAt: Date(timeIntervalSince1970: TimeInterval($0)),
+                totalBytes: Int64($0),
+                itemCount: 1,
+                status: "completed",
+                paths: ["/tmp/item-\($0)"])
+        }
+        harness.viewModel.deltaHistory = (0..<4).map {
+            StorageDeltaRecord(delta: StorageDelta(
+                fromDate: nil,
+                toDate: Date(timeIntervalSince1970: TimeInterval($0)),
+                addedBytes: Int64($0),
+                changedBytes: 0,
+                removedBytes: 0,
+                newItems: [],
+                changedItems: [],
+                removedPaths: []))
+        }
+
+        let summary = harness.viewModel.trimTransientStateForMemoryPressure(level: .warning)
+
+        #expect(summary == MemoryPressureTrimSummary(
+            level: .warning,
+            releasedPreviousSnapshot: true,
+            scanHistoryTrimmedCount: 3,
+            cleanupHistoryTrimmedCount: 2,
+            deltaHistoryTrimmedCount: 1,
+            diagnosticsTrimmedCount: 0))
+        #expect(harness.viewModel.previousSnapshot == nil)
+        #expect(harness.viewModel.snapshot == currentSnapshot)
+        #expect(harness.viewModel.pendingCleanupPlan == pendingPlan)
+        #expect(harness.viewModel.scanHistory.count == 3)
+        #expect(harness.viewModel.cleanupHistory.count == 3)
+        #expect(harness.viewModel.deltaHistory.count == 3)
+    }
+
+    private static func snapshot(index: Int) -> StorageSnapshot {
+        StorageSnapshot(
+            capturedAt: Date(timeIntervalSince1970: TimeInterval(index)),
+            items: [item(index: index)],
+            missingPaths: [],
+            unreadablePaths: [])
+    }
+
+    private static func item(index: Int) -> StorageItem {
+        StorageItem(
+            id: "item-\(index)",
+            domain: .derivedData,
+            kind: .derivedData,
+            path: "/tmp/item-\(index)",
+            displayName: "Item \(index)",
+            bytes: Int64(index),
+            createdAt: Date(timeIntervalSince1970: TimeInterval(index)),
+            modifiedAt: Date(timeIntervalSince1970: TimeInterval(index)),
+            lastUsedAt: Date(timeIntervalSince1970: TimeInterval(index)),
+            attribution: .xcode,
+            attributionConfidence: 0.9,
+            safety: .reviewRecommended,
+            isActive: false,
+            explanation: "Fixture",
+            metadata: [:])
+    }
 }
 
 @MainActor

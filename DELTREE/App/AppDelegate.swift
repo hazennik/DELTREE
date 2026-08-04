@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ProcessInfo.processInfo.disableAutomaticTermination(Self.automaticTerminationReason)
         didDisableAutomaticTermination = true
         container.mainThreadHangWatchdog.start()
+        container.memoryPressureMonitor.start()
         let dashboardWindowController = DashboardWindowController(viewModel: container.dashboardViewModel)
         let settingsWindowController = SettingsWindowController(container: container)
         self.dashboardWindowController = dashboardWindowController
@@ -41,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         container?.dashboardViewModel.stop()
         container?.mainThreadHangWatchdog.stop()
+        container?.memoryPressureMonitor.stop()
         if didDisableAutomaticTermination {
             ProcessInfo.processInfo.enableAutomaticTermination(Self.automaticTerminationReason)
         }

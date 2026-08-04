@@ -7,6 +7,7 @@ final class AppContainer {
     let settings: AppSettingsStore
     let dashboardViewModel: DashboardViewModel
     let mainThreadHangWatchdog: MainThreadHangWatchdog
+    let memoryPressureMonitor: MemoryPressureMonitor
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -26,7 +27,7 @@ final class AppContainer {
         let persistence = SwiftDataSnapshotStore(container: modelContainer)
 
         self.settings = settings
-        dashboardViewModel = DashboardViewModel(
+        let dashboardViewModel = DashboardViewModel(
             scanner: storageScanner,
             cleanupPlanner: DefaultCleanupPlanner(),
             cleanupExecutor: DefaultCleanupExecutor(trashService: trashService),
@@ -41,6 +42,12 @@ final class AppContainer {
             mainThreadHangWatchdog: mainThreadHangWatchdog,
             powerStateProvider: powerStateProvider,
             backgroundScanPolicy: .production)
+        self.dashboardViewModel = dashboardViewModel
         self.mainThreadHangWatchdog = mainThreadHangWatchdog
+        memoryPressureMonitor = MemoryPressureMonitor { [weak dashboardViewModel] level in
+            Task { @MainActor in
+                dashboardViewModel?.trimTransientStateForMemoryPressure(level: level)
+            }
+        }
     }
 }

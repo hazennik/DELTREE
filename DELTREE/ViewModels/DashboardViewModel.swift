@@ -11,6 +11,8 @@ typealias DashboardScanDelayScheduler = @MainActor (
 @MainActor
 @Observable
 final class DashboardViewModel {
+    private static let memoryPressureHistoryLimit = 3
+
     var snapshot: StorageSnapshot = .empty {
         didSet { onStateChange?() }
     }
@@ -193,6 +195,20 @@ final class DashboardViewModel {
         cancelDebouncedScan?()
         cancelDebouncedScan = nil
         cleanupTask?.cancel()
+    }
+
+    @discardableResult
+    func trimTransientStateForMemoryPressure(level: MemoryPressureLevel) -> MemoryPressureTrimSummary {
+        let releasedPreviousSnapshot = previousSnapshot != nil
+        previousSnapshot = nil
+
+        return MemoryPressureTrimSummary(
+            level: level,
+            releasedPreviousSnapshot: releasedPreviousSnapshot,
+            scanHistoryTrimmedCount: trimHistory(&scanHistory, keeping: Self.memoryPressureHistoryLimit),
+            cleanupHistoryTrimmedCount: trimHistory(&cleanupHistory, keeping: Self.memoryPressureHistoryLimit),
+            deltaHistoryTrimmedCount: trimHistory(&deltaHistory, keeping: Self.memoryPressureHistoryLimit),
+            diagnosticsTrimmedCount: 0)
     }
 
     func scan(force: Bool = true) {
@@ -457,6 +473,14 @@ final class DashboardViewModel {
         scanHistory = persistence.recentScanRecords(limit: 10)
         cleanupHistory = persistence.recentCleanupRecords(limit: 10)
         deltaHistory = persistence.recentDeltaRecords(limit: 10)
+    }
+
+    private func trimHistory<Element>(_ records: inout [Element], keeping limit: Int) -> Int {
+        let trimmedCount = max(0, records.count - limit)
+        if trimmedCount > 0 {
+            records.removeLast(trimmedCount)
+        }
+        return trimmedCount
     }
 
     private func saveOverride(
