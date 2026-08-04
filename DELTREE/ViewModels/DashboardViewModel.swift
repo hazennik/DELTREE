@@ -45,6 +45,7 @@ final class DashboardViewModel {
     @ObservationIgnored private let attributionTracker: any AttributionTracking
     @ObservationIgnored private let diskSpaceProvider: any DiskSpaceProviding
     @ObservationIgnored private let notificationService: any NotificationServicing
+    @ObservationIgnored private let mainThreadHangWatchdog: MainThreadHangWatchdog
 
     @ObservationIgnored private var hasStarted = false
     @ObservationIgnored private var scanTask: Task<Void, Never>?
@@ -68,7 +69,8 @@ final class DashboardViewModel {
         processSampler: any ProcessSampling,
         attributionTracker: any AttributionTracking,
         diskSpaceProvider: any DiskSpaceProviding,
-        notificationService: any NotificationServicing)
+        notificationService: any NotificationServicing,
+        mainThreadHangWatchdog: MainThreadHangWatchdog = .disabled())
     {
         self.scanner = scanner
         self.cleanupPlanner = cleanupPlanner
@@ -81,6 +83,7 @@ final class DashboardViewModel {
         self.attributionTracker = attributionTracker
         self.diskSpaceProvider = diskSpaceProvider
         self.notificationService = notificationService
+        self.mainThreadHangWatchdog = mainThreadHangWatchdog
     }
 
     var menuBarTitle: String {
@@ -212,19 +215,24 @@ final class DashboardViewModel {
                 return
             }
 
-            self.previousSnapshot = previousSnapshot
-            self.availableDiskBytes = diskSpaceProvider.availableBytes(for: URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true))
-            let delta = StorageDelta.make(previous: previousSnapshot, current: snapshot)
-            self.lastDelta = delta
-            let fingerprint = snapshot.displayFingerprint
-            if fingerprint != self.lastSnapshotFingerprint {
-                self.snapshot = snapshot
-                self.lastSnapshotFingerprint = fingerprint
+            let delta = mainThreadHangWatchdog.withBreadcrumb("scan.apply") {
+                self.previousSnapshot = previousSnapshot
+                self.availableDiskBytes = diskSpaceProvider.availableBytes(for: URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true))
+                let delta = StorageDelta.make(previous: previousSnapshot, current: snapshot)
+                self.lastDelta = delta
+                let fingerprint = snapshot.displayFingerprint
+                if fingerprint != self.lastSnapshotFingerprint {
+                    self.snapshot = snapshot
+                    self.lastSnapshotFingerprint = fingerprint
+                }
+                self.isScanning = false
+                return delta
             }
-            self.isScanning = false
-            self.persistence.saveSnapshot(snapshot)
-            self.persistence.saveDelta(delta)
-            self.refreshHistory()
+            mainThreadHangWatchdog.withBreadcrumb("persistence.scan") {
+                self.persistence.saveSnapshot(snapshot)
+                self.persistence.saveDelta(delta)
+                self.refreshHistory()
+            }
             await self.notifyIfNeeded(delta: delta, snapshot: snapshot)
             self.lastScanFinishedAt = Date()
 
@@ -258,19 +266,23 @@ final class DashboardViewModel {
     func performCleanup(_ plan: CleanupPlan) {
         cleanupTask?.cancel()
         cleanupTask = Task {
+            mainThreadHangWatchdog.recordBreadcrumb("cleanup.execute.begin")
             let result = await cleanupExecutor.execute(plan)
+            mainThreadHangWatchdog.recordBreadcrumb("cleanup.execute.end")
             let completedPaths = result.completedActions.map(\.item.path)
-            persistence.saveCleanup(
-                performedAt: result.performedAt,
-                totalBytes: result.reclaimedBytes,
-                itemCount: completedPaths.count,
-                status: result.status,
-                paths: completedPaths,
-                skippedPaths: result.skippedItems.map(\.path),
-                errors: Dictionary(uniqueKeysWithValues: result.failedActions.map { action, message in
-                    (action.item.path, message)
-                }),
-                initiator: "User")
+            mainThreadHangWatchdog.withBreadcrumb("persistence.cleanup") {
+                persistence.saveCleanup(
+                    performedAt: result.performedAt,
+                    totalBytes: result.reclaimedBytes,
+                    itemCount: completedPaths.count,
+                    status: result.status,
+                    paths: completedPaths,
+                    skippedPaths: result.skippedItems.map(\.path),
+                    errors: Dictionary(uniqueKeysWithValues: result.failedActions.map { action, message in
+                        (action.item.path, message)
+                    }),
+                    initiator: "User")
+            }
             cleanupMessage = cleanupMessage(for: result)
             pendingCleanupPlan = nil
             refreshHistory()
@@ -314,7 +326,9 @@ final class DashboardViewModel {
     }
 
     func resetAttribution(_ item: StorageItem) {
-        persistence.clearManualOverride(path: item.path)
+        mainThreadHangWatchdog.withBreadcrumb("persistence.override.clear") {
+            persistence.clearManualOverride(path: item.path)
+        }
         scan(force: true)
     }
 
@@ -352,7 +366,9 @@ final class DashboardViewModel {
             confidence = 0.0
         }
 
-        persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: Date())
+        mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
+            persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: Date())
+        }
         if settings.autoScanAfterActivity {
             scheduleDebouncedScan()
         }
@@ -396,12 +412,14 @@ final class DashboardViewModel {
         isIgnored: Bool,
         note: String)
     {
-        persistence.saveManualOverride(ManualStorageOverride(
-            path: item.path,
-            owner: owner,
-            isPinned: isPinned,
-            isIgnored: isIgnored,
-            note: note))
+        mainThreadHangWatchdog.withBreadcrumb("persistence.override") {
+            persistence.saveManualOverride(ManualStorageOverride(
+                path: item.path,
+                owner: owner,
+                isPinned: isPinned,
+                isIgnored: isIgnored,
+                note: note))
+        }
         scan(force: true)
     }
 
@@ -435,8 +453,12 @@ final class DashboardViewModel {
             missingPaths: snapshot.missingPaths)
 
         do {
-            let data = try JSONEncoder.storage.encode(report)
-            try data.write(to: url, options: [.atomic])
+            let data = try mainThreadHangWatchdog.withBreadcrumb("report.encode") {
+                try JSONEncoder.storage.encode(report)
+            }
+            try mainThreadHangWatchdog.withBreadcrumb("report.write") {
+                try data.write(to: url, options: [.atomic])
+            }
             cleanupMessage = "Exported cleanup report."
         } catch {
             cleanupMessage = "Could not export cleanup report: \(error.localizedDescription)"

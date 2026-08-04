@@ -6,11 +6,13 @@ final class AppContainer {
     let modelContainer: ModelContainer
     let settings: AppSettingsStore
     let dashboardViewModel: DashboardViewModel
+    let mainThreadHangWatchdog: MainThreadHangWatchdog
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
 
         let settings = AppSettingsStore()
+        let mainThreadHangWatchdog = MainThreadHangWatchdog.makeDefault()
         let rootCatalog = StorageRootCatalog.live()
         let attributionTracker = LiveAttributionTracker()
         let processSampler = LiveProcessSampler()
@@ -34,6 +36,8 @@ final class AppContainer {
             processSampler: processSampler,
             attributionTracker: attributionTracker,
             diskSpaceProvider: LiveDiskSpaceProvider(),
-            notificationService: UserNotificationService())
+            notificationService: UserNotificationService(),
+            mainThreadHangWatchdog: mainThreadHangWatchdog)
+        self.mainThreadHangWatchdog = mainThreadHangWatchdog
     }
 }
