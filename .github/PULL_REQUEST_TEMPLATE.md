@@ -14,6 +14,9 @@
 ## Validation
 
 - [ ] `make lint`
+- [ ] `make workflow-check`
+- [ ] `make repository-check`
+- [ ] `make script-test`
 - [ ] `make test`
 - [ ] `make swift-test`
 - [ ] `make analyze`

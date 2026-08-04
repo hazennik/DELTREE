@@ -6,77 +6,191 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  quality:
-    name: Lint, Scripts, CLI
+  workflow-validation:
+    name: Workflow Validation
     runs-on: macos-latest
+    timeout-minutes: 5
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - id: workflow-check
+        name: Validate workflows
+        run: make workflow-check
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Workflow Validation"
+            echo "- Status: ${{ job.status }}"
+            echo "- YAML and pinned-action checks: ${{ steps.workflow-check.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  repository-check:
+    name: Repository Check
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - id: repository-check
+        name: Check repository artifacts
+        run: make repository-check
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Repository Check"
+            echo "- Status: ${{ job.status }}"
+            echo "- Artifact and size gate: ${{ steps.repository-check.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  script-tests:
+    name: Script Tests
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - id: script-test
+        name: Run script tests
+        run: make script-test
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Script Tests"
+            echo "- Status: ${{ job.status }}"
+            echo "- Shell syntax and mocked script tests: ${{ steps.script-test.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  quality:
+    name: Lint And CLI
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install lint tools
         run: brew install swiftformat swiftlint
 
-      - name: Run Swift lint
+      - id: lint
+        name: Run Swift lint
         run: make lint
 
-      - name: Check repository artifacts
-        run: make repository-check
-
-      - name: Check shell scripts
-        run: zsh -n Scripts/*.sh Tools/deltree
-
-      - name: Run CLI dry run
+      - id: cli-dry-run
+        name: Run CLI dry run
         run: make cli-dry-run
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Lint And CLI"
+            echo "- Status: ${{ job.status }}"
+            echo "- Swift lint: ${{ steps.lint.outcome }}"
+            echo "- CLI dry run: ${{ steps.cli-dry-run.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   package:
     name: Swift Package
     runs-on: macos-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Show Swift version
         run: swift --version
 
-      - name: Validate package manifest
+      - id: dump-package
+        name: Validate package manifest
         run: swift package dump-package
 
-      - name: Run SwiftPM tests
+      - id: swift-test
+        name: Run SwiftPM tests
         run: make swift-test
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Swift Package"
+            echo "- Status: ${{ job.status }}"
+            echo "- Package manifest: ${{ steps.dump-package.outcome }}"
+            echo "- SwiftPM tests: ${{ steps.swift-test.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   xcode:
     name: Xcode Build, Test, Analyze
     runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Run tests
+      - id: test
+        name: Run tests
         run: make test
 
-      - name: Build release configuration
+      - id: release-build
+        name: Build release configuration
         run: xcodebuild build -scheme DELTREE -project DELTREE.xcodeproj -configuration Release -destination 'platform=macOS' -derivedDataPath build/DerivedData CODE_SIGNING_ALLOWED=NO
 
-      - name: Run analyzer
+      - id: analyze
+        name: Run analyzer
         run: make analyze
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Xcode Build, Test, Analyze"
+            echo "- Status: ${{ job.status }}"
+            echo "- Tests: ${{ steps.test.outcome }}"
+            echo "- Release build: ${{ steps.release-build.outcome }}"
+            echo "- Analyzer: ${{ steps.analyze.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   release-dry-run:
     name: Release Dry Run
     runs-on: macos-latest
+    timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Validate package and notarization command path
+      - id: package-check
+        name: Validate package and notarization command paths
         run: make package-check
 
-      - name: Validate appcast generation
+      - id: appcast-check
+        name: Validate appcast generation
         run: make appcast-check
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Release Dry Run"
+            echo "- Status: ${{ job.status }}"
+            echo "- Package dry-run: ${{ steps.package-check.outcome }}"
+            echo "- Appcast dry-run: ${{ steps.appcast-check.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"

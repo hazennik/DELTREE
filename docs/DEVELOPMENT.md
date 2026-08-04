@@ -21,6 +21,8 @@ make build
 make test
 make swift-test
 make analyze
+make workflow-check
+make script-test
 make cli-dry-run
 make package-check
 make appcast-check
@@ -61,6 +63,8 @@ git status -sb
 make check
 make lint
 make format
+make workflow-check
+make script-test
 swift test
 make ui-test
 Tools/deltree --dry-run --json

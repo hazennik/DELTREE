@@ -22,6 +22,7 @@ jobs:
   release:
     name: Sign, Notarize, Publish
     runs-on: macos-latest
+    timeout-minutes: 60
     env:
       DELTREE_NOTARY_PROFILE: deltree-notary
       DELTREE_DEVELOPER_ID_APPLICATION: ${{ secrets.DELTREE_DEVELOPER_ID_APPLICATION }}
@@ -30,7 +31,7 @@ jobs:
       RELEASE_ZIP_URL_OVERRIDE: ${{ vars.DELTREE_RELEASE_ZIP_URL }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
@@ -60,13 +61,19 @@ jobs:
           echo "DELTREE_RELEASE_BUILD=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
           echo "DELTREE_RELEASE_ZIP_URL=$zip_url" >> "$GITHUB_ENV"
 
-      - name: Validate repository
+      - id: validate-repository
+        name: Validate repository
         run: |
+          make workflow-check
+          make repository-check
+          make script-test
           make lint
           make swift-test
           make test
           make analyze
           make cli-dry-run
+          make package-check
+          make appcast-check
 
       - name: Validate signing secrets
         env:
@@ -131,14 +138,17 @@ jobs:
             --issuer "$DELTREE_APP_STORE_CONNECT_ISSUER_ID" \
             --keychain "$DELTREE_NOTARY_KEYCHAIN"
 
-      - name: Build, sign, and notarize
+      - id: package-release
+        name: Build, sign, and notarize
         run: zsh Scripts/package-release.sh --notarize
 
-      - name: Generate Sparkle appcast
+      - id: generate-appcast
+        name: Generate Sparkle appcast
         run: zsh Scripts/generate-appcast.sh
 
-      - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v4
+      - id: upload-artifacts
+        name: Upload workflow artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: deltree-release
           path: |
@@ -146,7 +156,8 @@ jobs:
             build/export/DELTREE.dSYM.zip
             build/export/appcast.xml
 
-      - name: Publish GitHub Release
+      - id: publish-release
+        name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -157,3 +168,16 @@ jobs:
             --title "DELTREE $DELTREE_RELEASE_VERSION" \
             --generate-notes \
             --verify-tag
+
+      - name: Write job summary
+        if: always()
+        run: |
+          {
+            echo "### Release"
+            echo "- Status: ${{ job.status }}"
+            echo "- Repository validation: ${{ steps.validate-repository.outcome }}"
+            echo "- Package, sign, notarize: ${{ steps.package-release.outcome }}"
+            echo "- Appcast: ${{ steps.generate-appcast.outcome }}"
+            echo "- Artifact upload: ${{ steps.upload-artifacts.outcome }}"
+            echo "- GitHub Release: ${{ steps.publish-release.outcome }}"
+          } >> "$GITHUB_STEP_SUMMARY"
