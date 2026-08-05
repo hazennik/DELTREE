@@ -66,12 +66,12 @@ struct StorageOverviewHeaderView: View {
             title: "Xcode",
             value: StorageFormatters.byteCount(footprint.xcodeRelatedBytes),
             symbolName: "hammer",
-            tint: theme.warning)
+            tint: theme.isClassic ? theme.normalTint : theme.warning)
         MetricView(
             title: "Recent Growth",
             value: StorageFormatters.byteCount(lastDelta.growthBytes),
             symbolName: "plus.circle",
-            tint: theme.review)
+            tint: theme.isClassic ? theme.normalTint : theme.review)
         if let available = footprint.availableDiskBytes {
             MetricView(
                 title: "Free Disk",

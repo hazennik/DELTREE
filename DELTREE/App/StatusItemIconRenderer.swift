@@ -87,7 +87,7 @@ enum StatusItemIconRenderer {
         case .none:
             badgeColor = .clear
         case .reclaimable:
-            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.00, green: 0.50, blue: 0.52, alpha: 1) : .systemGreen
+            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.52, green: 0.52, blue: 0.52, alpha: 1) : .systemGreen
         case .warning:
             badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.58, green: 0.36, blue: 0.14, alpha: 1) : .systemOrange
         }

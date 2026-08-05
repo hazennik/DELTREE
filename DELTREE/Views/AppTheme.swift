@@ -56,7 +56,7 @@ struct AppTheme: Equatable {
     }
 
     var safe: Color {
-        isClassic ? Color(red: 0.240, green: 0.500, blue: 0.260) : AppPalette.codex
+        isClassic ? normalTint : AppPalette.codex
     }
 
     var review: Color {
@@ -64,11 +64,11 @@ struct AppTheme: Equatable {
     }
 
     var keep: Color {
-        isClassic ? primaryText : .secondary
+        isClassic ? normalTint : .secondary
     }
 
     var unknown: Color {
-        isClassic ? Color(red: 0.380, green: 0.380, blue: 0.520) : .secondary
+        isClassic ? normalTint : .secondary
     }
 
     var controlFill: Color {
@@ -81,6 +81,10 @@ struct AppTheme: Equatable {
 
     var selectionText: Color {
         isClassic ? Color(red: 0.780, green: 0.780, blue: 0.780) : .primary
+    }
+
+    var normalTint: Color {
+        isClassic ? secondaryText : .secondary
     }
 
     var panelCornerRadius: CGFloat {
@@ -100,25 +104,29 @@ struct AppTheme: Equatable {
     }
 
     func domainTint(_ domain: StorageDomain) -> Color {
+        guard isClassic == false else {
+            return normalTint
+        }
+
         switch domain {
         case .codexHome, .codexWorkspaces:
-            isClassic ? Color(red: 0.300, green: 0.360, blue: 0.540) : AppPalette.codex
+            return AppPalette.codex
         case .coreSimulatorDevices, .xcTestDevices:
-            isClassic ? accent : AppPalette.simulator
+            return AppPalette.simulator
         case .derivedData, .xcodeProducts, .swiftPackageCaches, .coreSimulatorCaches:
-            isClassic ? warning : AppPalette.xcode
+            return AppPalette.xcode
         case .xcResults:
-            isClassic ? Color(red: 0.480, green: 0.300, blue: 0.480) : AppPalette.results
+            return AppPalette.results
         case .deviceSupport, .simulatorRuntimes, .simulatorImages:
-            isClassic ? Color(red: 0.300, green: 0.400, blue: 0.520) : AppPalette.device
+            return AppPalette.device
         case .archives:
-            isClassic ? secondaryText : AppPalette.archive
+            return AppPalette.archive
         }
     }
 
     func safetyTint(_ safety: SafetyClassification, isActive: Bool) -> Color {
         if isActive {
-            return accent
+            return isClassic ? normalTint : accent
         }
 
         switch safety {

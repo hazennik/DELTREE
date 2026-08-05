@@ -42,7 +42,7 @@ struct ClassicToggleButton: View {
         } label: {
             HStack(spacing: 6) {
                 Text("[\(isOn ? "X" : " ")]")
-                    .foregroundStyle(theme.accent)
+                    .foregroundStyle(theme.selectionText)
                 Text(title.uppercased())
             }
         }

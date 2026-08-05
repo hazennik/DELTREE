@@ -22,6 +22,30 @@ struct AppThemeTests {
         #expect(theme.safetyTitle(.unknown, isActive: false) == "[UNKNOWN]")
     }
 
+    @Test func classicNormalStorageTintsUseNeutralText() {
+        let theme = AppTheme.classic
+
+        #expect(theme.safe == theme.normalTint)
+        #expect(theme.keep == theme.normalTint)
+        #expect(theme.unknown == theme.normalTint)
+        #expect(theme.safetyTint(.safeToTrash, isActive: false) == theme.normalTint)
+        #expect(theme.safetyTint(.keep, isActive: false) == theme.normalTint)
+        #expect(theme.safetyTint(.unknown, isActive: false) == theme.normalTint)
+        #expect(theme.safetyTint(.safeToTrash, isActive: true) == theme.normalTint)
+
+        for domain in StorageDomain.allCases {
+            #expect(theme.domainTint(domain) == theme.normalTint)
+        }
+    }
+
+    @Test func classicRiskStorageTintsUseWarningColor() {
+        let theme = AppTheme.classic
+
+        #expect(theme.review == theme.warning)
+        #expect(theme.safetyTint(.probablySafe, isActive: false) == theme.warning)
+        #expect(theme.safetyTint(.reviewRecommended, isActive: false) == theme.warning)
+    }
+
     @Test func modernSafetyLabelsPreserveExistingText() {
         let theme = AppTheme.modern
 

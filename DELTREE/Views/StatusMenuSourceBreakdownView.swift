@@ -59,7 +59,7 @@ struct StatusMenuSourceBreakdownView: View {
                 value: StorageFormatters.byteCount(codexNativeBytes),
                 detail: "Home, sessions, workspaces",
                 systemImage: "terminal",
-                tint: theme.safe,
+                tint: theme.isClassic ? theme.normalTint : theme.safe,
                 bytes: codexNativeBytes),
             StatusMenuSegment(
                 id: "xcode-generated",
@@ -67,7 +67,7 @@ struct StatusMenuSourceBreakdownView: View {
                 value: StorageFormatters.byteCount(xcodeGeneratedBytes),
                 detail: "Simulators, builds, archives",
                 systemImage: "hammer",
-                tint: theme.warning,
+                tint: theme.isClassic ? theme.normalTint : theme.warning,
                 bytes: xcodeGeneratedBytes),
         ]
     }

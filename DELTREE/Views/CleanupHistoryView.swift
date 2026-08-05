@@ -103,7 +103,7 @@ struct CleanupHistoryView: View {
                         ForEach(deltaHistory) { record in
                             HStack {
                                 Text(theme.classicGlyph(for: "plus.circle"))
-                                    .foregroundStyle(theme.review)
+                                    .foregroundStyle(theme.normalTint)
                                 Text("STORAGE DELTA")
                                 Text(record.capturedAt, format: .dateTime.month().day().hour().minute())
                                 Spacer()
