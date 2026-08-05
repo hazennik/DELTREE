@@ -11,6 +11,8 @@ struct StatusMenuOverviewView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            let badgeTint = theme.markerTint(statusTint)
+
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 if theme.isClassic {
                     Text("[ DELTREE ]")
@@ -26,7 +28,7 @@ struct StatusMenuOverviewView: View {
 
                 Text(theme.isClassic ? "[\(statusText.uppercased())]" : statusText)
                     .font(theme.font(.caption))
-                    .foregroundStyle(statusTint)
+                    .foregroundStyle(badgeTint)
                     .lineLimit(1)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
@@ -36,13 +38,13 @@ struct StatusMenuOverviewView: View {
                                 .fill(theme.controlFill)
                         } else {
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(statusTint.opacity(0.14))
+                                .fill(badgeTint.opacity(0.14))
                         }
                     }
                     .overlay {
                         if theme.isClassic {
                             Rectangle()
-                                .stroke(statusTint, lineWidth: 1)
+                                .stroke(badgeTint, lineWidth: 1)
                         }
                     }
             }

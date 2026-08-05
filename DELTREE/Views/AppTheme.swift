@@ -87,6 +87,24 @@ struct AppTheme: Equatable {
         isClassic ? secondaryText : .secondary
     }
 
+    func domainMarkerTint(_ domain: StorageDomain) -> Color {
+        let tint = domainTint(domain)
+        return isClassic ? tint : tint.opacity(0.78)
+    }
+
+    func domainFillTint(_ domain: StorageDomain) -> Color {
+        let tint = domainTint(domain)
+        return isClassic ? tint : tint.opacity(0.52)
+    }
+
+    func markerTint(_ tint: Color) -> Color {
+        isClassic ? tint : tint.opacity(0.78)
+    }
+
+    func fillTint(_ tint: Color) -> Color {
+        isClassic ? tint : tint.opacity(0.52)
+    }
+
     var panelCornerRadius: CGFloat {
         isClassic ? 0 : 8
     }

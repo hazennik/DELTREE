@@ -32,7 +32,7 @@ struct StatusMenuSuggestedCleanupView: View {
                 ForEach(suggestions) { suggestion in
                     HStack(alignment: .top, spacing: 8) {
                         RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 2)
-                            .fill(suggestion.domain.menuTint(in: theme))
+                            .fill(theme.domainFillTint(suggestion.domain))
                             .frame(width: 8, height: 30)
 
                         VStack(alignment: .leading, spacing: 2) {

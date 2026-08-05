@@ -43,7 +43,7 @@ struct SafetyBadgeView: View {
     }
 
     private var color: Color {
-        theme.safetyTint(safety, isActive: isActive)
+        theme.markerTint(theme.safetyTint(safety, isActive: isActive))
     }
 
     private var accessibilityTitle: String {

@@ -16,7 +16,7 @@ struct StorageBreakdownMenuView: View {
                 ForEach(visibleBreakdowns) { breakdown in
                     HStack(spacing: 8) {
                         RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 2)
-                            .fill(breakdown.domain.menuTint(in: theme))
+                            .fill(theme.domainFillTint(breakdown.domain))
                             .frame(width: 8, height: 18)
 
                         if theme.isClassic {

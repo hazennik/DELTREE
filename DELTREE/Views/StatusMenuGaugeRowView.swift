@@ -44,7 +44,7 @@ struct StatusMenuGaugeRowView: View {
                         .fill(theme.panelFill)
                         .overlay(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 3)
-                                .fill(tint)
+                                .fill(theme.fillTint(tint))
                                 .frame(width: fillWidth(for: proxy.size.width))
                         }
                         .clipped()

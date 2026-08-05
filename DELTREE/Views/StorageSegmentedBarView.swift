@@ -19,7 +19,7 @@ struct StorageSegmentedBarView: View {
                 HStack(spacing: segmentSpacing) {
                     ForEach(Array(visibleBreakdowns.enumerated()), id: \.element.id) { index, breakdown in
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(breakdown.domain.menuTint(in: theme))
+                            .fill(theme.domainFillTint(breakdown.domain))
                             .frame(width: widths[index])
                             .help("\(breakdown.domain.displayName): \(StorageFormatters.byteCount(breakdown.bytes))")
                     }

@@ -53,6 +53,14 @@ struct AppThemeTests {
         #expect(theme.safetyTitle(.unknown, isActive: false) == SafetyClassification.unknown.displayName)
     }
 
+    @Test func modernDomainMarkersAndFillsUseReducedEmphasis() {
+        let theme = AppTheme.modern
+        let domain = StorageDomain.derivedData
+
+        #expect(theme.domainMarkerTint(domain) != theme.domainTint(domain))
+        #expect(theme.domainFillTint(domain) != theme.domainMarkerTint(domain))
+    }
+
     @Test func classicGlyphsUseTextModeMarkers() {
         let theme = AppTheme.classic
 

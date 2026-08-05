@@ -6,6 +6,6 @@ extension StorageDomain {
     }
 
     func menuTint(in theme: AppTheme) -> Color {
-        theme.domainTint(self)
+        theme.domainMarkerTint(self)
     }
 }

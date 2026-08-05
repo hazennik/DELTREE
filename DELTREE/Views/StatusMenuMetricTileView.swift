@@ -17,7 +17,7 @@ struct StatusMenuMetricTileView: View {
                     .frame(width: 36, alignment: .leading)
             } else {
                 Image(systemName: systemImage)
-                    .foregroundStyle(tint)
+                    .foregroundStyle(theme.markerTint(tint))
                     .frame(width: 18)
             }
 

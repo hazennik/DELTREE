@@ -30,7 +30,7 @@ struct StorageBreakdownPanelView: View {
                                     .lineLimit(1)
                             } icon: {
                                 Rectangle()
-                                    .fill(breakdown.domain.menuTint(in: theme))
+                                    .fill(theme.domainFillTint(breakdown.domain))
                                     .frame(width: 8, height: 8)
                             }
                             .font(theme.font(.caption))

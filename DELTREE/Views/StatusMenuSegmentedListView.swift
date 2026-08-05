@@ -27,7 +27,7 @@ struct StatusMenuSegmentedListView: View {
                 ForEach(visibleSegments) { segment in
                     HStack(spacing: 8) {
                         RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 2)
-                            .fill(segment.tint)
+                            .fill(theme.fillTint(segment.tint))
                             .frame(width: 8, height: 16)
 
                         if theme.isClassic {
@@ -79,7 +79,7 @@ struct StatusMenuSegmentedListView: View {
                 HStack(spacing: segmentSpacing) {
                     ForEach(Array(visibleSegments.enumerated()), id: \.element.id) { index, segment in
                         RoundedRectangle(cornerRadius: 3)
-                            .fill(segment.tint)
+                            .fill(theme.fillTint(segment.tint))
                             .frame(width: widths[index])
                             .help("\(segment.title): \(segment.value)")
                     }

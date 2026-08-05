@@ -17,7 +17,7 @@ struct MetricView: View {
                     .frame(width: 36, alignment: .leading)
             } else {
                 Image(systemName: symbolName)
-                    .foregroundStyle(tint)
+                    .foregroundStyle(theme.markerTint(tint))
                     .frame(width: 20)
             }
             VStack(alignment: .leading, spacing: 2) {
