@@ -5,6 +5,7 @@ SCHEME ?= DELTREE
 DESTINATION ?= platform=macOS,arch=arm64
 DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
+UI_TEST_TIMEOUT_SECONDS ?= 120
 
 .PHONY: analyze appcast-check build check cli-dry-run docs-check format homebrew-check icon-check lint package-check release repository-check script-test spark-sign-check swift-test test ui-test workflow-check
 
@@ -15,7 +16,7 @@ test:
 	DELTREE_DISABLE_INITIAL_SCAN=1 $(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -parallel-testing-enabled NO -skip-testing:DELTREEUITests CODE_SIGNING_ALLOWED=NO
 
 ui-test:
-	$(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -only-testing:DELTREEUITests
+	DELTREE_DISABLE_INITIAL_SCAN=1 ruby Scripts/run-with-timeout.rb $(UI_TEST_TIMEOUT_SECONDS) -- $(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -only-testing:DELTREEUITests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 30 -maximum-test-execution-time-allowance 45
 
 swift-test:
 	swift test
@@ -34,6 +35,7 @@ workflow-check:
 
 script-test:
 	zsh -n Scripts/*.sh Tools/deltree
+	ruby -c Scripts/run-with-timeout.rb
 	zsh Scripts/test_release_artifacts.sh
 	zsh Scripts/test_release_pipeline.sh
 	zsh Scripts/test_repository_size.sh

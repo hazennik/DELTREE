@@ -4,7 +4,7 @@ struct LiveFileSizeScanner: FileSizeScanning, @unchecked Sendable {
     private let fileManager: FileManager
     private let budget: FileSizeScanBudget
 
-    init(fileManager: FileManager = .default, budget: FileSizeScanBudget = .unbounded) {
+    init(fileManager: FileManager = .default, budget: FileSizeScanBudget = .production) {
         self.fileManager = fileManager
         self.budget = budget
     }

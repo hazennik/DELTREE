@@ -4,6 +4,7 @@ struct CleanupPreflightView: View {
     @Environment(\.appTheme) private var theme
 
     var plan: CleanupPlan
+    var confirmationThresholdBytes: Int64
     var confirmAction: () -> Void
     var cancelAction: () -> Void
     var exportAction: () -> Void
@@ -33,6 +34,13 @@ struct CleanupPreflightView: View {
             Text(theme.isClassic ? "DELTREE WILL USE TRASH FOR FILES AND FOLDERS, OR APPROVED SIMCTL COMMANDS FOR SIMULATOR ACTIONS. NOTHING IS PERMANENTLY DELETED BY THE APP." : "DELTREE will use Trash for files and folders, or approved simctl commands for simulator actions. Nothing is permanently deleted by the app.")
                 .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if showsHighImpactWarning {
+                Text(theme.isClassic ? "HIGH-IMPACT CLEANUP: THIS PLAN IS ABOVE YOUR CONFIRMATION THRESHOLD." : "High-impact cleanup: this plan is above your confirmation threshold.")
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             List {
                 if plan.actions.isEmpty == false {
@@ -119,5 +127,9 @@ struct CleanupPreflightView: View {
         .frame(minWidth: 640, minHeight: 460)
         .background(theme.background)
         .foregroundStyle(theme.primaryText)
+    }
+
+    private var showsHighImpactWarning: Bool {
+        confirmationThresholdBytes > 0 && plan.reclaimableBytes >= confirmationThresholdBytes
     }
 }

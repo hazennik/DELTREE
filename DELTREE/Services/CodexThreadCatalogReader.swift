@@ -5,6 +5,7 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
     private let fileManager: FileManager
     private let maximumFiles: Int
     private let maximumBytesPerFile: UInt64
+    private let maximumPreviewBytes: UInt64
     private let cache: CodexThreadCatalogCache
 
     init(
@@ -12,12 +13,14 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
         fileManager: FileManager = .default,
         maximumFiles: Int = 2_000,
         maximumBytesPerFile: UInt64 = 5_000_000,
+        maximumPreviewBytes: UInt64 = 512_000,
         cache: CodexThreadCatalogCache = CodexThreadCatalogCache())
     {
         self.homeDirectory = homeDirectory
         self.fileManager = fileManager
         self.maximumFiles = maximumFiles
         self.maximumBytesPerFile = maximumBytesPerFile
+        self.maximumPreviewBytes = maximumPreviewBytes
         self.cache = cache
     }
 
@@ -121,10 +124,8 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
     }
 
     nonisolated private func parse(file: URL, now: Date) -> [CodexSessionRecord] {
-        guard let data = try? Data(contentsOf: file),
-              data.isEmpty == false,
-              let text = String(data: data, encoding: .utf8)
-        else {
+        let text = textPreview(from: file)
+        guard text.isEmpty == false else {
             return []
         }
 
@@ -260,6 +261,38 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
             .first { token in
                 token.hasPrefix("/") && token.count > 5
             }
+    }
+
+    nonisolated private func textPreview(from file: URL) -> String {
+        guard let handle = try? FileHandle(forReadingFrom: file) else {
+            return ""
+        }
+        defer {
+            try? handle.close()
+        }
+
+        var data = Data()
+        let byteLimit = Int(min(maximumBytesPerFile, maximumPreviewBytes))
+        while data.count < byteLimit {
+            if Task.isCancelled {
+                break
+            }
+
+            let chunkLimit = min(64 * 1_024, byteLimit - data.count)
+            guard chunkLimit > 0,
+                  let chunk = try? handle.read(upToCount: chunkLimit),
+                  chunk.isEmpty == false
+            else {
+                break
+            }
+            data.append(chunk)
+
+            if data.filter({ $0 == 0x0A }).count >= 400 {
+                break
+            }
+        }
+
+        return String(decoding: data, as: UTF8.self)
     }
 
     nonisolated private func modificationDate(for url: URL) -> Date {

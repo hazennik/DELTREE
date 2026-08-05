@@ -170,6 +170,28 @@ struct CodexSessionMatcherTests {
         #expect(secondRecord.displayTitle == "Updated scan cache title")
     }
 
+    @Test func catalogReaderParsesOnlyBoundedFilePreview() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent("DELTREE-session-preview-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let sessionsRoot = root.appendingPathComponent(".codex/sessions", isDirectory: true)
+        try fileManager.createDirectory(at: sessionsRoot, withIntermediateDirectories: true)
+        let sessionFile = sessionsRoot.appendingPathComponent("session-preview.jsonl")
+        let visibleLine = #"{"id":"preview-1","title":"Visible bounded preview"}"# + "\n"
+        let hiddenLine = #"{"id":"preview-2","title":"Hidden after preview"}"# + "\n"
+        try Data((visibleLine + String(repeating: "x", count: 2_000) + hiddenLine).utf8).write(to: sessionFile)
+
+        let records = await CodexThreadCatalogReader(
+            homeDirectory: root,
+            fileManager: fileManager,
+            maximumPreviewBytes: UInt64(visibleLine.utf8.count))
+            .sessions(now: Date(timeIntervalSince1970: 2_000_000))
+
+        #expect(records.contains { $0.id == "preview-1" })
+        #expect(records.contains { $0.id == "preview-2" } == false)
+    }
+
     private static func writeSessionFixture(title: String, updatedAt: String, to url: URL, modifiedAt: Date) throws {
         let json = #"{"id":"session-1","title":"\#(title)","updated_at":"\#(updatedAt)"}"#
         try Data(json.utf8).write(to: url)

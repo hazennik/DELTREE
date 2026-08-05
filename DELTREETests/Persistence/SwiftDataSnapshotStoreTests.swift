@@ -16,8 +16,8 @@ struct SwiftDataSnapshotStoreTests {
         let store = SwiftDataSnapshotStore(container: container)
         let snapshot = Self.snapshot(capturedAt: Date(), path: "/tmp/item", bytes: 42)
 
-        store.saveSnapshot(snapshot)
-        store.saveCleanup(
+        try store.saveSnapshot(snapshot)
+        try store.saveCleanup(
             performedAt: Date(),
             totalBytes: 42,
             itemCount: 1,
@@ -27,7 +27,7 @@ struct SwiftDataSnapshotStoreTests {
             errors: [:],
             initiator: "User")
 
-        store.saveManualOverride(ManualStorageOverride(path: "/tmp/item", owner: .user, isPinned: true))
+        try store.saveManualOverride(ManualStorageOverride(path: "/tmp/item", owner: .user, isPinned: true))
 
         let scan = try #require(store.recentScanRecords(limit: 1).first)
         let cleanup = try #require(store.recentCleanupRecords(limit: 1).first)
@@ -62,8 +62,8 @@ struct SwiftDataSnapshotStoreTests {
             let date = start.addingTimeInterval(Double(index))
             let path = "/tmp/item-\(index)"
             let snapshot = Self.snapshot(capturedAt: date, path: path, bytes: Int64(index + 1))
-            store.saveSnapshot(snapshot)
-            store.saveDelta(StorageDelta(
+            try store.saveSnapshot(snapshot)
+            try store.saveDelta(StorageDelta(
                 fromDate: nil,
                 toDate: date,
                 addedBytes: Int64(index + 1),
@@ -72,7 +72,7 @@ struct SwiftDataSnapshotStoreTests {
                 newItems: snapshot.items,
                 changedItems: [],
                 removedPaths: []))
-            store.saveCleanup(
+            try store.saveCleanup(
                 performedAt: date,
                 totalBytes: Int64(index + 1),
                 itemCount: 1,
@@ -81,7 +81,7 @@ struct SwiftDataSnapshotStoreTests {
                 skippedPaths: [],
                 errors: [:],
                 initiator: "User")
-            store.saveAttributionEvent(owner: .codex, confidence: 0.9, paths: [path], observedAt: date)
+            try store.saveAttributionEvent(owner: .codex, confidence: 0.9, paths: [path], observedAt: date)
         }
 
         #expect(store.recentScanRecords(limit: 10).map(\.totalBytes) == [4, 3])

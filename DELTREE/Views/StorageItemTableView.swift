@@ -60,8 +60,8 @@ struct StorageItemTableView: View {
         .animation(scanListAnimation, value: itemIdentityToken)
     }
 
-    private var itemIdentityToken: String {
-        items.map(\.id).joined(separator: "|")
+    private var itemIdentityToken: Int {
+        items.count
     }
 
     private var scanListAnimation: Animation? {

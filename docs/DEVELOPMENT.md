@@ -31,7 +31,7 @@ make appcast-check
 make spark-sign-check
 ```
 
-`make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` when validating launch behavior on a trusted local machine.
+`make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` when validating launch behavior on a trusted local machine. `make ui-test` is wrapped by `Scripts/run-with-timeout.rb`; override the watchdog with `UI_TEST_TIMEOUT_SECONDS=240 make ui-test` when the local machine is slow. A timeout is still a failed UI-test run, not a pass.
 `make package-check` performs dry-run package validation for both Developer ID and Homebrew distribution channels.
 
 ## Project Layout

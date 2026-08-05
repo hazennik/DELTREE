@@ -49,6 +49,15 @@ These stay out of one-click cleanup:
 - simulator images
 - DeviceSupport
 
+## Execution Revalidation
+
+Cleanup plans are advisory until execution. Immediately before each action, DELTREE rechecks the current item state and blocks the action when anything has become less safe:
+
+- the item is now active, pinned, ignored, in a blocked domain, or no longer classified as `Safe to Remove`
+- a non-simulator path no longer exists, cannot be checked for open files, or is currently open
+- a simulator device is booted, no longer exists, is no longer unavailable, or cannot be safely erased
+- the action is not an approved Trash, `simctl delete`, or `simctl erase` operation
+
 ## Verification
 
 Before changing cleanup behavior, run:

@@ -79,6 +79,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             lastDelta: viewModel.lastDelta,
             isScanning: viewModel.isScanning,
             safeItemCount: cleanupEligibleItems.count,
+            allowsMenuCleanup: settings.notifyOnlyByDefault == false,
             cleanupSuggestions: cleanupEligibleItems.map(StatusMenuCleanupSuggestion.make))
     }
 

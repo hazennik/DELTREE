@@ -32,6 +32,7 @@ struct DashboardView: View {
         .sheet(item: $viewModel.pendingCleanupPlan) { plan in
             CleanupPreflightView(
                 plan: plan,
+                confirmationThresholdBytes: viewModel.settings.requireConfirmationAboveBytes,
                 confirmAction: { viewModel.performCleanup(plan) },
                 cancelAction: { viewModel.pendingCleanupPlan = nil },
                 exportAction: { viewModel.exportCleanupReport(plan: plan) })

@@ -3,12 +3,29 @@ import Testing
 @testable import DELTREE
 
 struct CleanupExecutorTests {
-    @Test @MainActor func executorRoutesTrashAndSimctlActions() async {
+    @Test @MainActor func executorRoutesTrashAndSimctlActionsAfterFinalValidation() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent("DELTREE-cleanup-executor-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        let resultBundle = root.appendingPathComponent("result.xcresult")
+        try Data("fixture".utf8).write(to: resultBundle)
         let trash = RecordingTrashService()
         let simctl = RecordingSimctlCommandClient()
-        let executor = DefaultCleanupExecutor(trashService: trash, simctlClient: simctl)
-        let file = Self.item(path: "/tmp/result.xcresult", metadata: [:])
-        let simulator = Self.item(path: "/tmp/device", metadata: ["udid": "SIM-123"])
+        let executor = DefaultCleanupExecutor(
+            fileManager: fileManager,
+            trashService: trash,
+            simctlClient: simctl,
+            simctlDeviceClient: StaticSimctlClient(devices: [
+                Self.simulatorDevice(udid: "SIM-123", state: "Shutdown", isAvailable: false),
+            ]),
+            openFileChecker: RecordingOpenFileChecker(result: .clear))
+        let file = Self.item(path: resultBundle.path, metadata: [:])
+        let simulator = Self.item(
+            path: "/tmp/device",
+            domain: .coreSimulatorDevices,
+            kind: .simulatorDevice,
+            metadata: ["udid": "SIM-123"])
         let plan = CleanupPlan(
             actions: [
                 CleanupPlanAction(item: file, action: .removeXCResult, reason: "Trash result bundle."),
@@ -20,7 +37,7 @@ struct CleanupExecutorTests {
 
         #expect(result.completedActions.count == 2)
         #expect(result.failedActions.isEmpty)
-        #expect(await trash.trashedPaths() == ["/tmp/result.xcresult"])
+        #expect(await trash.trashedPaths() == [resultBundle.path])
         #expect(await simctl.deletedUDIDs() == ["SIM-123"])
         #expect(await simctl.erasedUDIDs().isEmpty)
     }
@@ -28,8 +45,16 @@ struct CleanupExecutorTests {
     @Test @MainActor func executorFailsSimulatorActionWithoutUDID() async {
         let trash = RecordingTrashService()
         let simctl = RecordingSimctlCommandClient()
-        let executor = DefaultCleanupExecutor(trashService: trash, simctlClient: simctl)
-        let simulator = Self.item(path: "/tmp/device", metadata: [:])
+        let executor = DefaultCleanupExecutor(
+            trashService: trash,
+            simctlClient: simctl,
+            simctlDeviceClient: StaticSimctlClient(devices: []),
+            openFileChecker: RecordingOpenFileChecker(result: .clear))
+        let simulator = Self.item(
+            path: "/tmp/device",
+            domain: .coreSimulatorDevices,
+            kind: .simulatorDevice,
+            metadata: [:])
         let action = CleanupPlanAction(item: simulator, action: .eraseSimulator, reason: "Erase simulator.")
         let plan = CleanupPlan(actions: [action], blockedItems: [])
 
@@ -42,11 +67,69 @@ struct CleanupExecutorTests {
         #expect(await simctl.erasedUDIDs().isEmpty)
     }
 
-    private static func item(path: String, metadata: [String: String]) -> StorageItem {
+    @Test @MainActor func executorBlocksOpenFilesDuringFinalValidation() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent("DELTREE-cleanup-open-file-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        let resultBundle = root.appendingPathComponent("result.xcresult")
+        try Data("fixture".utf8).write(to: resultBundle)
+        let trash = RecordingTrashService()
+        let simctl = RecordingSimctlCommandClient()
+        let executor = DefaultCleanupExecutor(
+            fileManager: fileManager,
+            trashService: trash,
+            simctlClient: simctl,
+            simctlDeviceClient: StaticSimctlClient(devices: []),
+            openFileChecker: RecordingOpenFileChecker(result: .openFilesFound))
+        let item = Self.item(path: resultBundle.path, metadata: [:])
+        let action = CleanupPlanAction(item: item, action: .removeXCResult, reason: "Trash result bundle.")
+        let plan = CleanupPlan(actions: [action], blockedItems: [])
+
+        let result = await executor.execute(plan)
+
+        #expect(result.completedActions.isEmpty)
+        #expect(result.failedActions[action] == CleanupExecutionError.pathHasOpenFiles(resultBundle.path).localizedDescription)
+        #expect(await trash.trashedPaths().isEmpty)
+        #expect(await simctl.deletedUDIDs().isEmpty)
+    }
+
+    @Test @MainActor func executorBlocksBootedSimulatorBeforeSimctlCommand() async {
+        let trash = RecordingTrashService()
+        let simctl = RecordingSimctlCommandClient()
+        let executor = DefaultCleanupExecutor(
+            trashService: trash,
+            simctlClient: simctl,
+            simctlDeviceClient: StaticSimctlClient(devices: [
+                Self.simulatorDevice(udid: "SIM-123", state: "Booted", isAvailable: false),
+            ]),
+            openFileChecker: RecordingOpenFileChecker(result: .clear))
+        let simulator = Self.item(
+            path: "/tmp/device",
+            domain: .coreSimulatorDevices,
+            kind: .simulatorDevice,
+            metadata: ["udid": "SIM-123"])
+        let action = CleanupPlanAction(item: simulator, action: .deleteUnavailableSimulator, reason: "Delete unavailable simulator.")
+        let plan = CleanupPlan(actions: [action], blockedItems: [])
+
+        let result = await executor.execute(plan)
+
+        #expect(result.completedActions.isEmpty)
+        #expect(result.failedActions[action] == CleanupExecutionError.simulatorBooted("SIM-123").localizedDescription)
+        #expect(await trash.trashedPaths().isEmpty)
+        #expect(await simctl.deletedUDIDs().isEmpty)
+    }
+
+    private static func item(
+        path: String,
+        domain: StorageDomain = .xcResults,
+        kind: StorageKind = .xcResult,
+        metadata: [String: String]) -> StorageItem
+    {
         StorageItem(
             id: path,
-            domain: .xcResults,
-            kind: .xcResult,
+            domain: domain,
+            kind: kind,
             path: path,
             displayName: URL(fileURLWithPath: path).lastPathComponent,
             bytes: 1_000,
@@ -59,6 +142,19 @@ struct CleanupExecutorTests {
             isActive: false,
             explanation: "Fixture",
             metadata: metadata)
+    }
+
+    private static func simulatorDevice(udid: String, state: String, isAvailable: Bool) -> SimctlDevice {
+        SimctlDevice(
+            udid: udid,
+            name: "iPhone",
+            state: state,
+            isAvailable: isAvailable,
+            availabilityError: isAvailable ? nil : "runtime unavailable",
+            runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-0",
+            dataPath: "/tmp/device",
+            logPath: nil,
+            lastBootedAt: nil)
     }
 }
 
@@ -93,5 +189,25 @@ private actor RecordingSimctlCommandClient: SimctlCommanding {
 
     func erasedUDIDs() -> [String] {
         erases
+    }
+}
+
+private struct StaticSimctlClient: SimctlClient {
+    var storedDevices: [SimctlDevice]
+
+    init(devices: [SimctlDevice]) {
+        storedDevices = devices
+    }
+
+    func devices() async -> [SimctlDevice] {
+        storedDevices
+    }
+}
+
+private struct RecordingOpenFileChecker: OpenFileChecking {
+    var result: OpenFileCheckResult
+
+    func checkOpenFiles(under url: URL) async -> OpenFileCheckResult {
+        result
     }
 }

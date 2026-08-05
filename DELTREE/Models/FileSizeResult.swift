@@ -3,6 +3,7 @@ import Foundation
 struct FileSizeScanBudget: Equatable, Sendable {
     var maxEntryCount: Int?
 
+    static let production = FileSizeScanBudget(maxEntryCount: 100_000)
     static let unbounded = FileSizeScanBudget(maxEntryCount: nil)
 }
 

@@ -137,6 +137,9 @@ final class DashboardViewModel {
 
     var domainSummaries: [DomainSummary] {
         let grouped = snapshot.groupedDomainTotals
+        let itemCounts = snapshot.items.reduce(into: [StorageDomain: Int]()) { counts, item in
+            counts[item.domain, default: 0] += 1
+        }
         return StorageDomain.allCases.compactMap { domain in
             guard let bytes = grouped[domain], bytes > 0 else {
                 return nil
@@ -144,7 +147,7 @@ final class DashboardViewModel {
             return DomainSummary(
                 domain: domain,
                 bytes: bytes,
-                itemCount: snapshot.items.filter { $0.domain == domain }.count)
+                itemCount: itemCounts[domain] ?? 0)
         }
         .sorted { lhs, rhs in
             if lhs.bytes == rhs.bytes {
@@ -284,10 +287,14 @@ final class DashboardViewModel {
             guard self.scanGeneration == generation else {
                 return
             }
-            mainThreadHangWatchdog.withBreadcrumb("persistence.scan") {
-                self.persistence.saveSnapshot(snapshot)
-                self.persistence.saveDelta(delta)
-                self.refreshHistory()
+            do {
+                try mainThreadHangWatchdog.withBreadcrumb("persistence.scan") {
+                    try self.persistence.saveSnapshot(snapshot)
+                    try self.persistence.saveDelta(delta)
+                    self.refreshHistory()
+                }
+            } catch {
+                self.errorMessage = "Could not save scan history: \(error.localizedDescription)"
             }
             await self.notifyIfNeeded(delta: delta, snapshot: snapshot)
             self.lastScanFinishedAt = self.now()
@@ -336,20 +343,25 @@ final class DashboardViewModel {
             let result = await cleanupExecutor.execute(plan)
             mainThreadHangWatchdog.recordBreadcrumb("cleanup.execute.end")
             let completedPaths = result.completedActions.map(\.item.path)
-            mainThreadHangWatchdog.withBreadcrumb("persistence.cleanup") {
-                persistence.saveCleanup(
-                    performedAt: result.performedAt,
-                    totalBytes: result.reclaimedBytes,
-                    itemCount: completedPaths.count,
-                    status: result.status,
-                    paths: completedPaths,
-                    skippedPaths: result.skippedItems.map(\.path),
-                    errors: Dictionary(uniqueKeysWithValues: result.failedActions.map { action, message in
-                        (action.item.path, message)
-                    }),
-                    initiator: "User")
+            var message = cleanupMessage(for: result)
+            do {
+                try mainThreadHangWatchdog.withBreadcrumb("persistence.cleanup") {
+                    try persistence.saveCleanup(
+                        performedAt: result.performedAt,
+                        totalBytes: result.reclaimedBytes,
+                        itemCount: completedPaths.count,
+                        status: result.status,
+                        paths: completedPaths,
+                        skippedPaths: result.skippedItems.map(\.path),
+                        errors: Dictionary(uniqueKeysWithValues: result.failedActions.map { action, message in
+                            (action.item.path, message)
+                        }),
+                        initiator: "User")
+                }
+            } catch {
+                message += " Could not save cleanup history: \(error.localizedDescription)"
             }
-            cleanupMessage = cleanupMessage(for: result)
+            cleanupMessage = message
             pendingCleanupPlan = nil
             refreshHistory()
             await notifyCleanupComplete(result)
@@ -392,8 +404,12 @@ final class DashboardViewModel {
     }
 
     func resetAttribution(_ item: StorageItem) {
-        mainThreadHangWatchdog.withBreadcrumb("persistence.override.clear") {
-            persistence.clearManualOverride(path: item.path)
+        do {
+            try mainThreadHangWatchdog.withBreadcrumb("persistence.override.clear") {
+                try persistence.clearManualOverride(path: item.path)
+            }
+        } catch {
+            cleanupMessage = "Could not reset attribution: \(error.localizedDescription)"
         }
         scan(force: true)
     }
@@ -504,8 +520,12 @@ final class DashboardViewModel {
         }
 
         if confidence > 0 {
-            mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
-                persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: now())
+            do {
+                try mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
+                    try persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: now())
+                }
+            } catch {
+                errorMessage = "Could not save attribution history: \(error.localizedDescription)"
             }
         }
         if settings.autoScanAfterActivity {
@@ -598,13 +618,17 @@ final class DashboardViewModel {
         isIgnored: Bool,
         note: String)
     {
-        mainThreadHangWatchdog.withBreadcrumb("persistence.override") {
-            persistence.saveManualOverride(ManualStorageOverride(
-                path: item.path,
-                owner: owner,
-                isPinned: isPinned,
-                isIgnored: isIgnored,
-                note: note))
+        do {
+            try mainThreadHangWatchdog.withBreadcrumb("persistence.override") {
+                try persistence.saveManualOverride(ManualStorageOverride(
+                    path: item.path,
+                    owner: owner,
+                    isPinned: isPinned,
+                    isIgnored: isIgnored,
+                    note: note))
+            }
+        } catch {
+            cleanupMessage = "Could not save override: \(error.localizedDescription)"
         }
         scan(force: true)
     }

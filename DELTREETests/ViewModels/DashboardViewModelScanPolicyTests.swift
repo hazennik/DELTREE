@@ -390,7 +390,7 @@ private final class InMemorySnapshotPersistence: SnapshotPersisting {
         self.snapshots = snapshots
     }
 
-    func saveSnapshot(_ snapshot: StorageSnapshot) {
+    func saveSnapshot(_ snapshot: StorageSnapshot) throws {
         snapshots.append(snapshot)
     }
 
@@ -398,7 +398,7 @@ private final class InMemorySnapshotPersistence: SnapshotPersisting {
         snapshots.last
     }
 
-    func saveDelta(_ delta: StorageDelta) {}
+    func saveDelta(_ delta: StorageDelta) throws {}
 
     func saveCleanup(
         performedAt: Date,
@@ -408,16 +408,16 @@ private final class InMemorySnapshotPersistence: SnapshotPersisting {
         paths: [String],
         skippedPaths: [String],
         errors: [String: String],
-        initiator: String)
+        initiator: String) throws
     {}
 
-    func saveAttributionEvent(owner: OwnerAttribution, confidence: Double, paths: [String], observedAt: Date) {}
+    func saveAttributionEvent(owner: OwnerAttribution, confidence: Double, paths: [String], observedAt: Date) throws {}
 
-    func saveManualOverride(_ override: ManualStorageOverride) {
+    func saveManualOverride(_ override: ManualStorageOverride) throws {
         overrides[override.path] = override
     }
 
-    func clearManualOverride(path: String) {
+    func clearManualOverride(path: String) throws {
         overrides.removeValue(forKey: path)
     }
 

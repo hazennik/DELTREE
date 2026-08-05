@@ -148,6 +148,7 @@ Packaging notes live in [Packaging/README.md](Packaging/README.md) and release s
 - [User Guide](docs/USER_GUIDE.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development](docs/DEVELOPMENT.md)
+- [Production Readiness](docs/PRODUCTION_READINESS.md)
 - [Safety Policy](docs/SAFETY.md)
 - [CLI](docs/CLI.md)
 - [Release Process](docs/RELEASING.md)

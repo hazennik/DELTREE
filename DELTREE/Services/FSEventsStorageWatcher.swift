@@ -2,16 +2,29 @@ import CoreServices
 import Foundation
 
 final class FSEventsStorageWatcher: StorageWatching, @unchecked Sendable {
-    var onChange: (@Sendable ([String]) -> Void)?
+    var onChange: (@Sendable ([String]) -> Void)? {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return changeHandler
+        }
+        set {
+            lock.lock()
+            changeHandler = newValue
+            lock.unlock()
+        }
+    }
 
     private let queue = DispatchQueue(label: "com.infrallabs.deltree.storage-watcher", qos: .utility)
+    private let lock = NSLock()
+    private var changeHandler: (@Sendable ([String]) -> Void)?
     private var stream: FSEventStreamRef?
     private var watchedPaths: [String] = []
 
     func start(paths: [String]) {
         stop()
-        watchedPaths = paths.filter { FileManager.default.fileExists(atPath: $0) }
-        guard watchedPaths.isEmpty == false else {
+        let existingPaths = paths.filter { FileManager.default.fileExists(atPath: $0) }
+        guard existingPaths.isEmpty == false else {
             return
         }
 
@@ -22,31 +35,40 @@ final class FSEventsStorageWatcher: StorageWatching, @unchecked Sendable {
             release: nil,
             copyDescription: nil)
 
-        stream = FSEventStreamCreate(
+        let createdStream = FSEventStreamCreate(
             nil,
             Self.callback,
             &context,
-            watchedPaths as CFArray,
+            existingPaths as CFArray,
             FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
             5.0,
             FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes))
 
-        guard let stream else {
+        guard let createdStream else {
             return
         }
 
-        FSEventStreamSetDispatchQueue(stream, queue)
-        FSEventStreamStart(stream)
+        FSEventStreamSetDispatchQueue(createdStream, queue)
+        lock.lock()
+        watchedPaths = existingPaths
+        stream = createdStream
+        lock.unlock()
+        FSEventStreamStart(createdStream)
     }
 
     func stop() {
+        lock.lock()
+        let stream = stream
+        self.stream = nil
+        watchedPaths = []
+        lock.unlock()
+
         guard let stream else {
             return
         }
         FSEventStreamStop(stream)
         FSEventStreamInvalidate(stream)
         FSEventStreamRelease(stream)
-        self.stream = nil
     }
 
     deinit {

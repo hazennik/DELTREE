@@ -79,4 +79,42 @@ struct StatusMenuDescriptorTests {
         #expect(descriptor.items.contains(.command(title: "Scan Now", command: .scanNow, keyEquivalent: "r", isEnabled: false)))
         #expect(descriptor.items.contains(.command(title: "Clean Safe Items...", command: .cleanSafe, keyEquivalent: "", isEnabled: true)))
     }
+
+    @Test func descriptorSuppressesMenuCleanupWhenNotifyOnlyIsEnabled() {
+        let now = Date()
+        let item = StorageItem(
+            id: "/tmp/result.xcresult",
+            domain: .xcResults,
+            kind: .xcResult,
+            path: "/tmp/result.xcresult",
+            displayName: "result.xcresult",
+            bytes: 1_000,
+            createdAt: now,
+            modifiedAt: now,
+            lastUsedAt: now,
+            attribution: .xcodeViaCodex,
+            attributionConfidence: 0.8,
+            safety: .safeToTrash,
+            isActive: false,
+            explanation: "Fixture",
+            metadata: [:])
+        let snapshot = StorageSnapshot(capturedAt: now, items: [item], missingPaths: [], unreadablePaths: [])
+        let footprint = StorageFootprint.make(
+            snapshot: snapshot,
+            previousSnapshot: nil,
+            availableDiskBytes: 10_000,
+            lowDiskThresholdBytes: 1_000)
+
+        let descriptor = StatusMenuDescriptorBuilder.make(
+            title: "DELTREE",
+            footprint: footprint,
+            lastDelta: StorageDelta.make(previous: nil, current: snapshot),
+            isScanning: false,
+            safeItemCount: 1,
+            allowsMenuCleanup: false,
+            cleanupSuggestions: [StatusMenuCleanupSuggestion.make(from: item)])
+
+        #expect(descriptor.items.contains(.section(title: "Suggested Cleanup")) == false)
+        #expect(descriptor.items.contains(.command(title: "Clean Safe Items...", command: .cleanSafe, keyEquivalent: "", isEnabled: false)))
+    }
 }
