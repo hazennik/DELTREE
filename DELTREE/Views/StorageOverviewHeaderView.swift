@@ -24,11 +24,21 @@ struct StorageOverviewHeaderView: View {
             HStack {
                 Spacer()
 
-                Button("Scan", systemImage: "arrow.clockwise", action: scanAction)
-                    .disabled(isScanning)
+                if theme.isClassic {
+                    Button("[SCAN]", action: scanAction)
+                        .buttonStyle(ClassicButtonStyle())
+                        .disabled(isScanning)
 
-                Button("Clean Safe", systemImage: "trash", action: cleanupAction)
-                    .disabled(snapshot.reclaimableBytes == 0 || isScanning)
+                    Button("[CLEAN SAFE]", action: cleanupAction)
+                        .buttonStyle(ClassicButtonStyle())
+                        .disabled(snapshot.reclaimableBytes == 0 || isScanning)
+                } else {
+                    Button("Scan", systemImage: "arrow.clockwise", action: scanAction)
+                        .disabled(isScanning)
+
+                    Button("Clean Safe", systemImage: "trash", action: cleanupAction)
+                        .disabled(snapshot.reclaimableBytes == 0 || isScanning)
+                }
             }
         }
         .padding(14)

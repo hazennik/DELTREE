@@ -28,4 +28,14 @@ struct AppThemeTests {
         #expect(theme.safetyTitle(.safeToTrash, isActive: false) == SafetyClassification.safeToTrash.displayName)
         #expect(theme.safetyTitle(.unknown, isActive: false) == SafetyClassification.unknown.displayName)
     }
+
+    @Test func classicGlyphsUseTextModeMarkers() {
+        let theme = AppTheme.classic
+
+        #expect(theme.classicGlyph(for: "externaldrive") == "[DSK]")
+        #expect(theme.classicGlyph(for: "terminal") == "[CMD]")
+        #expect(theme.classicGlyph(for: "trash") == "[DEL]")
+        #expect(theme.classicGlyph(for: "slider.horizontal.3") == "[CFG]")
+        #expect(theme.classicGlyph(for: "unmapped.symbol") == "[*]")
+    }
 }

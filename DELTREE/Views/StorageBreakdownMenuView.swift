@@ -19,8 +19,17 @@ struct StorageBreakdownMenuView: View {
                             .fill(breakdown.domain.menuTint(in: theme))
                             .frame(width: 8, height: 18)
 
-                        Label(breakdown.domain.displayName, systemImage: breakdown.domain.symbolName)
+                        if theme.isClassic {
+                            HStack(spacing: 6) {
+                                Text(theme.classicGlyph(for: breakdown.domain.symbolName))
+                                    .foregroundStyle(breakdown.domain.menuTint(in: theme))
+                                Text(breakdown.domain.displayName.uppercased())
+                            }
                             .lineLimit(1)
+                        } else {
+                            Label(breakdown.domain.displayName, systemImage: breakdown.domain.symbolName)
+                                .lineLimit(1)
+                        }
 
                         Spacer(minLength: 8)
 
@@ -52,6 +61,8 @@ struct StorageBreakdownMenuView: View {
     private func rowDetail(for breakdown: StorageDomainBreakdown) -> String {
         let percent = breakdown.share(of: footprint.totalBytes)
             .formatted(.percent.precision(.fractionLength(0)))
-        return "\(breakdown.itemCount) \(breakdown.itemCount == 1 ? "item" : "items") - \(percent)"
+        let itemText = breakdown.itemCount == 1 ? "item" : "items"
+        let detail = "\(breakdown.itemCount) \(itemText) - \(percent)"
+        return theme.isClassic ? detail.uppercased() : detail
     }
 }

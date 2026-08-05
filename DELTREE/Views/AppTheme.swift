@@ -12,63 +12,75 @@ struct AppTheme: Equatable {
     }
 
     var background: Color {
-        isClassic ? Color(red: 0.018, green: 0.020, blue: 0.022) : Color(NSColor.windowBackgroundColor)
+        isClassic ? Color(red: 0.000, green: 0.004, blue: 0.016) : Color(NSColor.windowBackgroundColor)
     }
 
     var sidebarBackground: Color {
-        isClassic ? Color(red: 0.012, green: 0.014, blue: 0.016) : Color(NSColor.controlBackgroundColor)
+        isClassic ? Color(red: 0.000, green: 0.004, blue: 0.016) : Color(NSColor.controlBackgroundColor)
     }
 
     var panelFill: Color {
-        isClassic ? Color(red: 0.055, green: 0.060, blue: 0.062) : Color.secondary.opacity(0.10)
+        isClassic ? Color(red: 0.000, green: 0.016, blue: 0.090) : Color.secondary.opacity(0.10)
     }
 
     var panelBorder: Color {
-        isClassic ? Color(red: 0.00, green: 0.78, blue: 0.84).opacity(0.38) : Color.clear
+        isClassic ? Color(red: 0.000, green: 0.440, blue: 0.460) : Color.clear
     }
 
     var separator: Color {
-        isClassic ? Color(red: 0.42, green: 0.48, blue: 0.48).opacity(0.42) : Color.secondary.opacity(0.24)
+        isClassic ? Color(red: 0.280, green: 0.300, blue: 0.320) : Color.secondary.opacity(0.24)
     }
 
     var primaryText: Color {
-        isClassic ? Color(red: 0.88, green: 0.91, blue: 0.87) : .primary
+        isClassic ? Color(red: 0.720, green: 0.720, blue: 0.720) : .primary
     }
 
     var secondaryText: Color {
-        isClassic ? Color(red: 0.63, green: 0.69, blue: 0.66) : .secondary
+        isClassic ? Color(red: 0.520, green: 0.520, blue: 0.520) : .secondary
     }
 
     var mutedText: Color {
-        isClassic ? Color(red: 0.43, green: 0.49, blue: 0.47) : .secondary
+        isClassic ? Color(red: 0.360, green: 0.360, blue: 0.360) : .secondary
     }
 
     var accent: Color {
-        isClassic ? Color(red: 0.00, green: 0.95, blue: 0.98) : Color.accentColor
+        isClassic ? Color(red: 0.000, green: 0.540, blue: 0.560) : Color.accentColor
     }
 
     var warning: Color {
-        isClassic ? Color(red: 1.00, green: 0.72, blue: 0.22) : AppPalette.xcode
+        isClassic ? Color(red: 0.580, green: 0.360, blue: 0.140) : AppPalette.xcode
     }
 
     var danger: Color {
-        isClassic ? Color(red: 1.00, green: 0.23, blue: 0.18) : .red
+        isClassic ? Color(red: 0.580, green: 0.120, blue: 0.120) : .red
     }
 
     var safe: Color {
-        isClassic ? Color(red: 0.39, green: 0.82, blue: 0.50) : AppPalette.codex
+        isClassic ? Color(red: 0.240, green: 0.500, blue: 0.260) : AppPalette.codex
     }
 
     var review: Color {
-        isClassic ? Color(red: 1.00, green: 0.72, blue: 0.22) : AppPalette.caution
+        isClassic ? warning : AppPalette.caution
     }
 
     var keep: Color {
-        isClassic ? Color(red: 0.72, green: 0.78, blue: 0.74) : .secondary
+        isClassic ? primaryText : .secondary
     }
 
     var unknown: Color {
-        isClassic ? Color(red: 0.00, green: 0.88, blue: 0.92) : .secondary
+        isClassic ? Color(red: 0.380, green: 0.380, blue: 0.520) : .secondary
+    }
+
+    var controlFill: Color {
+        isClassic ? Color(red: 0.000, green: 0.000, blue: 0.000) : Color(NSColor.controlBackgroundColor)
+    }
+
+    var selectionFill: Color {
+        isClassic ? Color(red: 0.000, green: 0.180, blue: 0.260) : Color.accentColor.opacity(0.18)
+    }
+
+    var selectionText: Color {
+        isClassic ? Color(red: 0.780, green: 0.780, blue: 0.780) : .primary
     }
 
     var panelCornerRadius: CGFloat {
@@ -90,17 +102,17 @@ struct AppTheme: Equatable {
     func domainTint(_ domain: StorageDomain) -> Color {
         switch domain {
         case .codexHome, .codexWorkspaces:
-            isClassic ? Color(red: 0.55, green: 0.74, blue: 0.92) : AppPalette.codex
+            isClassic ? Color(red: 0.300, green: 0.360, blue: 0.540) : AppPalette.codex
         case .coreSimulatorDevices, .xcTestDevices:
             isClassic ? accent : AppPalette.simulator
         case .derivedData, .xcodeProducts, .swiftPackageCaches, .coreSimulatorCaches:
             isClassic ? warning : AppPalette.xcode
         case .xcResults:
-            isClassic ? Color(red: 0.92, green: 0.42, blue: 1.00) : AppPalette.results
+            isClassic ? Color(red: 0.480, green: 0.300, blue: 0.480) : AppPalette.results
         case .deviceSupport, .simulatorRuntimes, .simulatorImages:
-            isClassic ? Color(red: 0.42, green: 0.72, blue: 1.00) : AppPalette.device
+            isClassic ? Color(red: 0.300, green: 0.400, blue: 0.520) : AppPalette.device
         case .archives:
-            isClassic ? Color(red: 0.72, green: 0.78, blue: 0.74) : AppPalette.archive
+            isClassic ? secondaryText : AppPalette.archive
         }
     }
 
@@ -149,6 +161,71 @@ struct AppTheme: Equatable {
         let percent = Int((clampedShare * 100).rounded())
         return "\(String(repeating: "█", count: filledCount))\(String(repeating: "░", count: emptyCount)) \(percent)%"
     }
+
+    func classicGlyph(for systemImage: String) -> String {
+        switch systemImage {
+        case "archivebox", "externaldrive", "internaldrive":
+            return "[DSK]"
+        case "chart.pie":
+            return "[SUM]"
+        case "hammer":
+            return "[BLD]"
+        case "iphone":
+            return "[DEV]"
+        case "shippingbox":
+            return "[ARC]"
+        case "checklist":
+            return "[TST]"
+        case "square.stack.3d.up", "externaldrive.badge.icloud":
+            return "[SYS]"
+        case "clock.arrow.circlepath":
+            return "[HST]"
+        case "slider.horizontal.3":
+            return "[CFG]"
+        case "terminal":
+            return "[CMD]"
+        case "trash":
+            return "[DEL]"
+        case "magnifyingglass":
+            return "[CHK]"
+        case "iphone.slash":
+            return "[DEL]"
+        case "eraser":
+            return "[ERS]"
+        case "folder":
+            return "[DIR]"
+        case "doc.on.doc":
+            return "[CPY]"
+        case "square.and.arrow.down":
+            return "[EXP]"
+        case "eye.slash", "eye":
+            return "[IGN]"
+        case "person.crop.circle.badge.checkmark":
+            return "[OWN]"
+        case "arrow.uturn.backward":
+            return "[RST]"
+        case "link":
+            return "[LNK]"
+        case "plus.circle":
+            return "[+]"
+        case "clock":
+            return "[CLK]"
+        case "leaf.fill":
+            return "[DT]"
+        case "list.bullet.rectangle":
+            return "[LST]"
+        case "checkmark.shield":
+            return "[OK]"
+        case "exclamationmark.triangle":
+            return "[REV]"
+        case "lock":
+            return "[LOCK]"
+        case "questionmark.circle":
+            return "[?]"
+        default:
+            return "[*]"
+        }
+    }
 }
 
 private struct AppThemeKey: EnvironmentKey {
@@ -166,6 +243,7 @@ extension View {
     func appTheme(_ theme: AppTheme) -> some View {
         environment(\.appTheme, theme)
             .tint(theme.accent)
+            .font(theme.font(.body))
             .preferredColorScheme(theme.colorScheme)
     }
 }

@@ -11,9 +11,19 @@ struct StorageItemTableView: View {
     var body: some View {
         Table(items, selection: $selectedItemID, sortOrder: $sortOrder) {
             TableColumn("Name") { item in
-                Label(item.displayName, systemImage: item.domain.symbolName)
-                    .lineLimit(1)
-                    .help(item.path)
+                Group {
+                    if theme.isClassic {
+                        HStack(spacing: 8) {
+                            Text(theme.classicGlyph(for: item.domain.symbolName))
+                                .foregroundStyle(item.domain.menuTint(in: theme))
+                            Text(item.displayName.uppercased())
+                        }
+                    } else {
+                        Label(item.displayName, systemImage: item.domain.symbolName)
+                    }
+                }
+                .lineLimit(1)
+                .help(item.path)
             }
             .width(min: 120, ideal: 360)
 
@@ -27,10 +37,19 @@ struct StorageItemTableView: View {
             TableColumn("Safety") { item in
                 VStack(alignment: .leading, spacing: 2) {
                     SafetyBadgeView(safety: item.safety, isActive: item.isActive)
-                    Label(item.suggestedAction.displayName, systemImage: item.suggestedAction.systemImage)
-                        .font(theme.font(.caption))
-                        .foregroundStyle(theme.secondaryText)
-                        .lineLimit(1)
+                    Group {
+                        if theme.isClassic {
+                            HStack(spacing: 6) {
+                                Text(theme.classicGlyph(for: item.suggestedAction.systemImage))
+                                Text(item.suggestedAction.displayName.uppercased())
+                            }
+                        } else {
+                            Label(item.suggestedAction.displayName, systemImage: item.suggestedAction.systemImage)
+                        }
+                    }
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.secondaryText)
+                    .lineLimit(1)
                 }
             }
             .width(min: 104, ideal: 160)

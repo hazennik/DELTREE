@@ -10,11 +10,18 @@ struct MetricView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: symbolName)
-                .foregroundStyle(tint)
-                .frame(width: 20)
+            if theme.isClassic {
+                Text(theme.classicGlyph(for: symbolName))
+                    .font(theme.font(.caption))
+                    .foregroundStyle(tint)
+                    .frame(width: 36, alignment: .leading)
+            } else {
+                Image(systemName: symbolName)
+                    .foregroundStyle(tint)
+                    .frame(width: 20)
+            }
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(theme.isClassic ? title.uppercased() : title)
                     .font(theme.font(.caption))
                     .foregroundStyle(theme.secondaryText)
                 Text(value)

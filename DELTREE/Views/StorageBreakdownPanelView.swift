@@ -15,16 +15,27 @@ struct StorageBreakdownPanelView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 18) {
                     ForEach(footprint.domainBreakdowns.prefix(6)) { breakdown in
-                        Label {
-                            Text("\(breakdown.domain.displayName) \(StorageFormatters.byteCount(breakdown.bytes))")
-                                .lineLimit(1)
-                        } icon: {
-                            Rectangle()
-                                .fill(breakdown.domain.menuTint(in: theme))
-                                .frame(width: 8, height: 8)
+                        if theme.isClassic {
+                            HStack(spacing: 6) {
+                                Text(theme.classicGlyph(for: breakdown.domain.symbolName))
+                                    .foregroundStyle(breakdown.domain.menuTint(in: theme))
+                                Text("\(breakdown.domain.displayName.uppercased()) \(StorageFormatters.byteCount(breakdown.bytes))")
+                                    .lineLimit(1)
+                            }
+                            .font(theme.font(.caption))
+                            .foregroundStyle(theme.secondaryText)
+                        } else {
+                            Label {
+                                Text("\(breakdown.domain.displayName) \(StorageFormatters.byteCount(breakdown.bytes))")
+                                    .lineLimit(1)
+                            } icon: {
+                                Rectangle()
+                                    .fill(breakdown.domain.menuTint(in: theme))
+                                    .frame(width: 8, height: 8)
+                            }
+                            .font(theme.font(.caption))
+                            .foregroundStyle(theme.secondaryText)
                         }
-                        .font(theme.font(.caption))
-                        .foregroundStyle(theme.secondaryText)
                     }
                 }
             }

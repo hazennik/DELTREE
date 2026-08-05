@@ -13,10 +13,16 @@ struct StatusMenuSourceBreakdownView: View {
 
             if codexLinkedXcodeBytes > 0 {
                 HStack(spacing: 8) {
-                    Image(systemName: "link")
-                        .foregroundStyle(theme.secondaryText)
-                        .frame(width: 16)
-                    Text("Codex-linked Xcode")
+                    if theme.isClassic {
+                        Text(theme.classicGlyph(for: "link"))
+                            .foregroundStyle(theme.secondaryText)
+                            .frame(width: 36, alignment: .leading)
+                    } else {
+                        Image(systemName: "link")
+                            .foregroundStyle(theme.secondaryText)
+                            .frame(width: 16)
+                    }
+                    Text(theme.isClassic ? "CODEX-LINKED XCODE" : "Codex-linked Xcode")
                         .lineLimit(1)
                     Spacer(minLength: 8)
                     Text(StorageFormatters.byteCount(codexLinkedXcodeBytes))

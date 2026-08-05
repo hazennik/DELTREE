@@ -17,10 +17,21 @@ struct ItemDetailView: View {
             if let item {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Label(item.displayName, systemImage: item.domain.symbolName)
+                        if theme.isClassic {
+                            HStack(spacing: 8) {
+                                Text(theme.classicGlyph(for: item.domain.symbolName))
+                                    .foregroundStyle(item.domain.menuTint(in: theme))
+                                Text(item.displayName.uppercased())
+                            }
                             .font(theme.font(.title3))
                             .bold()
                             .lineLimit(2)
+                        } else {
+                            Label(item.displayName, systemImage: item.domain.symbolName)
+                                .font(theme.font(.title3))
+                                .bold()
+                                .lineLimit(2)
+                        }
 
                         ItemActionPanelView(
                             item: item,
@@ -37,7 +48,7 @@ struct ItemDetailView: View {
                         Divider()
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Why It Exists")
+                            Text(theme.isClassic ? "WHY IT EXISTS" : "Why It Exists")
                                 .font(theme.font(.headline))
                             Text(item.explanation)
                                 .foregroundStyle(theme.secondaryText)
@@ -45,7 +56,7 @@ struct ItemDetailView: View {
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Path")
+                            Text(theme.isClassic ? "PATH" : "Path")
                                 .font(theme.font(.headline))
                             Text(item.path)
                                 .font(.system(.caption, design: .monospaced))
@@ -62,7 +73,13 @@ struct ItemDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
-                ContentUnavailableView("No Item Selected", systemImage: "externaldrive", description: Text("Select a storage item to inspect its safety, owner, and path."))
+                if theme.isClassic {
+                    ClassicEmptyState(
+                        title: "No Item Selected",
+                        message: "Select a storage item to inspect safety, owner, and path.")
+                } else {
+                    ContentUnavailableView("No Item Selected", systemImage: "externaldrive", description: Text("Select a storage item to inspect its safety, owner, and path."))
+                }
             }
         }
         .background(theme.background)

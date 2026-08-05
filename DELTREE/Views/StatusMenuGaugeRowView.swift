@@ -13,8 +13,17 @@ struct StatusMenuGaugeRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 8) {
-                Label(title, systemImage: systemImage)
+                if theme.isClassic {
+                    HStack(spacing: 6) {
+                        Text(theme.classicGlyph(for: systemImage))
+                            .foregroundStyle(tint)
+                        Text(title.uppercased())
+                    }
                     .lineLimit(1)
+                } else {
+                    Label(title, systemImage: systemImage)
+                        .lineLimit(1)
+                }
 
                 Spacer(minLength: 8)
 

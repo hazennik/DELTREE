@@ -39,7 +39,7 @@ struct DetailGridView: View {
 
     private func row(_ title: String, _ value: String) -> some View {
         GridRow {
-            Text(title)
+            Text(theme.isClassic ? title.uppercased() : title)
                 .foregroundStyle(theme.secondaryText)
             Text(value)
                 .textSelection(.enabled)

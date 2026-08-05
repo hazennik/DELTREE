@@ -10,12 +10,18 @@ struct StatusMenuSummaryRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             if let systemImage {
-                Image(systemName: systemImage)
-                    .foregroundStyle(theme.secondaryText)
-                    .frame(width: 18)
+                if theme.isClassic {
+                    Text(theme.classicGlyph(for: systemImage))
+                        .foregroundStyle(theme.secondaryText)
+                        .frame(width: 36, alignment: .leading)
+                } else {
+                    Image(systemName: systemImage)
+                        .foregroundStyle(theme.secondaryText)
+                        .frame(width: 18)
+                }
             }
 
-            Text(title)
+            Text(theme.isClassic ? title.uppercased() : title)
                 .lineLimit(1)
 
             Spacer(minLength: 8)

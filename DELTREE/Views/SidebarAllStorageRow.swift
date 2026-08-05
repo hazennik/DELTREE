@@ -7,7 +7,15 @@ struct SidebarAllStorageRow: View {
 
     var body: some View {
         HStack {
-            Label("All Storage", systemImage: "externaldrive")
+            if theme.isClassic {
+                HStack(spacing: 8) {
+                    Text(theme.classicGlyph(for: "externaldrive"))
+                        .foregroundStyle(theme.secondaryText)
+                    Text("ALL STORAGE")
+                }
+            } else {
+                Label("All Storage", systemImage: "externaldrive")
+            }
             Spacer()
             Text(StorageFormatters.byteCount(totalBytes))
                 .foregroundStyle(theme.secondaryText)

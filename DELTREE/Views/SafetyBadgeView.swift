@@ -7,11 +7,17 @@ struct SafetyBadgeView: View {
     var isActive: Bool
 
     var body: some View {
-        Label(title, systemImage: symbolName)
-            .font(theme.font(.caption))
-            .foregroundStyle(color)
-            .lineLimit(1)
-            .accessibilityLabel(accessibilityTitle)
+        Group {
+            if theme.isClassic {
+                Text(title)
+            } else {
+                Label(title, systemImage: symbolName)
+            }
+        }
+        .font(theme.font(.caption))
+        .foregroundStyle(color)
+        .lineLimit(1)
+        .accessibilityLabel(accessibilityTitle)
     }
 
     private var title: String {

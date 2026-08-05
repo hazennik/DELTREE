@@ -30,8 +30,17 @@ struct StatusMenuSegmentedListView: View {
                             .fill(segment.tint)
                             .frame(width: 8, height: 16)
 
-                        Label(segment.title, systemImage: segment.systemImage)
+                        if theme.isClassic {
+                            HStack(spacing: 6) {
+                                Text(theme.classicGlyph(for: segment.systemImage))
+                                    .foregroundStyle(segment.tint)
+                                Text(segment.title.uppercased())
+                            }
                             .lineLimit(1)
+                        } else {
+                            Label(segment.title, systemImage: segment.systemImage)
+                                .lineLimit(1)
+                        }
 
                         Spacer(minLength: 8)
 

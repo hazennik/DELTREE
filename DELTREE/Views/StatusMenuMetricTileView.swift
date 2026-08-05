@@ -10,12 +10,19 @@ struct StatusMenuMetricTileView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .foregroundStyle(tint)
-                .frame(width: 18)
+            if theme.isClassic {
+                Text(theme.classicGlyph(for: systemImage))
+                    .font(theme.font(.caption))
+                    .foregroundStyle(tint)
+                    .frame(width: 36, alignment: .leading)
+            } else {
+                Image(systemName: systemImage)
+                    .foregroundStyle(tint)
+                    .frame(width: 18)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(theme.isClassic ? title.uppercased() : title)
                     .font(theme.font(.caption))
                     .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)

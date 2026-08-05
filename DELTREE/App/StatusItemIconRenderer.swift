@@ -36,7 +36,7 @@ enum StatusItemIconRenderer {
         }
 
         let mainColor = visualMode == .classic
-            ? NSColor(srgbRed: 0.78, green: 0.86, blue: 0.83, alpha: 1)
+            ? NSColor(srgbRed: 0.72, green: 0.72, blue: 0.72, alpha: 1)
             : NSColor.labelColor
         let strokeColor = mainColor.withAlphaComponent(state.isFilled ? 0.95 : 0.82)
         let fillColor = mainColor.withAlphaComponent(state.isFilled ? 0.9 : 0)
@@ -87,9 +87,9 @@ enum StatusItemIconRenderer {
         case .none:
             badgeColor = .clear
         case .reclaimable:
-            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.0, green: 0.95, blue: 0.98, alpha: 1) : .systemGreen
+            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.00, green: 0.50, blue: 0.52, alpha: 1) : .systemGreen
         case .warning:
-            badgeColor = visualMode == .classic ? NSColor(srgbRed: 1.0, green: 0.72, blue: 0.22, alpha: 1) : .systemOrange
+            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.58, green: 0.36, blue: 0.14, alpha: 1) : .systemOrange
         }
 
         let diameter = max(4.4, 5.2 * scale)
@@ -101,7 +101,7 @@ enum StatusItemIconRenderer {
 
         let backingRect = badgeRect.insetBy(dx: -1.1 * scale, dy: -1.1 * scale)
         let backingColor = visualMode == .classic
-            ? NSColor(srgbRed: 0.01, green: 0.03, blue: 0.02, alpha: 0.92)
+            ? NSColor(srgbRed: 0.00, green: 0.01, blue: 0.04, alpha: 0.92)
             : NSColor.windowBackgroundColor.withAlphaComponent(0.88)
         backingColor.setFill()
         NSBezierPath(ovalIn: backingRect).fill()

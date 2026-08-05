@@ -12,19 +12,39 @@ struct StatusMenuOverviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Label("DELTREE", systemImage: "leaf.fill")
-                    .font(theme.font(.headline))
-                    .foregroundStyle(theme.primaryText)
+                if theme.isClassic {
+                    Text("[ DELTREE ]")
+                        .font(theme.font(.headline))
+                        .foregroundStyle(theme.selectionText)
+                } else {
+                    Label("DELTREE", systemImage: "leaf.fill")
+                        .font(theme.font(.headline))
+                        .foregroundStyle(theme.primaryText)
+                }
 
                 Spacer(minLength: 8)
 
-                Text(statusText)
+                Text(theme.isClassic ? "[\(statusText.uppercased())]" : statusText)
                     .font(theme.font(.caption))
                     .foregroundStyle(statusTint)
                     .lineLimit(1)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(statusTint.opacity(theme.isClassic ? 0.22 : 0.14), in: RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 10))
+                    .background {
+                        if theme.isClassic {
+                            Rectangle()
+                                .fill(theme.controlFill)
+                        } else {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(statusTint.opacity(0.14))
+                        }
+                    }
+                    .overlay {
+                        if theme.isClassic {
+                            Rectangle()
+                                .stroke(statusTint, lineWidth: 1)
+                        }
+                    }
             }
 
             HStack(spacing: 8) {

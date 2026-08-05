@@ -10,8 +10,17 @@ struct StatusMenuSuggestedCleanupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Label("Clean Safe would include", systemImage: "trash")
+                if theme.isClassic {
+                    HStack(spacing: 6) {
+                        Text(theme.classicGlyph(for: "trash"))
+                            .foregroundStyle(theme.safe)
+                        Text("CLEAN SAFE WOULD INCLUDE")
+                    }
                     .lineLimit(1)
+                } else {
+                    Label("Clean Safe would include", systemImage: "trash")
+                        .lineLimit(1)
+                }
                 Spacer(minLength: 8)
                 Text(StorageFormatters.byteCount(totalBytes))
                     .monospacedDigit()
@@ -27,8 +36,17 @@ struct StatusMenuSuggestedCleanupView: View {
                             .frame(width: 8, height: 30)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Label(suggestion.title, systemImage: suggestion.domain.symbolName)
+                            if theme.isClassic {
+                                HStack(spacing: 6) {
+                                    Text(theme.classicGlyph(for: suggestion.domain.symbolName))
+                                        .foregroundStyle(suggestion.domain.menuTint(in: theme))
+                                    Text(suggestion.title.uppercased())
+                                }
                                 .lineLimit(1)
+                            } else {
+                                Label(suggestion.title, systemImage: suggestion.domain.symbolName)
+                                    .lineLimit(1)
+                            }
                             Text(suggestion.consequence)
                                 .foregroundStyle(theme.secondaryText)
                                 .lineLimit(2)
@@ -46,7 +64,7 @@ struct StatusMenuSuggestedCleanupView: View {
             .font(theme.font(.caption))
 
             if hiddenSuggestionCount > 0 {
-                Text("Plus \(hiddenSuggestionCount) smaller safe \(hiddenSuggestionCount == 1 ? "item" : "items").")
+                Text(theme.isClassic ? "PLUS \(hiddenSuggestionCount) SMALLER SAFE \(hiddenSuggestionCount == 1 ? "ITEM" : "ITEMS")." : "Plus \(hiddenSuggestionCount) smaller safe \(hiddenSuggestionCount == 1 ? "item" : "items").")
                     .font(theme.font(.caption))
                     .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
