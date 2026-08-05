@@ -12,35 +12,35 @@ struct AppTheme: Equatable {
     }
 
     var background: Color {
-        isClassic ? Color(red: 0.015, green: 0.025, blue: 0.018) : Color(NSColor.windowBackgroundColor)
+        isClassic ? Color(red: 0.018, green: 0.020, blue: 0.022) : Color(NSColor.windowBackgroundColor)
     }
 
     var sidebarBackground: Color {
-        isClassic ? Color(red: 0.010, green: 0.018, blue: 0.014) : Color(NSColor.controlBackgroundColor)
+        isClassic ? Color(red: 0.012, green: 0.014, blue: 0.016) : Color(NSColor.controlBackgroundColor)
     }
 
     var panelFill: Color {
-        isClassic ? Color(red: 0.025, green: 0.045, blue: 0.032) : Color.secondary.opacity(0.10)
+        isClassic ? Color(red: 0.055, green: 0.060, blue: 0.062) : Color.secondary.opacity(0.10)
     }
 
     var panelBorder: Color {
-        isClassic ? Color(red: 0.22, green: 0.88, blue: 0.44).opacity(0.62) : Color.clear
+        isClassic ? Color(red: 0.00, green: 0.78, blue: 0.84).opacity(0.38) : Color.clear
     }
 
     var separator: Color {
-        isClassic ? Color(red: 0.20, green: 0.72, blue: 0.38).opacity(0.50) : Color.secondary.opacity(0.24)
+        isClassic ? Color(red: 0.42, green: 0.48, blue: 0.48).opacity(0.42) : Color.secondary.opacity(0.24)
     }
 
     var primaryText: Color {
-        isClassic ? Color(red: 0.58, green: 1.00, blue: 0.62) : .primary
+        isClassic ? Color(red: 0.88, green: 0.91, blue: 0.87) : .primary
     }
 
     var secondaryText: Color {
-        isClassic ? Color(red: 0.34, green: 0.74, blue: 0.42) : .secondary
+        isClassic ? Color(red: 0.63, green: 0.69, blue: 0.66) : .secondary
     }
 
     var mutedText: Color {
-        isClassic ? Color(red: 0.25, green: 0.55, blue: 0.32) : .secondary
+        isClassic ? Color(red: 0.43, green: 0.49, blue: 0.47) : .secondary
     }
 
     var accent: Color {
@@ -56,7 +56,7 @@ struct AppTheme: Equatable {
     }
 
     var safe: Color {
-        isClassic ? Color(red: 0.35, green: 1.00, blue: 0.42) : AppPalette.codex
+        isClassic ? Color(red: 0.39, green: 0.82, blue: 0.50) : AppPalette.codex
     }
 
     var review: Color {
@@ -90,7 +90,7 @@ struct AppTheme: Equatable {
     func domainTint(_ domain: StorageDomain) -> Color {
         switch domain {
         case .codexHome, .codexWorkspaces:
-            isClassic ? safe : AppPalette.codex
+            isClassic ? Color(red: 0.55, green: 0.74, blue: 0.92) : AppPalette.codex
         case .coreSimulatorDevices, .xcTestDevices:
             isClassic ? accent : AppPalette.simulator
         case .derivedData, .xcodeProducts, .swiftPackageCaches, .coreSimulatorCaches:
