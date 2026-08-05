@@ -139,4 +139,40 @@ struct CodexSessionMatcherTests {
         #expect(record.briefDescription == "Review old Codex session cleanup")
         #expect(record.lastUpdatedAt != nil)
     }
+
+    @Test func catalogReaderInvalidatesCacheWhenSessionFileChanges() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent("DELTREE-session-cache-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let sessionsRoot = root.appendingPathComponent(".codex/sessions", isDirectory: true)
+        try fileManager.createDirectory(at: sessionsRoot, withIntermediateDirectories: true)
+        let sessionFile = sessionsRoot.appendingPathComponent("session-1.jsonl")
+        try Self.writeSessionFixture(
+            title: "Initial scan cache title",
+            updatedAt: "2026-08-01T12:00:00Z",
+            to: sessionFile,
+            modifiedAt: Date(timeIntervalSince1970: 2_000_000))
+
+        let reader = CodexThreadCatalogReader(homeDirectory: root, fileManager: fileManager)
+        let firstRecords = await reader.sessions(now: Date(timeIntervalSince1970: 2_000_000))
+        let firstRecord = try #require(firstRecords.first { $0.id == "session-1" })
+        #expect(firstRecord.displayTitle == "Initial scan cache title")
+
+        try Self.writeSessionFixture(
+            title: "Updated scan cache title",
+            updatedAt: "2026-08-02T12:00:00Z",
+            to: sessionFile,
+            modifiedAt: Date(timeIntervalSince1970: 2_000_100))
+
+        let secondRecords = await reader.sessions(now: Date(timeIntervalSince1970: 2_000_100))
+        let secondRecord = try #require(secondRecords.first { $0.id == "session-1" })
+        #expect(secondRecord.displayTitle == "Updated scan cache title")
+    }
+
+    private static func writeSessionFixture(title: String, updatedAt: String, to url: URL, modifiedAt: Date) throws {
+        let json = #"{"id":"session-1","title":"\#(title)","updated_at":"\#(updatedAt)"}"#
+        try Data(json.utf8).write(to: url)
+        try FileManager.default.setAttributes([.modificationDate: modifiedAt], ofItemAtPath: url.path)
+    }
 }

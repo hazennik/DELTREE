@@ -35,6 +35,7 @@ struct DashboardView: View {
                 confirmAction: { viewModel.performCleanup(plan) },
                 cancelAction: { viewModel.pendingCleanupPlan = nil },
                 exportAction: { viewModel.exportCleanupReport(plan: plan) })
+                .appTheme(theme)
         }
         .alert("Cleanup", isPresented: cleanupMessageBinding) {
             Button("OK") {

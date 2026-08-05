@@ -29,7 +29,7 @@ final class FSEventsStorageWatcher: StorageWatching, @unchecked Sendable {
             watchedPaths as CFArray,
             FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
             5.0,
-            FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagFileEvents))
+            FSEventStreamCreateFlags(kFSEventStreamCreateFlagUseCFTypes))
 
         guard let stream else {
             return

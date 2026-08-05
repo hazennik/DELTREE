@@ -68,6 +68,26 @@ struct DashboardViewModelScanPolicyTests {
         harness.viewModel.stop()
     }
 
+    @Test func startHydratesPersistedSnapshotBeforeInitialScanCompletes() async throws {
+        let cachedSnapshot = Self.snapshot(index: 42)
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false),
+            persistedSnapshots: [cachedSnapshot])
+        await harness.scanner.setBlocksScans(true)
+
+        harness.viewModel.start()
+        try await harness.waitForScanStart(count: 1)
+
+        #expect(harness.viewModel.snapshot == cachedSnapshot)
+        #expect(harness.viewModel.previousSnapshot == cachedSnapshot)
+        #expect(harness.viewModel.isScanning)
+
+        await harness.scanner.resumeBlockedScan()
+        try await harness.waitForScanCompletion(count: 1)
+        harness.viewModel.stop()
+    }
+
     @Test func pendingAutomaticScanAfterCurrentUsesBackgroundPolicyDelay() async throws {
         let harness = try await DashboardViewModelHarness(
             scanIntervalMinutes: 1,
@@ -97,6 +117,24 @@ struct DashboardViewModelScanPolicyTests {
         try await harness.waitForScanCompletion(count: 2)
 
         #expect(harness.scheduler.scheduledDelays.isEmpty)
+    }
+
+    @Test func forcedScanRecoversWhenExistingScanIsStale() async throws {
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false))
+        await harness.scanner.setBlocksScans(true)
+
+        harness.viewModel.scan(force: true)
+        try await harness.waitForScanStart(count: 1)
+
+        harness.clock.advance(by: 121)
+        await harness.scanner.setBlocksScans(false)
+        harness.viewModel.scan(force: true)
+        try await harness.waitForScanCompletion(count: 2)
+
+        #expect(await harness.scanner.scanCount() == 2)
+        #expect(harness.viewModel.isScanning == false)
     }
 
     @Test func memoryPressureTrimDropsOnlyRebuildableState() async throws {
@@ -183,18 +221,25 @@ private final class DashboardViewModelHarness {
     let scheduler: RecordingScanDelayScheduler
     let watcher: RecordingStorageWatcher
     let clock: DashboardViewModelTestClock
+    let persistence: InMemorySnapshotPersistence
 
     private let suiteName = "DELTREE.DashboardViewModelScanPolicyTests.\(UUID().uuidString)"
 
-    init(scanIntervalMinutes: Double, powerState: PowerState) async throws {
+    init(
+        scanIntervalMinutes: Double,
+        powerState: PowerState,
+        persistedSnapshots: [StorageSnapshot] = []) async throws
+    {
         let scanner = RecordingStorageScanner()
         let scheduler = RecordingScanDelayScheduler()
         let watcher = RecordingStorageWatcher()
         let clock = DashboardViewModelTestClock()
+        let persistence = InMemorySnapshotPersistence(snapshots: persistedSnapshots)
         self.scanner = scanner
         self.scheduler = scheduler
         self.watcher = watcher
         self.clock = clock
+        self.persistence = persistence
 
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defaults.removePersistentDomain(forName: suiteName)
@@ -211,7 +256,7 @@ private final class DashboardViewModelHarness {
             scanner: scanner,
             cleanupPlanner: NoopCleanupPlanner(),
             cleanupExecutor: NoopCleanupExecutor(),
-            persistence: InMemorySnapshotPersistence(),
+            persistence: persistence,
             settings: settings,
             watcher: watcher,
             rootCatalog: StorageRootCatalog(homeDirectory: homeDirectory),
@@ -252,7 +297,7 @@ private final class DashboardViewModelHarness {
     }
 
     private func waitUntil(_ predicate: @escaping @MainActor () async -> Bool) async throws {
-        for _ in 0..<100 {
+        for _ in 0..<300 {
             if await predicate() {
                 return
             }
@@ -315,14 +360,14 @@ private final class RecordingStorageScanner: StorageScanning, @unchecked Sendabl
 private actor RecordingStorageScannerState {
     var scanCount = 0
     private var blocksScans = false
-    private var continuation: CheckedContinuation<Void, Never>?
 
     func scan(now: Date) async -> StorageSnapshot {
         scanCount += 1
-        if blocksScans {
-            await withCheckedContinuation { continuation in
-                self.continuation = continuation
+        while blocksScans {
+            if Task.isCancelled {
+                break
             }
+            try? await Task.sleep(for: .milliseconds(10))
         }
         return StorageSnapshot(capturedAt: now, items: [], missingPaths: [], unreadablePaths: [])
     }
@@ -333,8 +378,6 @@ private actor RecordingStorageScannerState {
 
     func resumeBlockedScan() {
         blocksScans = false
-        continuation?.resume()
-        continuation = nil
     }
 }
 
@@ -342,6 +385,10 @@ private actor RecordingStorageScannerState {
 private final class InMemorySnapshotPersistence: SnapshotPersisting {
     private var snapshots: [StorageSnapshot] = []
     private var overrides: [String: ManualStorageOverride] = [:]
+
+    init(snapshots: [StorageSnapshot] = []) {
+        self.snapshots = snapshots
+    }
 
     func saveSnapshot(_ snapshot: StorageSnapshot) {
         snapshots.append(snapshot)
@@ -448,4 +495,8 @@ private struct NoopNotificationService: NotificationServicing {
 
 private final class DashboardViewModelTestClock {
     var now = Date(timeIntervalSince1970: 2_000)
+
+    func advance(by seconds: TimeInterval) {
+        now.addTimeInterval(seconds)
+    }
 }

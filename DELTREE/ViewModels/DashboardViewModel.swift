@@ -12,6 +12,9 @@ typealias DashboardScanDelayScheduler = @MainActor (
 @Observable
 final class DashboardViewModel {
     private static let memoryPressureHistoryLimit = 3
+    private static let staleScanRecoveryInterval: TimeInterval = 120
+    private static let filesystemChangeDebounce: Duration = .milliseconds(750)
+    private static let attributionPathLimit = 200
 
     var snapshot: StorageSnapshot = .empty {
         didSet { onStateChange?() }
@@ -60,6 +63,7 @@ final class DashboardViewModel {
     @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var refreshLoopTask: Task<Void, Never>?
     @ObservationIgnored private var cancelDebouncedScan: (@MainActor () -> Void)?
+    @ObservationIgnored private var filesystemChangeTask: Task<Void, Never>?
     @ObservationIgnored private var cleanupTask: Task<Void, Never>?
     @ObservationIgnored private var lastSnapshotFingerprint = ""
     @ObservationIgnored private var lastScanStartedAt: Date?
@@ -67,6 +71,9 @@ final class DashboardViewModel {
     @ObservationIgnored private var pendingScanAfterCurrent = false
     @ObservationIgnored private var pendingScanAfterCurrentIsForced = false
     @ObservationIgnored private var lastNotificationFingerprint = ""
+    @ObservationIgnored private var pendingFilesystemChangePaths = Set<String>()
+    @ObservationIgnored private var scanGeneration: UInt64 = 0
+    @ObservationIgnored private var isRunning = false
 
     init(
         scanner: any StorageScanning,
@@ -181,19 +188,27 @@ final class DashboardViewModel {
             return
         }
         hasStarted = true
+        isRunning = true
         refreshHistory()
-        previousSnapshot = persistence.mostRecentSnapshot()
+        let cachedSnapshot = persistence.mostRecentSnapshot()
+        previousSnapshot = cachedSnapshot
+        if let cachedSnapshot {
+            snapshot = cachedSnapshot
+            lastSnapshotFingerprint = cachedSnapshot.displayFingerprint
+        }
         configureWatcher()
         startRefreshLoop()
         scan(force: true)
     }
 
     func stop() {
+        isRunning = false
         watcher.stop()
         scanTask?.cancel()
         refreshLoopTask?.cancel()
         cancelDebouncedScan?()
         cancelDebouncedScan = nil
+        cancelPendingFilesystemChanges()
         cleanupTask?.cancel()
     }
 
@@ -213,9 +228,13 @@ final class DashboardViewModel {
 
     func scan(force: Bool = true) {
         if isScanning {
-            pendingScanAfterCurrent = true
-            pendingScanAfterCurrentIsForced = pendingScanAfterCurrentIsForced || force
-            return
+            if force, activeScanIsStale() {
+                recoverFromStaleScan()
+            } else {
+                pendingScanAfterCurrent = true
+                pendingScanAfterCurrentIsForced = pendingScanAfterCurrentIsForced || force
+                return
+            }
         }
 
         if force == false, let delay = automaticScanDelaySinceMostRecentScan() {
@@ -224,6 +243,10 @@ final class DashboardViewModel {
         }
 
         let scanDate = now()
+        scanGeneration &+= 1
+        let generation = scanGeneration
+        watcher.stop()
+        cancelPendingFilesystemChanges()
         lastScanStartedAt = scanDate
         isScanning = true
         errorMessage = nil
@@ -237,6 +260,10 @@ final class DashboardViewModel {
             let snapshot = await scanner.scan(configuration: configuration, now: scanDate)
 
             guard Task.isCancelled == false else {
+                self.finishCancelledScan(generation: generation)
+                return
+            }
+            guard self.scanGeneration == generation else {
                 return
             }
 
@@ -253,6 +280,10 @@ final class DashboardViewModel {
                 self.isScanning = false
                 return delta
             }
+            await Task.yield()
+            guard self.scanGeneration == generation else {
+                return
+            }
             mainThreadHangWatchdog.withBreadcrumb("persistence.scan") {
                 self.persistence.saveSnapshot(snapshot)
                 self.persistence.saveDelta(delta)
@@ -260,6 +291,10 @@ final class DashboardViewModel {
             }
             await self.notifyIfNeeded(delta: delta, snapshot: snapshot)
             self.lastScanFinishedAt = self.now()
+            self.scanTask = nil
+            if self.isRunning {
+                self.configureWatcher()
+            }
 
             if self.pendingScanAfterCurrent {
                 let forcePendingScan = self.pendingScanAfterCurrentIsForced
@@ -366,15 +401,86 @@ final class DashboardViewModel {
     private func configureWatcher() {
         guard settings.watcherEnabled else {
             watcher.stop()
+            cancelPendingFilesystemChanges()
             return
         }
 
         watcher.onChange = { [weak self] paths in
             Task { @MainActor [weak self] in
-                await self?.handleFilesystemChange(paths: paths)
+                self?.queueFilesystemChange(paths: paths)
             }
         }
         watcher.start(paths: rootCatalog.watchRoots(configuration: settings.scanConfiguration))
+    }
+
+    private func activeScanIsStale() -> Bool {
+        guard let lastScanStartedAt else {
+            return false
+        }
+        return now().timeIntervalSince(lastScanStartedAt) >= Self.staleScanRecoveryInterval
+    }
+
+    private func recoverFromStaleScan() {
+        scanGeneration &+= 1
+        scanTask?.cancel()
+        scanTask = nil
+        pendingScanAfterCurrent = false
+        pendingScanAfterCurrentIsForced = false
+        isScanning = false
+    }
+
+    private func finishCancelledScan(generation: UInt64) {
+        guard scanGeneration == generation else {
+            return
+        }
+        isScanning = false
+        scanTask = nil
+        if isRunning {
+            configureWatcher()
+        }
+    }
+
+    private func queueFilesystemChange(paths: [String]) {
+        guard paths.isEmpty == false, isRunning else {
+            return
+        }
+        pendingFilesystemChangePaths.formUnion(paths)
+        filesystemChangeTask?.cancel()
+        filesystemChangeTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: Self.filesystemChangeDebounce)
+            } catch {
+                return
+            }
+            guard Task.isCancelled == false else {
+                return
+            }
+            await self?.processQueuedFilesystemChanges()
+        }
+    }
+
+    private func processQueuedFilesystemChanges() async {
+        let paths = limitedAttributionPaths(from: pendingFilesystemChangePaths)
+        pendingFilesystemChangePaths.removeAll(keepingCapacity: true)
+        filesystemChangeTask = nil
+        guard paths.isEmpty == false else {
+            return
+        }
+        await handleFilesystemChange(paths: paths)
+    }
+
+    private func cancelPendingFilesystemChanges() {
+        filesystemChangeTask?.cancel()
+        filesystemChangeTask = nil
+        pendingFilesystemChangePaths.removeAll(keepingCapacity: true)
+    }
+
+    private func limitedAttributionPaths(from paths: Set<String>) -> [String] {
+        let sortedPaths = paths.sorted()
+        guard sortedPaths.count > Self.attributionPathLimit else {
+            return sortedPaths
+        }
+        return Array(sortedPaths.prefix(Self.attributionPathLimit))
     }
 
     private func handleFilesystemChange(paths: [String]) async {
@@ -397,8 +503,10 @@ final class DashboardViewModel {
             confidence = 0.0
         }
 
-        mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
-            persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: now())
+        if confidence > 0 {
+            mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
+                persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: now())
+            }
         }
         if settings.autoScanAfterActivity {
             scheduleBackgroundScan()
