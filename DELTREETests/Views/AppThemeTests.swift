@@ -33,9 +33,12 @@ struct AppThemeTests {
         let theme = AppTheme.classic
 
         #expect(theme.classicGlyph(for: "externaldrive") == "[DSK]")
+        #expect(theme.classicGlyph(for: "rectangle.grid.2x2") == "[WIN]")
         #expect(theme.classicGlyph(for: "terminal") == "[CMD]")
         #expect(theme.classicGlyph(for: "trash") == "[DEL]")
+        #expect(theme.classicGlyph(for: "arrow.clockwise") == "[RUN]")
         #expect(theme.classicGlyph(for: "slider.horizontal.3") == "[CFG]")
+        #expect(theme.classicGlyph(for: "power") == "[OFF]")
         #expect(theme.classicGlyph(for: "unmapped.symbol") == "[*]")
     }
 }

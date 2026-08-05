@@ -9,11 +9,11 @@ struct StatusMenuSectionHeaderView: View {
         Text(theme.isClassic ? "[ \(title.uppercased()) ]" : title.uppercased())
             .font(theme.font(.caption))
             .bold()
-            .foregroundStyle(theme.secondaryText)
-            .tracking(0.8)
+            .foregroundStyle(theme.isClassic ? theme.accent : theme.secondaryText)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 12)
             .padding(.top, 4)
             .padding(.bottom, 2)
+            .background(theme.background)
     }
 }

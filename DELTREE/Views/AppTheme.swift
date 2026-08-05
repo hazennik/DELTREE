@@ -168,6 +168,8 @@ struct AppTheme: Equatable {
             return "[DSK]"
         case "chart.pie":
             return "[SUM]"
+        case "rectangle.grid.2x2":
+            return "[WIN]"
         case "hammer":
             return "[BLD]"
         case "iphone":
@@ -186,6 +188,12 @@ struct AppTheme: Equatable {
             return "[CMD]"
         case "trash":
             return "[DEL]"
+        case "arrow.clockwise":
+            return "[RUN]"
+        case "gearshape":
+            return "[CFG]"
+        case "power":
+            return "[OFF]"
         case "magnifyingglass":
             return "[CHK]"
         case "iphone.slash":
