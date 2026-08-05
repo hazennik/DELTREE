@@ -58,6 +58,33 @@ display_value() {
   fi
 }
 
+repeat_char() {
+  local char="$1"
+  local count="$2"
+  local output=""
+  local index
+  for (( index = 0; index < count; index++ )); do
+    output+="$char"
+  done
+  printf '%s' "$output"
+}
+
+block_meter() {
+  local size_kb="$1"
+  local width=10
+  local percent=0
+  local filled=0
+  if (( total_kb > 0 )); then
+    percent=$(( (size_kb * 100 + total_kb / 2) / total_kb ))
+    filled=$(( (size_kb * width + total_kb / 2) / total_kb ))
+  fi
+  if (( filled > width )); then
+    filled=$width
+  fi
+  local empty=$(( width - filled ))
+  printf '%s%s %3d%%' "$(repeat_char '█' "$filled")" "$(repeat_char '░' "$empty")" "$percent"
+}
+
 if [[ "${1:-}" == "diagnose" ]]; then
   command="diagnose"
   redact=true
@@ -122,18 +149,25 @@ if [[ "$json" == true ]]; then
   done
   printf ']}\n'
 else
+  local_title="STORAGE INVENTORY"
   if [[ "$command" == "diagnose" ]]; then
-    echo "DELTREE diagnostics"
-    echo "Redacted: $redact"
-    echo "Home: $(display_value "$HOME")"
-  else
-    echo "DELTREE storage inventory"
+    local_title="DIAGNOSTICS"
   fi
-  echo "Total: $((total_kb / 1024)) MB"
+  echo "DELTREE CLASSIC :: $local_title"
+  echo "--------------------------------"
+  echo "MODE    $command"
+  echo "SAFETY  [SAFE] read-only scan; no files modified."
+  echo "TOTAL   $((total_kb / 1024)) MB"
+  if [[ "$command" == "diagnose" ]]; then
+    echo "REDACT  $redact"
+    echo "HOME    $(display_value "$HOME")"
+  fi
   if [[ "$dry_run" == true ]]; then
-    echo "Dry run: no files were modified."
+    echo "DRYRUN  true"
   fi
+  echo "--------------------------------"
   printf '%s\n' "${items[@]}" | sort -nr | while IFS='|' read -r size item_path; do
-    printf "%8d MB  %s\n" "$((size / 1024))" "$(display_value "$item_path")"
+    [[ -n "${size:-}" ]] || continue
+    printf "%8d MB  %s  [REVIEW]  %s\n" "$((size / 1024))" "$(block_meter "$size")" "$(display_value "$item_path")"
   done
 fi

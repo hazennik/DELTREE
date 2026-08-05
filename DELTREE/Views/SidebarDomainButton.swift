@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SidebarDomainButton: View {
+    @Environment(\.appTheme) private var theme
+
     var summary: DomainSummary
     var isSelected: Bool
     var action: () -> Void
@@ -10,6 +12,6 @@ struct SidebarDomainButton: View {
             SidebarDomainRow(summary: summary)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
+        .foregroundStyle(isSelected ? theme.accent : theme.primaryText)
     }
 }

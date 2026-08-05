@@ -6,8 +6,10 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var settings = settings
+        let theme = AppTheme(mode: settings.visualMode)
 
         Form {
+            SettingsAppearanceSection(settings: settings)
             SettingsScanningSection(settings: settings)
             SettingsRulesSection(settings: settings)
             SettingsNotificationsSection(settings: settings)
@@ -17,8 +19,34 @@ struct SettingsView: View {
             SettingsPrivacySection()
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
         .padding()
+        .background(theme.background)
+        .foregroundStyle(theme.primaryText)
+        .appTheme(theme)
         .onChange(of: settings.changeToken) { _, _ in viewModel.settingsDidChange() }
+    }
+}
+
+private struct SettingsAppearanceSection: View {
+    @Environment(\.appTheme) private var theme
+
+    var settings: AppSettingsStore
+
+    var body: some View {
+        @Bindable var settings = settings
+
+        Section("Appearance") {
+            Picker("Visual Mode", selection: $settings.visualMode) {
+                ForEach(AppVisualMode.allCases) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text("Classic is the default terminal-style identity. Modern preserves the previous macOS-native visual system.")
+                .foregroundStyle(theme.secondaryText)
+        }
     }
 }
 
@@ -71,6 +99,8 @@ private struct SettingsNotificationsSection: View {
 }
 
 private struct SettingsCustomRootsSection: View {
+    @Environment(\.appTheme) private var theme
+
     var settings: AppSettingsStore
 
     var body: some View {
@@ -81,7 +111,7 @@ private struct SettingsCustomRootsSection: View {
                 .lineLimit(4...)
                 .font(.system(.body, design: .monospaced))
             Text("Custom roots are treated as Codex workspace roots and are still subject to exclusions.")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
         }
     }
 }
@@ -101,20 +131,22 @@ private struct SettingsExcludedPathsSection: View {
 }
 
 private struct SettingsRecentCleanupSection: View {
+    @Environment(\.appTheme) private var theme
+
     var records: [CleanupHistoryRecord]
 
     var body: some View {
         Section("Recent Cleanup") {
             if records.isEmpty {
                 Text("No cleanup history yet.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(theme.secondaryText)
             } else {
                 ForEach(records) { record in
                     HStack {
                         Text(record.performedAt, format: .dateTime.month().day().hour().minute())
                         Spacer()
                         Text("\(record.itemCount) item(s)")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.secondaryText)
                         Text(StorageFormatters.byteCount(record.totalBytes))
                             .monospacedDigit()
                     }
@@ -125,10 +157,12 @@ private struct SettingsRecentCleanupSection: View {
 }
 
 private struct SettingsPrivacySection: View {
+    @Environment(\.appTheme) private var theme
+
     var body: some View {
         Section("Privacy & Attribution") {
             Text("DELTREE scans known local developer paths, reads local Codex task metadata when present, and stores scan, attribution, and cleanup history on this Mac. Cleanup always requires confirmation and uses Trash or approved simctl actions.")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

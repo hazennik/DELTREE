@@ -27,6 +27,8 @@ DELTREE_CLI_INSTALL_DIR="$HOME/bin" Scripts/install-cli.sh
 
 The CLI scans bounded developer roots and reports sizes. It never deletes files.
 
+Human text output uses the DELTREE Classic terminal dashboard style with block meters and safety labels. JSON output keeps the stable machine-readable shape and does not include the terminal dashboard chrome.
+
 Inventory output preserves raw local paths by default because it is intended for local scripting. Add `--redact` when pasting output into an issue.
 
 `Tools/deltree diagnose` is intended for shareable support reports. It is a dry run and redacts paths, usernames, email-like strings, UUIDs, DerivedData hashes, temporary folders, and Codex session identifiers by default. Use `--raw-paths` only for private debugging where exact paths are required.

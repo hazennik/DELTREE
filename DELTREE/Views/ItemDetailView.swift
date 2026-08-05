@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ItemDetailView: View {
+    @Environment(\.appTheme) private var theme
+
     var item: StorageItem?
     var revealAction: (StorageItem) -> Void
     var copyPathAction: (StorageItem) -> Void
@@ -16,7 +18,7 @@ struct ItemDetailView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         Label(item.displayName, systemImage: item.domain.symbolName)
-                            .font(.title3)
+                            .font(theme.font(.title3))
                             .bold()
                             .lineLimit(2)
 
@@ -36,19 +38,19 @@ struct ItemDetailView: View {
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Why It Exists")
-                                .font(.headline)
+                                .font(theme.font(.headline))
                             Text(item.explanation)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Path")
-                                .font(.headline)
+                                .font(theme.font(.headline))
                             Text(item.path)
                                 .font(.system(.caption, design: .monospaced))
                                 .textSelection(.enabled)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -63,6 +65,7 @@ struct ItemDetailView: View {
                 ContentUnavailableView("No Item Selected", systemImage: "externaldrive", description: Text("Select a storage item to inspect its safety, owner, and path."))
             }
         }
-        .background(.background)
+        .background(theme.background)
+        .foregroundStyle(theme.primaryText)
     }
 }

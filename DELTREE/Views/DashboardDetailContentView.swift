@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct DashboardDetailContentView: View {
+    @Environment(\.appTheme) private var theme
+
     var viewModel: DashboardViewModel
 
     var body: some View {
@@ -32,6 +34,7 @@ struct DashboardDetailContentView: View {
                     includeIgnoredItems: $viewModel.includeIgnoredItems)
 
                 Divider()
+                    .overlay(theme.separator)
 
                 if viewModel.selectedSection == .codexTasks {
                     CodexTasksView(
@@ -55,6 +58,8 @@ struct DashboardDetailContentView: View {
                     }
                 }
             }
+            .background(theme.background)
+            .foregroundStyle(theme.primaryText)
         }
     }
 

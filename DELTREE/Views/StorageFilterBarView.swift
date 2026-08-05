@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StorageFilterBarView: View {
+    @Environment(\.appTheme) private var theme
+
     @Binding var searchText: String
     @Binding var selectedSafety: SafetyClassification?
     @Binding var selectedOwner: OwnerAttribution?
@@ -22,6 +24,8 @@ struct StorageFilterBarView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
+        .background(theme.isClassic ? theme.panelFill : Color.clear)
+        .foregroundStyle(theme.primaryText)
     }
 
     private var controls: some View {
@@ -36,6 +40,7 @@ struct StorageFilterBarView: View {
     private var searchField: some View {
         TextField("Filter", text: $searchText)
             .textFieldStyle(.roundedBorder)
+            .font(theme.font(.body))
             .frame(minWidth: 140, idealWidth: 220)
     }
 

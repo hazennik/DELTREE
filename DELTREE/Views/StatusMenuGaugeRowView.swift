@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuGaugeRowView: View {
+    @Environment(\.appTheme) private var theme
+
     var title: String
     var value: String
     var detail: String?
@@ -22,27 +24,34 @@ struct StatusMenuGaugeRowView: View {
                     .minimumScaleFactor(0.8)
             }
 
-            GeometryReader { proxy in
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(.quaternary)
-                    .overlay(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(tint)
-                            .frame(width: fillWidth(for: proxy.size.width))
-                    }
-                    .clipped()
+            if theme.isClassic {
+                Text(theme.blockMeter(share: share, width: 14))
+                    .foregroundStyle(tint)
+                    .font(theme.font(.caption))
+                    .monospaced()
+            } else {
+                GeometryReader { proxy in
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(theme.panelFill)
+                        .overlay(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(tint)
+                                .frame(width: fillWidth(for: proxy.size.width))
+                        }
+                        .clipped()
+                }
+                .frame(height: 6)
             }
-            .frame(height: 6)
 
             if let detail {
                 Text(detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
             }
         }
-        .font(.caption)
-        .foregroundStyle(.primary)
+        .font(theme.font(.caption))
+        .foregroundStyle(theme.primaryText)
     }
 
     private var clampedShare: Double {

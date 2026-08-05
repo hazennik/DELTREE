@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.settingsWindowController = settingsWindowController
         statusItemController = StatusItemController(
             viewModel: container.dashboardViewModel,
+            settings: container.settings,
             openDashboard: { dashboardWindowController.show() },
             openSettings: { settingsWindowController.show() })
         if ProcessInfo.processInfo.environment["DELTREE_DISABLE_INITIAL_SCAN"] != "1" {

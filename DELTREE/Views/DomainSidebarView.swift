@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct DomainSidebarView: View {
+    @Environment(\.appTheme) private var theme
+
     var summaries: [DomainSummary]
     var totalBytes: Int64
     @Binding var selectedSection: DashboardSection
@@ -40,6 +42,9 @@ struct DomainSidebarView: View {
             }
         }
         .navigationTitle("DELTREE")
+        .scrollContentBackground(.hidden)
+        .background(theme.sidebarBackground)
+        .foregroundStyle(theme.primaryText)
         .frame(minWidth: 160, idealWidth: 240)
     }
 }

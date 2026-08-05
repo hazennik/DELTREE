@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CodexTasksView<Detail: View>: View {
+    @Environment(\.appTheme) private var theme
+
     var items: [StorageItem]
     @Binding var selectedItemID: StorageItem.ID?
     @Binding var sortOrder: [KeyPathComparator<StorageItem>]
@@ -22,10 +24,13 @@ struct CodexTasksView<Detail: View>: View {
                                 .monospacedDigit()
                         }
                         Text("\(summary.itemCount) item(s)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(theme.font(.caption))
+                            .foregroundStyle(theme.secondaryText)
                     }
                 }
+                .scrollContentBackground(.hidden)
+                .background(theme.background)
+                .foregroundStyle(theme.primaryText)
                 .frame(minHeight: 120, idealHeight: 180)
 
                 Divider()
@@ -35,6 +40,7 @@ struct CodexTasksView<Detail: View>: View {
                     selectedItemID: $selectedItemID,
                     sortOrder: $sortOrder)
             }
+            .background(theme.background)
             .frame(minWidth: 240, idealWidth: 640)
         } trailing: {
             itemDetail

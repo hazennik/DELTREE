@@ -97,6 +97,8 @@ Read the full policy in [docs/SAFETY.md](docs/SAFETY.md).
 ## What It Does
 
 - Shows Codex/Xcode storage impact from a quiet menu-bar icon.
+- Uses DELTREE Classic by default: terminal-style panels, monospaced scan output, block storage meters, and explicit `[SAFE]` / `[REVIEW]` / `[KEEP]` labels.
+- Keeps the previous macOS-native visual system available as `Modern` from Settings.
 - Scans CoreSimulator devices, XCTest devices, DerivedData, result bundles, archives, DeviceSupport, simulator runtimes/images, SwiftPM caches, `~/.codex`, and Codex workspaces.
 - Enriches simulator rows with `simctl` metadata.
 - Correlates filesystem changes with Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
@@ -109,10 +111,10 @@ Read the full policy in [docs/SAFETY.md](docs/SAFETY.md).
 
 The menu-bar item is icon-only:
 
-- Outline icon: idle.
+- Outline or pixel icon: idle.
 - Filled icon: scanning.
-- Green dot: reclaimable storage found.
-- Orange dot: warning, low disk, or unreadable paths.
+- Green/cyan dot: reclaimable storage found.
+- Orange/amber dot: warning, low disk, or unreadable paths.
 
 Totals and explanations live in the dropdown and dashboard so the menu bar stays quiet.
 
@@ -124,6 +126,8 @@ The bundled helper performs a bounded dry-run inventory and never deletes files:
 Tools/deltree --dry-run
 Tools/deltree --dry-run --json
 ```
+
+Human output uses the Classic terminal dashboard style. JSON output remains stable for scripts.
 
 Install it locally:
 

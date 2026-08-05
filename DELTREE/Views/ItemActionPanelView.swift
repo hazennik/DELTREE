@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ItemActionPanelView: View {
+    @Environment(\.appTheme) private var theme
+
     var item: StorageItem
     var revealAction: (StorageItem) -> Void
     var copyPathAction: (StorageItem) -> Void
@@ -13,12 +15,12 @@ struct ItemActionPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Actions")
-                .font(.headline)
+                .font(theme.font(.headline))
 
             if item.cleanupImpact.isEmpty == false {
                 Text(item.cleanupImpact)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
                     .help(item.cleanupImpact)
@@ -67,6 +69,7 @@ struct ItemActionPanelView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
         }
+        .appPanel(padding: 10)
     }
 
     private var buttonColumns: [GridItem] {

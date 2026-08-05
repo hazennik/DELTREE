@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct StorageItemTableView: View {
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var items: [StorageItem]
     @Binding var selectedItemID: StorageItem.ID?
     @Binding var sortOrder: [KeyPathComparator<StorageItem>]
@@ -16,6 +19,7 @@ struct StorageItemTableView: View {
 
             TableColumn("Size") { item in
                 Text(StorageFormatters.byteCount(item.bytes))
+                    .font(theme.font(.body))
                     .monospacedDigit()
             }
             .width(min: 64, ideal: 90)
@@ -24,12 +28,27 @@ struct StorageItemTableView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     SafetyBadgeView(safety: item.safety, isActive: item.isActive)
                     Label(item.suggestedAction.displayName, systemImage: item.suggestedAction.systemImage)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(theme.font(.caption))
+                        .foregroundStyle(theme.secondaryText)
                         .lineLimit(1)
                 }
             }
             .width(min: 104, ideal: 160)
         }
+        .scrollContentBackground(.hidden)
+        .background(theme.background)
+        .foregroundStyle(theme.primaryText)
+        .animation(scanListAnimation, value: itemIdentityToken)
+    }
+
+    private var itemIdentityToken: String {
+        items.map(\.id).joined(separator: "|")
+    }
+
+    private var scanListAnimation: Animation? {
+        guard theme.isClassic, reduceMotion == false else {
+            return nil
+        }
+        return .linear(duration: 0.12)
     }
 }

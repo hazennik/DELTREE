@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct DetailGridView: View {
+    @Environment(\.appTheme) private var theme
+
     var item: StorageItem
 
     var body: some View {
@@ -38,10 +40,11 @@ struct DetailGridView: View {
     private func row(_ title: String, _ value: String) -> some View {
         GridRow {
             Text(title)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
             Text(value)
                 .textSelection(.enabled)
                 .lineLimit(2)
         }
+        .font(theme.font(.body))
     }
 }

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StorageBreakdownMenuView: View {
+    @Environment(\.appTheme) private var theme
+
     var footprint: StorageFootprint
 
     var body: some View {
@@ -8,13 +10,13 @@ struct StorageBreakdownMenuView: View {
             StorageSegmentedBarView(
                 breakdowns: visibleBreakdowns,
                 totalBytes: footprint.totalBytes)
-                .frame(height: 10)
+                .frame(height: theme.isClassic ? 18 : 10)
 
             VStack(alignment: .leading, spacing: 7) {
                 ForEach(visibleBreakdowns) { breakdown in
                     HStack(spacing: 8) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(breakdown.domain.menuTint)
+                        RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 2)
+                            .fill(breakdown.domain.menuTint(in: theme))
                             .frame(width: 8, height: 18)
 
                         Label(breakdown.domain.displayName, systemImage: breakdown.domain.symbolName)
@@ -27,18 +29,20 @@ struct StorageBreakdownMenuView: View {
                                 .monospacedDigit()
                                 .lineLimit(1)
                             Text(rowDetail(for: breakdown))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(theme.font(.caption))
+                                .foregroundStyle(theme.secondaryText)
                                 .lineLimit(1)
                         }
                     }
-                    .font(.caption)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.primaryText)
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .clipped()
+        .background(theme.background)
     }
 
     private var visibleBreakdowns: [StorageDomainBreakdown] {

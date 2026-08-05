@@ -37,4 +37,14 @@ redacted_inventory="$(HOME="$home" USER="ryan" "$cli" --dry-run --json --redact)
 printf '%s' "$redacted_inventory" | grep -Fq '"redacted":true'
 printf '%s' "$redacted_inventory" | grep -Fq '"path":"~/.codex"'
 
+human_inventory="$(HOME="$home" USER="ryan" "$cli" --dry-run)"
+printf '%s' "$human_inventory" | grep -Fq 'DELTREE CLASSIC :: STORAGE INVENTORY'
+printf '%s' "$human_inventory" | grep -Fq '[SAFE] read-only scan'
+printf '%s' "$human_inventory" | grep -Fq '[REVIEW]'
+printf '%s' "$human_inventory" | grep -Fq '█'
+if printf '%s' "$raw_inventory" | grep -Fq 'DELTREE CLASSIC'; then
+  echo "Inventory JSON included human terminal chrome." >&2
+  exit 1
+fi
+
 echo "CLI diagnostics tests passed."

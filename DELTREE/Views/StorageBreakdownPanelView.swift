@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StorageBreakdownPanelView: View {
+    @Environment(\.appTheme) private var theme
+
     var footprint: StorageFootprint
 
     var body: some View {
@@ -17,12 +19,12 @@ struct StorageBreakdownPanelView: View {
                             Text("\(breakdown.domain.displayName) \(StorageFormatters.byteCount(breakdown.bytes))")
                                 .lineLimit(1)
                         } icon: {
-                            Circle()
-                                .fill(breakdown.domain.menuTint)
+                            Rectangle()
+                                .fill(breakdown.domain.menuTint(in: theme))
                                 .frame(width: 8, height: 8)
                         }
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(theme.font(.caption))
+                        .foregroundStyle(theme.secondaryText)
                     }
                 }
             }
@@ -32,5 +34,6 @@ struct StorageBreakdownPanelView: View {
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 12)
+        .background(theme.background)
     }
 }

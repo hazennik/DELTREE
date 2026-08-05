@@ -7,6 +7,7 @@ enum StatusMenuRenderer {
 
     static func render(
         descriptor: StatusMenuDescriptor,
+        visualMode: AppVisualMode,
         into menu: NSMenu,
         target: AnyObject,
         actionSelector: Selector)
@@ -21,27 +22,27 @@ enum StatusMenuRenderer {
                     lastCodexImpactBytes: lastCodexImpactBytes,
                     hasRecentGrowth: hasRecentGrowth,
                     isScanning: isScanning,
-                    safeItemCount: safeItemCount)))
+                    safeItemCount: safeItemCount), visualMode: visualMode))
             case let .section(title):
-                menu.addItem(hostedItem(StatusMenuSectionHeaderView(title: title)))
+                menu.addItem(hostedItem(StatusMenuSectionHeaderView(title: title), visualMode: visualMode))
             case let .summary(title, value, systemImage):
                 menu.addItem(hostedItem(StatusMenuSummaryRowView(
                     title: title,
                     value: value,
-                    systemImage: systemImage)))
+                    systemImage: systemImage), visualMode: visualMode))
             case let .sources(footprint):
-                menu.addItem(hostedItem(StatusMenuSourceBreakdownView(footprint: footprint)))
+                menu.addItem(hostedItem(StatusMenuSourceBreakdownView(footprint: footprint), visualMode: visualMode))
             case let .breakdown(footprint):
-                menu.addItem(hostedItem(StorageBreakdownMenuView(footprint: footprint)))
+                menu.addItem(hostedItem(StorageBreakdownMenuView(footprint: footprint), visualMode: visualMode))
             case let .cleanupSuggestions(suggestions, totalCount, totalBytes):
                 menu.addItem(hostedItem(StatusMenuSuggestedCleanupView(
                     suggestions: suggestions,
                     totalCount: totalCount,
-                    totalBytes: totalBytes)))
+                    totalBytes: totalBytes), visualMode: visualMode))
             case let .safety(footprint, safeItemCount):
                 menu.addItem(hostedItem(StatusMenuSafetyChartView(
                     footprint: footprint,
-                    safeItemCount: safeItemCount)))
+                    safeItemCount: safeItemCount), visualMode: visualMode))
             case .separator:
                 menu.addItem(.separator())
             case let .command(title, command, keyEquivalent, isEnabled):
@@ -55,9 +56,11 @@ enum StatusMenuRenderer {
         }
     }
 
-    private static func hostedItem<Content: View>(_ content: Content) -> NSMenuItem {
+    private static func hostedItem<Content: View>(_ content: Content, visualMode: AppVisualMode) -> NSMenuItem {
         let item = NSMenuItem()
-        let hostingView = NSHostingView(rootView: content.frame(width: hostedMenuWidth))
+        let hostingView = NSHostingView(rootView: content
+            .frame(width: hostedMenuWidth)
+            .appTheme(AppTheme(mode: visualMode)))
         hostingView.setFrameSize(hostingView.fittingSize)
         item.view = hostingView
         return item

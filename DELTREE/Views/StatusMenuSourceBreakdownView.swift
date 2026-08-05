@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuSourceBreakdownView: View {
+    @Environment(\.appTheme) private var theme
+
     var footprint: StorageFootprint
 
     var body: some View {
@@ -12,7 +14,7 @@ struct StatusMenuSourceBreakdownView: View {
             if codexLinkedXcodeBytes > 0 {
                 HStack(spacing: 8) {
                     Image(systemName: "link")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(theme.secondaryText)
                         .frame(width: 16)
                     Text("Codex-linked Xcode")
                         .lineLimit(1)
@@ -21,8 +23,8 @@ struct StatusMenuSourceBreakdownView: View {
                         .monospacedDigit()
                         .lineLimit(1)
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(theme.font(.caption))
+                .foregroundStyle(theme.secondaryText)
             }
         }
         .padding(.horizontal, 12)
@@ -51,7 +53,7 @@ struct StatusMenuSourceBreakdownView: View {
                 value: StorageFormatters.byteCount(codexNativeBytes),
                 detail: "Home, sessions, workspaces",
                 systemImage: "terminal",
-                tint: AppPalette.codex,
+                tint: theme.safe,
                 bytes: codexNativeBytes),
             StatusMenuSegment(
                 id: "xcode-generated",
@@ -59,7 +61,7 @@ struct StatusMenuSourceBreakdownView: View {
                 value: StorageFormatters.byteCount(xcodeGeneratedBytes),
                 detail: "Simulators, builds, archives",
                 systemImage: "hammer",
-                tint: AppPalette.xcode,
+                tint: theme.warning,
                 bytes: xcodeGeneratedBytes),
         ]
     }

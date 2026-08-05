@@ -22,9 +22,12 @@ final class AppSettingsStore {
         static let requireConfirmationAboveGB = "requireConfirmationAboveGB"
         static let excludedPathsText = "excludedPathsText"
         static let customScanRootsText = "customScanRootsText"
+        static let visualMode = "visualMode"
     }
 
     private let defaults: UserDefaults
+
+    @ObservationIgnored var onAppearanceChange: (() -> Void)?
 
     var watcherEnabled: Bool {
         didSet { defaults.set(watcherEnabled, forKey: Key.watcherEnabled) }
@@ -94,6 +97,15 @@ final class AppSettingsStore {
         didSet { defaults.set(customScanRootsText, forKey: Key.customScanRootsText) }
     }
 
+    var visualMode: AppVisualMode {
+        didSet {
+            defaults.set(visualMode.rawValue, forKey: Key.visualMode)
+            if oldValue != visualMode {
+                onAppearanceChange?()
+            }
+        }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         watcherEnabled = defaults.object(forKey: Key.watcherEnabled) as? Bool ?? true
@@ -113,6 +125,7 @@ final class AppSettingsStore {
         requireConfirmationAboveGB = defaults.object(forKey: Key.requireConfirmationAboveGB) as? Double ?? 1
         excludedPathsText = defaults.string(forKey: Key.excludedPathsText) ?? ""
         customScanRootsText = defaults.string(forKey: Key.customScanRootsText) ?? ""
+        visualMode = AppVisualMode(rawValue: defaults.string(forKey: Key.visualMode) ?? "") ?? .classic
     }
 
     var scanConfiguration: StorageScanConfiguration {

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuSuggestedCleanupView: View {
+    @Environment(\.appTheme) private var theme
+
     var suggestions: [StatusMenuCleanupSuggestion]
     var totalCount: Int
     var totalBytes: Int64
@@ -15,20 +17,20 @@ struct StatusMenuSuggestedCleanupView: View {
                     .monospacedDigit()
                     .lineLimit(1)
             }
-            .font(.caption)
+            .font(theme.font(.caption))
 
             VStack(alignment: .leading, spacing: 7) {
                 ForEach(suggestions) { suggestion in
                     HStack(alignment: .top, spacing: 8) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(suggestion.domain.menuTint)
+                        RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 2)
+                            .fill(suggestion.domain.menuTint(in: theme))
                             .frame(width: 8, height: 30)
 
                         VStack(alignment: .leading, spacing: 2) {
                             Label(suggestion.title, systemImage: suggestion.domain.symbolName)
                                 .lineLimit(1)
                             Text(suggestion.consequence)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.secondaryText)
                                 .lineLimit(2)
                         }
 
@@ -36,23 +38,24 @@ struct StatusMenuSuggestedCleanupView: View {
 
                         Text(StorageFormatters.byteCount(suggestion.bytes))
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(theme.secondaryText)
                             .lineLimit(1)
                     }
                 }
             }
-            .font(.caption)
+            .font(theme.font(.caption))
 
             if hiddenSuggestionCount > 0 {
                 Text("Plus \(hiddenSuggestionCount) smaller safe \(hiddenSuggestionCount == 1 ? "item" : "items").")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .accessibilityLabel(accessibilityLabel)
+        .foregroundStyle(theme.primaryText)
     }
 
     private var hiddenSuggestionCount: Int {
