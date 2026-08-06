@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct CleanupPreflightView: View {
+    @Environment(\.appTheme) private var theme
+
     var plan: CleanupPlan
+    var confirmationThresholdBytes: Int64
     var confirmAction: () -> Void
     var cancelAction: () -> Void
     var exportAction: () -> Void
@@ -9,37 +12,62 @@ struct CleanupPreflightView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Label("Cleanup Preflight", systemImage: "trash")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                if theme.isClassic {
+                    HStack(spacing: 8) {
+                        Text(theme.classicGlyph(for: "trash"))
+                            .foregroundStyle(theme.danger)
+                        Text("CLEANUP PREFLIGHT")
+                    }
+                    .font(theme.font(.title3))
+                    .bold()
+                } else {
+                    Label("Cleanup Preflight", systemImage: "trash")
+                        .font(theme.font(.title3))
+                        .bold()
+                }
                 Spacer()
                 Text(StorageFormatters.byteCount(plan.reclaimableBytes))
-                    .font(.title3)
+                    .font(theme.font(.title3))
                     .monospacedDigit()
             }
 
-            Text("DELTREE will use Trash for files and folders, or approved simctl commands for simulator actions. Nothing is permanently deleted by the app.")
-                .foregroundStyle(.secondary)
+            Text(theme.isClassic ? "DELTREE WILL USE TRASH FOR FILES AND FOLDERS, OR APPROVED SIMCTL COMMANDS FOR SIMULATOR ACTIONS. NOTHING IS PERMANENTLY DELETED BY THE APP." : "DELTREE will use Trash for files and folders, or approved simctl commands for simulator actions. Nothing is permanently deleted by the app.")
+                .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if showsHighImpactWarning {
+                Text(theme.isClassic ? "HIGH-IMPACT CLEANUP: THIS PLAN IS ABOVE YOUR CONFIRMATION THRESHOLD." : "High-impact cleanup: this plan is above your confirmation threshold.")
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             List {
                 if plan.actions.isEmpty == false {
-                    Section("Approved Actions") {
+                    Section(theme.isClassic ? "APPROVED ACTIONS" : "Approved Actions") {
                         ForEach(plan.actions) { action in
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
-                                    Label(action.action.displayName, systemImage: action.action.systemImage)
+                                    if theme.isClassic {
+                                        HStack(spacing: 6) {
+                                            Text(theme.classicGlyph(for: action.action.systemImage))
+                                                .foregroundStyle(theme.danger)
+                                            Text(action.action.displayName.uppercased())
+                                        }
+                                    } else {
+                                        Label(action.action.displayName, systemImage: action.action.systemImage)
+                                    }
                                     Spacer()
                                     Text(StorageFormatters.byteCount(action.bytes))
                                         .monospacedDigit()
                                 }
                                 Text(action.item.path)
                                     .font(.system(.caption, design: .monospaced))
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(theme.secondaryText)
                                     .lineLimit(2)
                                 Text(action.reason)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(theme.font(.caption))
+                                    .foregroundStyle(theme.secondaryText)
                             }
                             .padding(.vertical, 3)
                         }
@@ -47,28 +75,61 @@ struct CleanupPreflightView: View {
                 }
 
                 if plan.blockedItems.isEmpty == false {
-                    Section("Blocked") {
+                    Section(theme.isClassic ? "BLOCKED" : "Blocked") {
                         ForEach(plan.blockedItems) { item in
-                            Label(item.displayName, systemImage: "lock")
-                                .help(item.explanation)
+                            Group {
+                                if theme.isClassic {
+                                    HStack(spacing: 6) {
+                                        Text(theme.classicGlyph(for: "lock"))
+                                            .foregroundStyle(theme.secondaryText)
+                                        Text(item.displayName.uppercased())
+                                    }
+                                } else {
+                                    Label(item.displayName, systemImage: "lock")
+                                }
+                            }
+                            .help(item.explanation)
                         }
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(theme.background)
             .frame(minHeight: 280)
 
             HStack {
-                Button("Export Report", systemImage: "square.and.arrow.down", action: exportAction)
-                    .disabled(plan.actions.isEmpty && plan.blockedItems.isEmpty)
+                if theme.isClassic {
+                    Button("[EXPORT]", action: exportAction)
+                        .buttonStyle(ClassicButtonStyle())
+                        .disabled(plan.actions.isEmpty && plan.blockedItems.isEmpty)
+                } else {
+                    Button("Export Report", systemImage: "square.and.arrow.down", action: exportAction)
+                        .disabled(plan.actions.isEmpty && plan.blockedItems.isEmpty)
+                }
                 Spacer()
-                Button("Cancel", role: .cancel, action: cancelAction)
-                Button("Run Cleanup", systemImage: "trash", action: confirmAction)
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
-                    .disabled(plan.actions.isEmpty)
+                if theme.isClassic {
+                    Button("[CANCEL]", role: .cancel, action: cancelAction)
+                        .buttonStyle(ClassicButtonStyle())
+                    Button("[RUN CLEANUP]", action: confirmAction)
+                        .buttonStyle(ClassicButtonStyle())
+                        .foregroundStyle(theme.danger)
+                        .disabled(plan.actions.isEmpty)
+                } else {
+                    Button("Cancel", role: .cancel, action: cancelAction)
+                    Button("Run Cleanup", systemImage: "trash", action: confirmAction)
+                        .buttonStyle(.borderedProminent)
+                        .tint(theme.danger)
+                        .disabled(plan.actions.isEmpty)
+                }
             }
         }
         .padding(18)
         .frame(minWidth: 640, minHeight: 460)
+        .background(theme.background)
+        .foregroundStyle(theme.primaryText)
+    }
+
+    private var showsHighImpactWarning: Bool {
+        confirmationThresholdBytes > 0 && plan.reclaimableBytes >= confirmationThresholdBytes
     }
 }

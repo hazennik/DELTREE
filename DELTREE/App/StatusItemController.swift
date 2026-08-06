@@ -4,13 +4,21 @@ import AppKit
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let viewModel: DashboardViewModel
+    private let settings: AppSettingsStore
     private let openDashboard: () -> Void
     private let openSettings: () -> Void
     private var lastIconState: StatusItemIconState?
+    private var lastIconVisualMode: AppVisualMode?
 
-    init(viewModel: DashboardViewModel, openDashboard: @escaping () -> Void, openSettings: @escaping () -> Void) {
+    init(
+        viewModel: DashboardViewModel,
+        settings: AppSettingsStore,
+        openDashboard: @escaping () -> Void,
+        openSettings: @escaping () -> Void)
+    {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         self.viewModel = viewModel
+        self.settings = settings
         self.openDashboard = openDashboard
         self.openSettings = openSettings
         super.init()
@@ -22,6 +30,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         statusItem.button?.imageScaling = .scaleNone
         statusItem.button?.title = ""
         viewModel.onStateChange = { [weak self] in
+            self?.updateStatusItem()
+        }
+        settings.onAppearanceChange = { [weak self] in
             self?.updateStatusItem()
         }
         updateStatusItem()
@@ -38,9 +49,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             lastDelta: viewModel.lastDelta,
             isScanning: viewModel.isScanning)
 
-        if iconState != lastIconState {
-            statusItem.button?.image = StatusItemIconRenderer.image(for: iconState)
+        if iconState != lastIconState || settings.visualMode != lastIconVisualMode {
+            statusItem.button?.image = StatusItemIconRenderer.image(for: iconState, visualMode: settings.visualMode)
             lastIconState = iconState
+            lastIconVisualMode = settings.visualMode
         }
 
         statusItem.button?.title = ""
@@ -53,6 +65,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         updateStatusItem()
         StatusMenuRenderer.render(
             descriptor: descriptor(),
+            visualMode: settings.visualMode,
             into: menu,
             target: self,
             actionSelector: #selector(performMenuCommand(_:)))
@@ -66,6 +79,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             lastDelta: viewModel.lastDelta,
             isScanning: viewModel.isScanning,
             safeItemCount: cleanupEligibleItems.count,
+            allowsMenuCleanup: settings.notifyOnlyByDefault == false,
             cleanupSuggestions: cleanupEligibleItems.map(StatusMenuCleanupSuggestion.make))
     }
 

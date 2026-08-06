@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 struct ProcessOutput: Sendable {
@@ -10,7 +11,8 @@ enum ProcessRunner {
     nonisolated static func run(
         executableURL: URL,
         arguments: [String],
-        priority: TaskPriority = .utility) async throws -> ProcessOutput
+        priority: TaskPriority = .utility,
+        timeoutSeconds: TimeInterval? = nil) async throws -> ProcessOutput
     {
         let cancellation = ProcessCancellationState()
         return try await withTaskCancellationHandler {
@@ -18,6 +20,7 @@ enum ProcessRunner {
                 try runSynchronously(
                     executableURL: executableURL,
                     arguments: arguments,
+                    timeoutSeconds: timeoutSeconds,
                     cancellation: cancellation)
             }.value
         } onCancel: {
@@ -28,6 +31,7 @@ enum ProcessRunner {
     nonisolated private static func runSynchronously(
         executableURL: URL,
         arguments: [String],
+        timeoutSeconds: TimeInterval?,
         cancellation: ProcessCancellationState) throws -> ProcessOutput
     {
         try cancellation.checkCancellation()
@@ -35,6 +39,11 @@ enum ProcessRunner {
         let process = Process()
         process.executableURL = executableURL
         process.arguments = arguments
+        let termination = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in
+            termination.signal()
+        }
+        defer { process.terminationHandler = nil }
         cancellation.attach(process)
         defer { cancellation.detach(process) }
 
@@ -55,9 +64,22 @@ enum ProcessRunner {
         readAsync(from: stdoutPipe.fileHandleForReading, into: stdout, group: group)
         readAsync(from: stderrPipe.fileHandleForReading, into: stderr, group: group)
 
-        process.waitUntilExit()
+        let completedBeforeTimeout = waitForExit(
+            of: process,
+            termination: termination,
+            timeoutSeconds: timeoutSeconds)
+        if completedBeforeTimeout == false {
+            terminate(process, termination: termination)
+        }
+
         group.wait()
         try cancellation.checkCancellation()
+
+        guard completedBeforeTimeout else {
+            throw ProcessRunnerError.timedOut(
+                executablePath: executableURL.path,
+                timeoutSeconds: timeoutSeconds ?? 0)
+        }
 
         return ProcessOutput(
             terminationStatus: process.terminationStatus,
@@ -71,6 +93,54 @@ enum ProcessRunner {
         DispatchQueue.global(qos: .utility).async {
             output.append(handle.fileHandle.readDataToEndOfFile())
             group.leave()
+        }
+    }
+
+    nonisolated private static func waitForExit(
+        of process: Process,
+        termination: DispatchSemaphore,
+        timeoutSeconds: TimeInterval?) -> Bool
+    {
+        guard let timeoutSeconds else {
+            process.waitUntilExit()
+            return true
+        }
+
+        if process.isRunning == false {
+            return true
+        }
+
+        return termination.wait(timeout: deadline(after: timeoutSeconds)) == .success
+    }
+
+    nonisolated private static func terminate(_ process: Process, termination: DispatchSemaphore) {
+        if process.isRunning {
+            process.terminate()
+        }
+
+        guard termination.wait(timeout: deadline(after: 2)) == .timedOut,
+              process.isRunning
+        else {
+            return
+        }
+
+        kill(process.processIdentifier, SIGKILL)
+        _ = termination.wait(timeout: deadline(after: 2))
+    }
+
+    nonisolated private static func deadline(after seconds: TimeInterval) -> DispatchTime {
+        let milliseconds = max(1, Int((max(0, seconds) * 1_000).rounded(.up)))
+        return .now() + .milliseconds(milliseconds)
+    }
+}
+
+enum ProcessRunnerError: LocalizedError, Equatable {
+    case timedOut(executablePath: String, timeoutSeconds: TimeInterval)
+
+    var errorDescription: String? {
+        switch self {
+        case let .timedOut(executablePath, timeoutSeconds):
+            "\(executablePath) timed out after \(String(format: "%.1f", timeoutSeconds)) seconds."
         }
     }
 }

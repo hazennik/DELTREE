@@ -13,9 +13,11 @@ This repository is private while DELTREE is still taking shape. Contributions sh
 ## Local Checks
 
 ```sh
-xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platform=macOS'
-Tools/deltree --dry-run
+make check
+Tools/deltree diagnose --json
 ```
+
+Use [docs/TRIAGE.md](docs/TRIAGE.md) when labeling public issues or deciding whether a report needs private diagnostics.
 
 ## Commit Style
 
@@ -37,4 +39,3 @@ Any change touching these areas needs careful review:
 - `FileManagerTrashService`
 - `LiveSimctlCommandClient`
 - domain scanners that mark items safe
-

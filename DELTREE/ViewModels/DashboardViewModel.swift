@@ -3,10 +3,18 @@ import Foundation
 import Observation
 import UniformTypeIdentifiers
 
+typealias DashboardScanDelayScheduler = @MainActor (
+    _ seconds: TimeInterval,
+    _ operation: @escaping @MainActor () -> Void)
+    -> @MainActor () -> Void
+
 @MainActor
 @Observable
 final class DashboardViewModel {
-    private static let minimumAutomaticScanInterval: TimeInterval = 60
+    private static let memoryPressureHistoryLimit = 3
+    private static let staleScanRecoveryInterval: TimeInterval = 120
+    private static let filesystemChangeDebounce: Duration = .milliseconds(750)
+    private static let attributionPathLimit = 200
 
     var snapshot: StorageSnapshot = .empty {
         didSet { onStateChange?() }
@@ -45,17 +53,27 @@ final class DashboardViewModel {
     @ObservationIgnored private let attributionTracker: any AttributionTracking
     @ObservationIgnored private let diskSpaceProvider: any DiskSpaceProviding
     @ObservationIgnored private let notificationService: any NotificationServicing
+    @ObservationIgnored private let mainThreadHangWatchdog: MainThreadHangWatchdog
+    @ObservationIgnored private let powerStateProvider: any PowerStateProviding
+    @ObservationIgnored private let backgroundScanPolicy: BackgroundScanPolicy
+    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored private let scheduleScanDelay: DashboardScanDelayScheduler
 
     @ObservationIgnored private var hasStarted = false
     @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var refreshLoopTask: Task<Void, Never>?
-    @ObservationIgnored private var debounceTask: Task<Void, Never>?
+    @ObservationIgnored private var cancelDebouncedScan: (@MainActor () -> Void)?
+    @ObservationIgnored private var filesystemChangeTask: Task<Void, Never>?
     @ObservationIgnored private var cleanupTask: Task<Void, Never>?
     @ObservationIgnored private var lastSnapshotFingerprint = ""
     @ObservationIgnored private var lastScanStartedAt: Date?
     @ObservationIgnored private var lastScanFinishedAt: Date?
     @ObservationIgnored private var pendingScanAfterCurrent = false
+    @ObservationIgnored private var pendingScanAfterCurrentIsForced = false
     @ObservationIgnored private var lastNotificationFingerprint = ""
+    @ObservationIgnored private var pendingFilesystemChangePaths = Set<String>()
+    @ObservationIgnored private var scanGeneration: UInt64 = 0
+    @ObservationIgnored private var isRunning = false
 
     init(
         scanner: any StorageScanning,
@@ -68,7 +86,12 @@ final class DashboardViewModel {
         processSampler: any ProcessSampling,
         attributionTracker: any AttributionTracking,
         diskSpaceProvider: any DiskSpaceProviding,
-        notificationService: any NotificationServicing)
+        notificationService: any NotificationServicing,
+        mainThreadHangWatchdog: MainThreadHangWatchdog = .disabled(),
+        powerStateProvider: any PowerStateProviding = LivePowerStateProvider(),
+        backgroundScanPolicy: BackgroundScanPolicy = .production,
+        now: @escaping () -> Date = { Date() },
+        scheduleScanDelay: @escaping DashboardScanDelayScheduler = DashboardViewModel.defaultScanDelayScheduler)
     {
         self.scanner = scanner
         self.cleanupPlanner = cleanupPlanner
@@ -81,6 +104,11 @@ final class DashboardViewModel {
         self.attributionTracker = attributionTracker
         self.diskSpaceProvider = diskSpaceProvider
         self.notificationService = notificationService
+        self.mainThreadHangWatchdog = mainThreadHangWatchdog
+        self.powerStateProvider = powerStateProvider
+        self.backgroundScanPolicy = backgroundScanPolicy
+        self.now = now
+        self.scheduleScanDelay = scheduleScanDelay
     }
 
     var menuBarTitle: String {
@@ -109,6 +137,9 @@ final class DashboardViewModel {
 
     var domainSummaries: [DomainSummary] {
         let grouped = snapshot.groupedDomainTotals
+        let itemCounts = snapshot.items.reduce(into: [StorageDomain: Int]()) { counts, item in
+            counts[item.domain, default: 0] += 1
+        }
         return StorageDomain.allCases.compactMap { domain in
             guard let bytes = grouped[domain], bytes > 0 else {
                 return nil
@@ -116,7 +147,7 @@ final class DashboardViewModel {
             return DomainSummary(
                 domain: domain,
                 bytes: bytes,
-                itemCount: snapshot.items.filter { $0.domain == domain }.count)
+                itemCount: itemCounts[domain] ?? 0)
         }
         .sorted { lhs, rhs in
             if lhs.bytes == rhs.bytes {
@@ -160,42 +191,65 @@ final class DashboardViewModel {
             return
         }
         hasStarted = true
+        isRunning = true
         refreshHistory()
-        previousSnapshot = persistence.mostRecentSnapshot()
+        let cachedSnapshot = persistence.mostRecentSnapshot()
+        previousSnapshot = cachedSnapshot
+        if let cachedSnapshot {
+            snapshot = cachedSnapshot
+            lastSnapshotFingerprint = cachedSnapshot.displayFingerprint
+        }
         configureWatcher()
         startRefreshLoop()
         scan(force: true)
     }
 
     func stop() {
+        isRunning = false
         watcher.stop()
         scanTask?.cancel()
         refreshLoopTask?.cancel()
-        debounceTask?.cancel()
+        cancelDebouncedScan?()
+        cancelDebouncedScan = nil
+        cancelPendingFilesystemChanges()
         cleanupTask?.cancel()
+    }
+
+    @discardableResult
+    func trimTransientStateForMemoryPressure(level: MemoryPressureLevel) -> MemoryPressureTrimSummary {
+        let releasedPreviousSnapshot = previousSnapshot != nil
+        previousSnapshot = nil
+
+        return MemoryPressureTrimSummary(
+            level: level,
+            releasedPreviousSnapshot: releasedPreviousSnapshot,
+            scanHistoryTrimmedCount: trimHistory(&scanHistory, keeping: Self.memoryPressureHistoryLimit),
+            cleanupHistoryTrimmedCount: trimHistory(&cleanupHistory, keeping: Self.memoryPressureHistoryLimit),
+            deltaHistoryTrimmedCount: trimHistory(&deltaHistory, keeping: Self.memoryPressureHistoryLimit),
+            diagnosticsTrimmedCount: 0)
     }
 
     func scan(force: Bool = true) {
         if isScanning {
-            pendingScanAfterCurrent = true
+            if force, activeScanIsStale() {
+                recoverFromStaleScan()
+            } else {
+                pendingScanAfterCurrent = true
+                pendingScanAfterCurrentIsForced = pendingScanAfterCurrentIsForced || force
+                return
+            }
+        }
+
+        if force == false, let delay = automaticScanDelaySinceMostRecentScan() {
+            scheduleDebouncedScan(after: delay)
             return
         }
 
-        if force == false, let lastScanFinishedAt {
-            let elapsed = Date().timeIntervalSince(lastScanFinishedAt)
-            if elapsed < Self.minimumAutomaticScanInterval {
-                scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval - elapsed)
-                return
-            }
-        } else if force == false, let lastScanStartedAt {
-            let elapsed = Date().timeIntervalSince(lastScanStartedAt)
-            if elapsed < Self.minimumAutomaticScanInterval {
-                scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval - elapsed)
-                return
-            }
-        }
-
-        let scanDate = Date()
+        let scanDate = now()
+        scanGeneration &+= 1
+        let generation = scanGeneration
+        watcher.stop()
+        cancelPendingFilesystemChanges()
         lastScanStartedAt = scanDate
         isScanning = true
         errorMessage = nil
@@ -209,28 +263,55 @@ final class DashboardViewModel {
             let snapshot = await scanner.scan(configuration: configuration, now: scanDate)
 
             guard Task.isCancelled == false else {
+                self.finishCancelledScan(generation: generation)
+                return
+            }
+            guard self.scanGeneration == generation else {
                 return
             }
 
-            self.previousSnapshot = previousSnapshot
-            self.availableDiskBytes = diskSpaceProvider.availableBytes(for: URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true))
-            let delta = StorageDelta.make(previous: previousSnapshot, current: snapshot)
-            self.lastDelta = delta
-            let fingerprint = snapshot.displayFingerprint
-            if fingerprint != self.lastSnapshotFingerprint {
-                self.snapshot = snapshot
-                self.lastSnapshotFingerprint = fingerprint
+            let delta = mainThreadHangWatchdog.withBreadcrumb("scan.apply") {
+                self.previousSnapshot = previousSnapshot
+                self.availableDiskBytes = diskSpaceProvider.availableBytes(for: URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true))
+                let delta = StorageDelta.make(previous: previousSnapshot, current: snapshot)
+                self.lastDelta = delta
+                let fingerprint = snapshot.displayFingerprint
+                if fingerprint != self.lastSnapshotFingerprint {
+                    self.snapshot = snapshot
+                    self.lastSnapshotFingerprint = fingerprint
+                }
+                self.isScanning = false
+                return delta
             }
-            self.isScanning = false
-            self.persistence.saveSnapshot(snapshot)
-            self.persistence.saveDelta(delta)
-            self.refreshHistory()
+            await Task.yield()
+            guard self.scanGeneration == generation else {
+                return
+            }
+            do {
+                try mainThreadHangWatchdog.withBreadcrumb("persistence.scan") {
+                    try self.persistence.saveSnapshot(snapshot)
+                    try self.persistence.saveDelta(delta)
+                    self.refreshHistory()
+                }
+            } catch {
+                self.errorMessage = "Could not save scan history: \(error.localizedDescription)"
+            }
             await self.notifyIfNeeded(delta: delta, snapshot: snapshot)
-            self.lastScanFinishedAt = Date()
+            self.lastScanFinishedAt = self.now()
+            self.scanTask = nil
+            if self.isRunning {
+                self.configureWatcher()
+            }
 
             if self.pendingScanAfterCurrent {
+                let forcePendingScan = self.pendingScanAfterCurrentIsForced
                 self.pendingScanAfterCurrent = false
-                self.scheduleDebouncedScan(after: Self.minimumAutomaticScanInterval)
+                self.pendingScanAfterCurrentIsForced = false
+                if forcePendingScan {
+                    self.scan(force: true)
+                } else {
+                    self.scheduleDebouncedScan(after: self.backgroundScanInterval())
+                }
             }
         }
     }
@@ -252,26 +333,35 @@ final class DashboardViewModel {
         }
         configureWatcher()
         startRefreshLoop()
-        scheduleDebouncedScan()
+        scheduleBackgroundScan()
     }
 
     func performCleanup(_ plan: CleanupPlan) {
         cleanupTask?.cancel()
         cleanupTask = Task {
+            mainThreadHangWatchdog.recordBreadcrumb("cleanup.execute.begin")
             let result = await cleanupExecutor.execute(plan)
+            mainThreadHangWatchdog.recordBreadcrumb("cleanup.execute.end")
             let completedPaths = result.completedActions.map(\.item.path)
-            persistence.saveCleanup(
-                performedAt: result.performedAt,
-                totalBytes: result.reclaimedBytes,
-                itemCount: completedPaths.count,
-                status: result.status,
-                paths: completedPaths,
-                skippedPaths: result.skippedItems.map(\.path),
-                errors: Dictionary(uniqueKeysWithValues: result.failedActions.map { action, message in
-                    (action.item.path, message)
-                }),
-                initiator: "User")
-            cleanupMessage = cleanupMessage(for: result)
+            var message = cleanupMessage(for: result)
+            do {
+                try mainThreadHangWatchdog.withBreadcrumb("persistence.cleanup") {
+                    try persistence.saveCleanup(
+                        performedAt: result.performedAt,
+                        totalBytes: result.reclaimedBytes,
+                        itemCount: completedPaths.count,
+                        status: result.status,
+                        paths: completedPaths,
+                        skippedPaths: result.skippedItems.map(\.path),
+                        errors: Dictionary(uniqueKeysWithValues: result.failedActions.map { action, message in
+                            (action.item.path, message)
+                        }),
+                        initiator: "User")
+                }
+            } catch {
+                message += " Could not save cleanup history: \(error.localizedDescription)"
+            }
+            cleanupMessage = message
             pendingCleanupPlan = nil
             refreshHistory()
             await notifyCleanupComplete(result)
@@ -314,27 +404,104 @@ final class DashboardViewModel {
     }
 
     func resetAttribution(_ item: StorageItem) {
-        persistence.clearManualOverride(path: item.path)
+        do {
+            try mainThreadHangWatchdog.withBreadcrumb("persistence.override.clear") {
+                try persistence.clearManualOverride(path: item.path)
+            }
+        } catch {
+            cleanupMessage = "Could not reset attribution: \(error.localizedDescription)"
+        }
         scan(force: true)
     }
 
     private func configureWatcher() {
         guard settings.watcherEnabled else {
             watcher.stop()
+            cancelPendingFilesystemChanges()
             return
         }
 
         watcher.onChange = { [weak self] paths in
             Task { @MainActor [weak self] in
-                await self?.handleFilesystemChange(paths: paths)
+                self?.queueFilesystemChange(paths: paths)
             }
         }
         watcher.start(paths: rootCatalog.watchRoots(configuration: settings.scanConfiguration))
     }
 
+    private func activeScanIsStale() -> Bool {
+        guard let lastScanStartedAt else {
+            return false
+        }
+        return now().timeIntervalSince(lastScanStartedAt) >= Self.staleScanRecoveryInterval
+    }
+
+    private func recoverFromStaleScan() {
+        scanGeneration &+= 1
+        scanTask?.cancel()
+        scanTask = nil
+        pendingScanAfterCurrent = false
+        pendingScanAfterCurrentIsForced = false
+        isScanning = false
+    }
+
+    private func finishCancelledScan(generation: UInt64) {
+        guard scanGeneration == generation else {
+            return
+        }
+        isScanning = false
+        scanTask = nil
+        if isRunning {
+            configureWatcher()
+        }
+    }
+
+    private func queueFilesystemChange(paths: [String]) {
+        guard paths.isEmpty == false, isRunning else {
+            return
+        }
+        pendingFilesystemChangePaths.formUnion(paths)
+        filesystemChangeTask?.cancel()
+        filesystemChangeTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: Self.filesystemChangeDebounce)
+            } catch {
+                return
+            }
+            guard Task.isCancelled == false else {
+                return
+            }
+            await self?.processQueuedFilesystemChanges()
+        }
+    }
+
+    private func processQueuedFilesystemChanges() async {
+        let paths = limitedAttributionPaths(from: pendingFilesystemChangePaths)
+        pendingFilesystemChangePaths.removeAll(keepingCapacity: true)
+        filesystemChangeTask = nil
+        guard paths.isEmpty == false else {
+            return
+        }
+        await handleFilesystemChange(paths: paths)
+    }
+
+    private func cancelPendingFilesystemChanges() {
+        filesystemChangeTask?.cancel()
+        filesystemChangeTask = nil
+        pendingFilesystemChangePaths.removeAll(keepingCapacity: true)
+    }
+
+    private func limitedAttributionPaths(from paths: Set<String>) -> [String] {
+        let sortedPaths = paths.sorted()
+        guard sortedPaths.count > Self.attributionPathLimit else {
+            return sortedPaths
+        }
+        return Array(sortedPaths.prefix(Self.attributionPathLimit))
+    }
+
     private func handleFilesystemChange(paths: [String]) async {
         let processes = await processSampler.sample()
-        await attributionTracker.recordFilesystemEvents(paths: paths, processes: processes, at: Date())
+        await attributionTracker.recordFilesystemEvents(paths: paths, processes: processes, at: now())
 
         let owner: OwnerAttribution
         let confidence: Double
@@ -352,20 +519,28 @@ final class DashboardViewModel {
             confidence = 0.0
         }
 
-        persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: Date())
+        if confidence > 0 {
+            do {
+                try mainThreadHangWatchdog.withBreadcrumb("persistence.attribution") {
+                    try persistence.saveAttributionEvent(owner: owner, confidence: confidence, paths: paths, observedAt: now())
+                }
+            } catch {
+                errorMessage = "Could not save attribution history: \(error.localizedDescription)"
+            }
+        }
         if settings.autoScanAfterActivity {
-            scheduleDebouncedScan()
+            scheduleBackgroundScan()
         }
     }
 
-    private func scheduleDebouncedScan(after seconds: TimeInterval = 2) {
-        debounceTask?.cancel()
-        debounceTask = Task {
-            try? await Task.sleep(for: .seconds(seconds))
-            guard Task.isCancelled == false else {
-                return
-            }
-            scan(force: false)
+    private func scheduleBackgroundScan() {
+        scheduleDebouncedScan(after: backgroundScanInterval())
+    }
+
+    private func scheduleDebouncedScan(after seconds: TimeInterval) {
+        cancelDebouncedScan?()
+        cancelDebouncedScan = scheduleScanDelay(max(0, seconds)) { [weak self] in
+            self?.scan(force: false)
         }
     }
 
@@ -373,7 +548,7 @@ final class DashboardViewModel {
         refreshLoopTask?.cancel()
         refreshLoopTask = Task {
             while Task.isCancelled == false {
-                let seconds = max(60, settings.scanIntervalMinutes * 60)
+                let seconds = backgroundScanInterval()
                 try? await Task.sleep(for: .seconds(seconds))
                 guard Task.isCancelled == false else {
                     break
@@ -383,10 +558,57 @@ final class DashboardViewModel {
         }
     }
 
+    private func automaticScanDelaySinceMostRecentScan() -> TimeInterval? {
+        let minimumInterval = backgroundScanInterval()
+        let referenceDate = lastScanFinishedAt ?? lastScanStartedAt
+        guard let referenceDate else {
+            return nil
+        }
+
+        let elapsed = now().timeIntervalSince(referenceDate)
+        guard elapsed < minimumInterval else {
+            return nil
+        }
+        return minimumInterval - elapsed
+    }
+
+    private func backgroundScanInterval() -> TimeInterval {
+        backgroundScanPolicy.effectiveInterval(
+            userInterval: settings.scanIntervalMinutes * 60,
+            powerState: powerStateProvider.currentPowerState)
+    }
+
+    private static func defaultScanDelayScheduler(
+        seconds: TimeInterval,
+        operation: @escaping @MainActor () -> Void)
+        -> @MainActor () -> Void
+    {
+        let task = Task { @MainActor in
+            if seconds > 0 {
+                try? await Task.sleep(for: .seconds(seconds))
+            }
+            guard Task.isCancelled == false else {
+                return
+            }
+            operation()
+        }
+        return {
+            task.cancel()
+        }
+    }
+
     private func refreshHistory() {
         scanHistory = persistence.recentScanRecords(limit: 10)
         cleanupHistory = persistence.recentCleanupRecords(limit: 10)
         deltaHistory = persistence.recentDeltaRecords(limit: 10)
+    }
+
+    private func trimHistory<Element>(_ records: inout [Element], keeping limit: Int) -> Int {
+        let trimmedCount = max(0, records.count - limit)
+        if trimmedCount > 0 {
+            records.removeLast(trimmedCount)
+        }
+        return trimmedCount
     }
 
     private func saveOverride(
@@ -396,12 +618,18 @@ final class DashboardViewModel {
         isIgnored: Bool,
         note: String)
     {
-        persistence.saveManualOverride(ManualStorageOverride(
-            path: item.path,
-            owner: owner,
-            isPinned: isPinned,
-            isIgnored: isIgnored,
-            note: note))
+        do {
+            try mainThreadHangWatchdog.withBreadcrumb("persistence.override") {
+                try persistence.saveManualOverride(ManualStorageOverride(
+                    path: item.path,
+                    owner: owner,
+                    isPinned: isPinned,
+                    isIgnored: isIgnored,
+                    note: note))
+            }
+        } catch {
+            cleanupMessage = "Could not save override: \(error.localizedDescription)"
+        }
         scan(force: true)
     }
 
@@ -435,8 +663,12 @@ final class DashboardViewModel {
             missingPaths: snapshot.missingPaths)
 
         do {
-            let data = try JSONEncoder.storage.encode(report)
-            try data.write(to: url, options: [.atomic])
+            let data = try mainThreadHangWatchdog.withBreadcrumb("report.encode") {
+                try JSONEncoder.storage.encode(report)
+            }
+            try mainThreadHangWatchdog.withBreadcrumb("report.write") {
+                try data.write(to: url, options: [.atomic])
+            }
             cleanupMessage = "Exported cleanup report."
         } catch {
             cleanupMessage = "Could not export cleanup report: \(error.localizedDescription)"

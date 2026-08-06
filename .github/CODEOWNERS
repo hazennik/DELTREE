@@ -1,0 +1,8 @@
+# Update ownership as maintainers are added.
+* @hazennik
+
+/.github/ @hazennik
+/Scripts/ @hazennik
+/Packaging/ @hazennik
+/DELTREE/Services/ @hazennik
+/DELTREE/Models/ @hazennik

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuSafetyChartView: View {
+    @Environment(\.appTheme) private var theme
+
     var footprint: StorageFootprint
     var safeItemCount: Int
 
@@ -24,7 +26,7 @@ struct StatusMenuSafetyChartView: View {
                 value: StorageFormatters.byteCount(footprint.reclaimableBytes),
                 detail: "\(safeItemCount) \(safeItemCount == 1 ? "item" : "items")",
                 systemImage: "checkmark.circle",
-                tint: AppPalette.codex,
+                tint: theme.safe,
                 bytes: footprint.reclaimableBytes),
             StatusMenuSegment(
                 id: "needs-review",
@@ -32,7 +34,7 @@ struct StatusMenuSafetyChartView: View {
                 value: StorageFormatters.byteCount(footprint.reviewBytes),
                 detail: nil,
                 systemImage: "exclamationmark.triangle",
-                tint: AppPalette.xcode,
+                tint: theme.review,
                 bytes: footprint.reviewBytes),
             StatusMenuSegment(
                 id: "active-or-kept",
@@ -40,7 +42,7 @@ struct StatusMenuSafetyChartView: View {
                 value: StorageFormatters.byteCount(footprint.activeBytes),
                 detail: nil,
                 systemImage: "lock",
-                tint: AppPalette.simulator,
+                tint: theme.keep,
                 bytes: footprint.activeBytes),
         ]
     }

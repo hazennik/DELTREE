@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StorageOverviewHeaderView: View {
+    @Environment(\.appTheme) private var theme
+
     var snapshot: StorageSnapshot
     var footprint: StorageFootprint
     var lastDelta: StorageDelta
@@ -22,14 +24,25 @@ struct StorageOverviewHeaderView: View {
             HStack {
                 Spacer()
 
-                Button("Scan", systemImage: "arrow.clockwise", action: scanAction)
-                    .disabled(isScanning)
+                if theme.isClassic {
+                    Button("[SCAN]", action: scanAction)
+                        .buttonStyle(ClassicButtonStyle())
+                        .disabled(isScanning)
 
-                Button("Clean Safe", systemImage: "trash", action: cleanupAction)
-                    .disabled(snapshot.reclaimableBytes == 0 || isScanning)
+                    Button("[CLEAN SAFE]", action: cleanupAction)
+                        .buttonStyle(ClassicButtonStyle())
+                        .disabled(snapshot.reclaimableBytes == 0 || isScanning)
+                } else {
+                    Button("Scan", systemImage: "arrow.clockwise", action: scanAction)
+                        .disabled(isScanning)
+
+                    Button("Clean Safe", systemImage: "trash", action: cleanupAction)
+                        .disabled(snapshot.reclaimableBytes == 0 || isScanning)
+                }
             }
         }
         .padding(14)
+        .background(theme.background)
     }
 
     @ViewBuilder
@@ -38,43 +51,43 @@ struct StorageOverviewHeaderView: View {
             title: "Total",
             value: StorageFormatters.byteCount(snapshot.totalBytes),
             symbolName: "externaldrive",
-            tint: AppPalette.device)
+            tint: theme.domainTint(.deviceSupport))
         MetricView(
             title: "Reclaimable",
             value: StorageFormatters.byteCount(snapshot.reclaimableBytes),
             symbolName: "trash",
-            tint: AppPalette.codex)
+            tint: theme.safe)
         MetricView(
             title: "Codex",
             value: StorageFormatters.byteCount(footprint.codexAttributedBytes),
             symbolName: "terminal",
-            tint: AppPalette.codex)
+            tint: theme.safe)
         MetricView(
             title: "Xcode",
             value: StorageFormatters.byteCount(footprint.xcodeRelatedBytes),
             symbolName: "hammer",
-            tint: AppPalette.xcode)
+            tint: theme.isClassic ? theme.normalTint : theme.warning)
         MetricView(
             title: "Recent Growth",
             value: StorageFormatters.byteCount(lastDelta.growthBytes),
             symbolName: "plus.circle",
-            tint: AppPalette.caution)
+            tint: theme.isClassic ? theme.normalTint : theme.review)
         if let available = footprint.availableDiskBytes {
             MetricView(
                 title: "Free Disk",
                 value: StorageFormatters.byteCount(available),
                 symbolName: footprint.hasLowDiskSpace ? "exclamationmark.triangle" : "internaldrive",
-                tint: footprint.hasLowDiskSpace ? AppPalette.xcode : AppPalette.neutral)
+                tint: footprint.hasLowDiskSpace ? theme.warning : theme.mutedText)
         }
         MetricView(
             title: "Items",
             value: "\(snapshot.items.count)",
             symbolName: "list.bullet.rectangle",
-            tint: AppPalette.neutral)
+            tint: theme.mutedText)
         MetricView(
             title: "Last Scan",
             value: snapshot.capturedAt == .distantPast ? "Never" : StorageFormatters.ageString(from: snapshot.capturedAt),
             symbolName: "clock",
-            tint: AppPalette.neutral)
+            tint: theme.mutedText)
     }
 }

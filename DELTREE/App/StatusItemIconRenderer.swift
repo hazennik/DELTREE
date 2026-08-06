@@ -2,10 +2,10 @@ import AppKit
 
 @MainActor
 enum StatusItemIconRenderer {
-    static func image(for state: StatusItemIconState) -> NSImage {
+    static func image(for state: StatusItemIconState, visualMode: AppVisualMode = .modern) -> NSImage {
         let size = NSSize(width: 18, height: 18)
         let image = NSImage(size: size, flipped: false) { rect in
-            drawIcon(in: rect, state: state)
+            drawIcon(in: rect, state: state, visualMode: visualMode)
             return true
         }
         image.isTemplate = false
@@ -13,7 +13,7 @@ enum StatusItemIconRenderer {
         return image
     }
 
-    private static func drawIcon(in rect: NSRect, state: StatusItemIconState) {
+    private static func drawIcon(in rect: NSRect, state: StatusItemIconState, visualMode: AppVisualMode) {
         let scaleX = rect.width / 18
         let scaleY = rect.height / 18
 
@@ -35,7 +35,9 @@ enum StatusItemIconRenderer {
                 height: scaled(height, axisScale: scaleY))
         }
 
-        let mainColor = NSColor.labelColor
+        let mainColor = visualMode == .classic
+            ? NSColor(srgbRed: 0.72, green: 0.72, blue: 0.72, alpha: 1)
+            : NSColor.labelColor
         let strokeColor = mainColor.withAlphaComponent(state.isFilled ? 0.95 : 0.82)
         let fillColor = mainColor.withAlphaComponent(state.isFilled ? 0.9 : 0)
         let lineWidth = max(1, scaled(1.35, axisScale: min(scaleX, scaleY)))
@@ -67,10 +69,15 @@ enum StatusItemIconRenderer {
             path.stroke()
         }
 
-        drawBadge(state.badge, in: rect, scale: min(scaleX, scaleY))
+        drawBadge(state.badge, in: rect, scale: min(scaleX, scaleY), visualMode: visualMode)
     }
 
-    private static func drawBadge(_ badge: StatusItemIconBadge, in rect: NSRect, scale: CGFloat) {
+    private static func drawBadge(
+        _ badge: StatusItemIconBadge,
+        in rect: NSRect,
+        scale: CGFloat,
+        visualMode: AppVisualMode)
+    {
         guard badge != .none else {
             return
         }
@@ -80,9 +87,9 @@ enum StatusItemIconRenderer {
         case .none:
             badgeColor = .clear
         case .reclaimable:
-            badgeColor = .systemGreen
+            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.52, green: 0.52, blue: 0.52, alpha: 1) : .systemGreen
         case .warning:
-            badgeColor = .systemOrange
+            badgeColor = visualMode == .classic ? NSColor(srgbRed: 0.58, green: 0.36, blue: 0.14, alpha: 1) : .systemOrange
         }
 
         let diameter = max(4.4, 5.2 * scale)
@@ -93,7 +100,10 @@ enum StatusItemIconRenderer {
             height: diameter)
 
         let backingRect = badgeRect.insetBy(dx: -1.1 * scale, dy: -1.1 * scale)
-        NSColor.windowBackgroundColor.withAlphaComponent(0.88).setFill()
+        let backingColor = visualMode == .classic
+            ? NSColor(srgbRed: 0.00, green: 0.01, blue: 0.04, alpha: 0.92)
+            : NSColor.windowBackgroundColor.withAlphaComponent(0.88)
+        backingColor.setFill()
         NSBezierPath(ovalIn: backingRect).fill()
 
         badgeColor.setFill()

@@ -86,6 +86,11 @@ struct XCResultDomainScanner: DomainScanning {
 
         var bytes: Int64 = 0
         for case let url as URL in enumerator {
+            if Task.isCancelled {
+                enumerator.skipDescendants()
+                break
+            }
+
             if url.path.localizedCaseInsensitiveContains("attachment") {
                 bytes += context.fileSizeScanner.size(of: url).bytes
             }

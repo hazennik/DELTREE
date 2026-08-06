@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuSummaryRowView: View {
+    @Environment(\.appTheme) private var theme
+
     var title: String
     var value: String
     var systemImage: String?
@@ -8,23 +10,30 @@ struct StatusMenuSummaryRowView: View {
     var body: some View {
         HStack(spacing: 8) {
             if let systemImage {
-                Image(systemName: systemImage)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 18)
+                if theme.isClassic {
+                    Text(theme.classicGlyph(for: systemImage))
+                        .foregroundStyle(theme.secondaryText)
+                        .frame(width: 36, alignment: .leading)
+                } else {
+                    Image(systemName: systemImage)
+                        .foregroundStyle(theme.secondaryText)
+                        .frame(width: 18)
+                }
             }
 
-            Text(title)
+            Text(theme.isClassic ? title.uppercased() : title)
                 .lineLimit(1)
 
             Spacer(minLength: 8)
 
             Text(value)
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.secondaryText)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
-        .font(.caption)
+        .font(theme.font(.caption))
+        .foregroundStyle(theme.primaryText)
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
     }

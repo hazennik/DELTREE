@@ -9,6 +9,7 @@ struct DashboardView: View {
 
     var body: some View {
         @Bindable var viewModel = viewModel
+        let theme = AppTheme(mode: viewModel.settings.visualMode)
 
         ResizableSplitView(
             leadingMinWidth: 160,
@@ -25,12 +26,17 @@ struct DashboardView: View {
                 .frame(minWidth: 460, idealWidth: 880)
         }
         .frame(minWidth: 640, idealWidth: 1120, minHeight: 440, idealHeight: 720)
+        .background(theme.background)
+        .foregroundStyle(theme.primaryText)
+        .appTheme(theme)
         .sheet(item: $viewModel.pendingCleanupPlan) { plan in
             CleanupPreflightView(
                 plan: plan,
+                confirmationThresholdBytes: viewModel.settings.requireConfirmationAboveBytes,
                 confirmAction: { viewModel.performCleanup(plan) },
                 cancelAction: { viewModel.pendingCleanupPlan = nil },
                 exportAction: { viewModel.exportCleanupReport(plan: plan) })
+                .appTheme(theme)
         }
         .alert("Cleanup", isPresented: cleanupMessageBinding) {
             Button("OK") {

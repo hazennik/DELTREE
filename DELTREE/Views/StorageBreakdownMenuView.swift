@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StorageBreakdownMenuView: View {
+    @Environment(\.appTheme) private var theme
+
     var footprint: StorageFootprint
 
     var body: some View {
@@ -8,17 +10,26 @@ struct StorageBreakdownMenuView: View {
             StorageSegmentedBarView(
                 breakdowns: visibleBreakdowns,
                 totalBytes: footprint.totalBytes)
-                .frame(height: 10)
+                .frame(height: theme.isClassic ? 18 : 10)
 
             VStack(alignment: .leading, spacing: 7) {
                 ForEach(visibleBreakdowns) { breakdown in
                     HStack(spacing: 8) {
-                        RoundedRectangle(cornerRadius: 2)
-                            .fill(breakdown.domain.menuTint)
+                        RoundedRectangle(cornerRadius: theme.isClassic ? 0 : 2)
+                            .fill(theme.domainFillTint(breakdown.domain))
                             .frame(width: 8, height: 18)
 
-                        Label(breakdown.domain.displayName, systemImage: breakdown.domain.symbolName)
+                        if theme.isClassic {
+                            HStack(spacing: 6) {
+                                Text(theme.classicGlyph(for: breakdown.domain.symbolName))
+                                    .foregroundStyle(breakdown.domain.menuTint(in: theme))
+                                Text(breakdown.domain.displayName.uppercased())
+                            }
                             .lineLimit(1)
+                        } else {
+                            Label(breakdown.domain.displayName, systemImage: breakdown.domain.symbolName)
+                                .lineLimit(1)
+                        }
 
                         Spacer(minLength: 8)
 
@@ -27,18 +38,20 @@ struct StorageBreakdownMenuView: View {
                                 .monospacedDigit()
                                 .lineLimit(1)
                             Text(rowDetail(for: breakdown))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(theme.font(.caption))
+                                .foregroundStyle(theme.secondaryText)
                                 .lineLimit(1)
                         }
                     }
-                    .font(.caption)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.primaryText)
                 }
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .clipped()
+        .background(theme.background)
     }
 
     private var visibleBreakdowns: [StorageDomainBreakdown] {
@@ -48,6 +61,8 @@ struct StorageBreakdownMenuView: View {
     private func rowDetail(for breakdown: StorageDomainBreakdown) -> String {
         let percent = breakdown.share(of: footprint.totalBytes)
             .formatted(.percent.precision(.fractionLength(0)))
-        return "\(breakdown.itemCount) \(breakdown.itemCount == 1 ? "item" : "items") - \(percent)"
+        let itemText = breakdown.itemCount == 1 ? "item" : "items"
+        let detail = "\(breakdown.itemCount) \(itemText) - \(percent)"
+        return theme.isClassic ? detail.uppercased() : detail
     }
 }

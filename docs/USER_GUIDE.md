@@ -11,6 +11,18 @@ DELTREE helps iOS and macOS developers see what disk space Codex and Xcode are c
 
 The app does not open a Dock icon or a window by default.
 
+## Appearance
+
+DELTREE Classic is the default visual mode. It uses terminal-style panels, monospaced metrics, block storage meters, and explicit safety tags such as `[SAFE]`, `[REVIEW]`, `[KEEP]`, and `[UNKNOWN]`.
+
+To restore the previous macOS-native look:
+
+1. Open the menu-bar item.
+2. Choose `Settings...`.
+3. Set `Visual Mode` to `Modern`.
+
+Changing visual mode only changes presentation. It does not start a scan, alter safety classifications, or change cleanup behavior.
+
 ## What DELTREE Scans
 
 DELTREE scans bounded developer paths by default:
@@ -64,3 +76,12 @@ Use the detail inspector to:
 
 Overrides persist across scans.
 
+## Updates
+
+Direct Developer ID installs use `Check for Updates...` from the app menu when Sparkle is configured for the build.
+
+Homebrew installs should update with:
+
+```sh
+brew upgrade --cask deltree
+```

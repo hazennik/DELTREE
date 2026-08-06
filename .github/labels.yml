@@ -1,0 +1,48 @@
+- name: bug
+  color: d73a4a
+  description: Something is broken.
+- name: needs-triage
+  color: cfd3d7
+  description: Needs maintainer classification.
+- name: needs-diagnostics
+  color: ffb347
+  description: Needs redacted `Tools/deltree diagnose --json` output.
+- name: crash
+  color: b60205
+  description: Crash log or symbolication issue.
+- name: data-safety
+  color: 0e8a16
+  description: Cleanup safety, privacy, or data-loss risk.
+- name: scanner
+  color: 1d76db
+  description: Storage scanner behavior.
+- name: cleanup
+  color: 5319e7
+  description: Cleanup planning or execution behavior.
+- name: release
+  color: 0052cc
+  description: Packaging, signing, notarization, Sparkle, or Homebrew.
+- name: performance
+  color: fbca04
+  description: Speed, memory, battery, or responsiveness.
+- name: documentation
+  color: 0075ca
+  description: README, docs, examples, screenshots, or contributor guidance.
+- name: ui
+  color: 7057ff
+  description: Dashboard, menu-bar panel, settings, screenshots, accessibility, or visual polish.
+- name: enhancement
+  color: a2eeef
+  description: New feature or behavior improvement.
+- name: question
+  color: d876e3
+  description: Support request or discussion that is not yet classified.
+- name: dependencies
+  color: 0366d6
+  description: Dependency updates.
+- name: swift
+  color: f05138
+  description: Swift or Xcode toolchain changes.
+- name: github-actions
+  color: 2088ff
+  description: GitHub Actions workflow changes.

@@ -65,6 +65,11 @@ struct XCTestDevicesDomainScanner: DomainScanning {
         }
 
         for case let candidate as URL in enumerator {
+            if Task.isCancelled {
+                enumerator.skipDescendants()
+                break
+            }
+
             if candidate.pathExtension == "xctestconfiguration" || candidate.lastPathComponent == "SessionInfo.plist" {
                 return ["testMetadata": candidate.lastPathComponent]
             }

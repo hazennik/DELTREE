@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MetricView: View {
+    @Environment(\.appTheme) private var theme
+
     var title: String
     var value: String
     var symbolName: String
@@ -8,21 +10,27 @@ struct MetricView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: symbolName)
-                .foregroundStyle(tint)
-                .frame(width: 20)
+            if theme.isClassic {
+                Text(theme.classicGlyph(for: symbolName))
+                    .font(theme.font(.caption))
+                    .foregroundStyle(tint)
+                    .frame(width: 36, alignment: .leading)
+            } else {
+                Image(systemName: symbolName)
+                    .foregroundStyle(theme.markerTint(tint))
+                    .frame(width: 20)
+            }
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(theme.isClassic ? title.uppercased() : title)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.secondaryText)
                 Text(value)
-                    .font(.headline)
+                    .font(theme.font(.headline))
                     .monospacedDigit()
                     .lineLimit(1)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+        .foregroundStyle(theme.primaryText)
+        .appPanel(padding: 8)
     }
 }

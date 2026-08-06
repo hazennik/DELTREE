@@ -8,6 +8,7 @@ DELTREE uses MVVM with service protocols.
 - `AppDelegate` owns the AppKit lifecycle objects.
 - `StatusItemController` owns the menu-bar status item and renders menu descriptors.
 - `DashboardWindowController` hosts the SwiftUI dashboard.
+- `AppUpdateService` gates Sparkle runtime updates by distribution channel and Info.plist configuration.
 
 The app is an `LSUIElement` menu-bar app and is intentionally unsandboxed for Developer ID distribution.
 
@@ -41,6 +42,8 @@ Core protocols live in `StorageServiceProtocols.swift`:
 
 Concrete implementations are under `DELTREE/Services`.
 
+Sparkle is linked only by the app target. `Package.swift` keeps `DELTREECore` free of Sparkle so contributors can run core tests with `swift test`.
+
 ## UI
 
 SwiftUI owns rendering. AppKit is used only where macOS requires it:
@@ -63,4 +66,3 @@ SwiftData stores:
 - manual overrides
 
 Persisted data is local to the Mac.
-

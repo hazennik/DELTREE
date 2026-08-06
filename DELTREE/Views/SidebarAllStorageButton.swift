@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SidebarAllStorageButton: View {
+    @Environment(\.appTheme) private var theme
+
     var totalBytes: Int64
     var action: () -> Void
 
@@ -9,5 +11,6 @@ struct SidebarAllStorageButton: View {
             SidebarAllStorageRow(totalBytes: totalBytes)
         }
         .buttonStyle(.plain)
+        .foregroundStyle(theme.primaryText)
     }
 }

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ItemDetailView: View {
+    @Environment(\.appTheme) private var theme
+
     var item: StorageItem?
     var revealAction: (StorageItem) -> Void
     var copyPathAction: (StorageItem) -> Void
@@ -15,10 +17,21 @@ struct ItemDetailView: View {
             if let item {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
-                        Label(item.displayName, systemImage: item.domain.symbolName)
-                            .font(.title3)
+                        if theme.isClassic {
+                            HStack(spacing: 8) {
+                                Text(theme.classicGlyph(for: item.domain.symbolName))
+                                    .foregroundStyle(item.domain.menuTint(in: theme))
+                                Text(item.displayName.uppercased())
+                            }
+                            .font(theme.font(.title3))
                             .bold()
                             .lineLimit(2)
+                        } else {
+                            Label(item.displayName, systemImage: item.domain.symbolName)
+                                .font(theme.font(.title3))
+                                .bold()
+                                .lineLimit(2)
+                        }
 
                         ItemActionPanelView(
                             item: item,
@@ -35,20 +48,20 @@ struct ItemDetailView: View {
                         Divider()
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Why It Exists")
-                                .font(.headline)
+                            Text(theme.isClassic ? "WHY IT EXISTS" : "Why It Exists")
+                                .font(theme.font(.headline))
                             Text(item.explanation)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Path")
-                                .font(.headline)
+                            Text(theme.isClassic ? "PATH" : "Path")
+                                .font(theme.font(.headline))
                             Text(item.path)
                                 .font(.system(.caption, design: .monospaced))
                                 .textSelection(.enabled)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.secondaryText)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
 
@@ -60,9 +73,16 @@ struct ItemDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
-                ContentUnavailableView("No Item Selected", systemImage: "externaldrive", description: Text("Select a storage item to inspect its safety, owner, and path."))
+                if theme.isClassic {
+                    ClassicEmptyState(
+                        title: "No Item Selected",
+                        message: "Select a storage item to inspect safety, owner, and path.")
+                } else {
+                    ContentUnavailableView("No Item Selected", systemImage: "externaldrive", description: Text("Select a storage item to inspect its safety, owner, and path."))
+                }
             }
         }
-        .background(.background)
+        .background(theme.background)
+        .foregroundStyle(theme.primaryText)
     }
 }

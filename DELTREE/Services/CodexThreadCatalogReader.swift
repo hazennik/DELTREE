@@ -5,26 +5,40 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
     private let fileManager: FileManager
     private let maximumFiles: Int
     private let maximumBytesPerFile: UInt64
+    private let maximumPreviewBytes: UInt64
+    private let cache: CodexThreadCatalogCache
 
     init(
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         fileManager: FileManager = .default,
         maximumFiles: Int = 2_000,
-        maximumBytesPerFile: UInt64 = 5_000_000)
+        maximumBytesPerFile: UInt64 = 5_000_000,
+        maximumPreviewBytes: UInt64 = 512_000,
+        cache: CodexThreadCatalogCache = CodexThreadCatalogCache())
     {
         self.homeDirectory = homeDirectory
         self.fileManager = fileManager
         self.maximumFiles = maximumFiles
         self.maximumBytesPerFile = maximumBytesPerFile
+        self.maximumPreviewBytes = maximumPreviewBytes
+        self.cache = cache
     }
 
     nonisolated func sessions(now: Date) async -> [CodexSessionRecord] {
         await Task.detached(priority: .utility) {
-            scanSessions(now: now)
+            let candidateFiles = candidateSessionFiles()
+            let signature = catalogSignature(for: candidateFiles)
+            if let cachedRecords = await cache.records(matching: signature) {
+                return cachedRecords
+            }
+
+            let records = scanSessions(now: now, candidateFiles: candidateFiles)
+            await cache.store(records, for: signature)
+            return records
         }.value
     }
 
-    nonisolated private func scanSessions(now: Date) -> [CodexSessionRecord] {
+    nonisolated private func candidateSessionFiles() -> [URL] {
         let roots = [
             homeDirectory.appendingPathComponent(".codex/sessions", isDirectory: true),
             homeDirectory.appendingPathComponent(".codex/archived_sessions", isDirectory: true),
@@ -32,12 +46,14 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
             homeDirectory.appendingPathComponent(".codex/history.jsonl"),
         ]
 
-        let candidateFiles = roots.flatMap { candidateSessionFiles(under: $0) }
+        return Array(roots.flatMap { candidateSessionFiles(under: $0) }
             .sorted { lhs, rhs in
                 modificationDate(for: lhs) > modificationDate(for: rhs)
             }
-            .prefix(maximumFiles)
+            .prefix(maximumFiles))
+    }
 
+    nonisolated private func scanSessions(now: Date, candidateFiles: [URL]) -> [CodexSessionRecord] {
         var recordsByID: [String: CodexSessionRecord] = [:]
         for file in candidateFiles {
             for record in parse(file: file, now: now) {
@@ -51,6 +67,16 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
         return recordsByID.values.sorted {
             ($0.lastUpdatedAt ?? .distantPast) > ($1.lastUpdatedAt ?? .distantPast)
         }
+    }
+
+    nonisolated private func catalogSignature(for files: [URL]) -> CodexThreadCatalogSignature {
+        CodexThreadCatalogSignature(files: files.map { file in
+            let values = try? file.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+            return CodexThreadCatalogFileSignature(
+                path: file.standardizedFileURL.path,
+                modifiedAt: values?.contentModificationDate ?? .distantPast,
+                byteCount: values?.fileSize ?? 0)
+        })
     }
 
     nonisolated private func candidateSessionFiles(under root: URL) -> [URL] {
@@ -98,18 +124,21 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
     }
 
     nonisolated private func parse(file: URL, now: Date) -> [CodexSessionRecord] {
-        guard let data = try? Data(contentsOf: file),
-              data.isEmpty == false,
-              let text = String(data: data, encoding: .utf8)
-        else {
+        let text = textPreview(from: file)
+        guard text.isEmpty == false else {
             return []
         }
 
+        let dateParser = FlexibleCodexDateParser()
         let parsedRecords = text
             .split(separator: "\n", omittingEmptySubsequences: true)
             .prefix(400)
             .compactMap { line -> CodexSessionRecord? in
-                parseJSONLine(String(line), sourcePath: file.path, fallbackDate: modificationDate(for: file))
+                parseJSONLine(
+                    String(line),
+                    sourcePath: file.path,
+                    fallbackDate: modificationDate(for: file),
+                    dateParser: dateParser)
             }
 
         if parsedRecords.isEmpty == false {
@@ -128,7 +157,12 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
         ]
     }
 
-    nonisolated private func parseJSONLine(_ line: String, sourcePath: String, fallbackDate: Date?) -> CodexSessionRecord? {
+    nonisolated private func parseJSONLine(
+        _ line: String,
+        sourcePath: String,
+        fallbackDate: Date?,
+        dateParser: FlexibleCodexDateParser) -> CodexSessionRecord?
+    {
         guard let data = line.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
@@ -153,13 +187,14 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
             return nil
         }
 
+        let parsedDate = dateParser.date(from: dateString)
         return CodexSessionRecord(
             id: id ?? URL(fileURLWithPath: sourcePath).deletingPathExtension().lastPathComponent,
             title: title ?? URL(fileURLWithPath: sourcePath).deletingPathExtension().lastPathComponent,
             workingDirectory: workingDirectory,
             sourcePath: sourcePath,
-            startedAt: FlexibleCodexDateParser.date(from: dateString),
-            lastUpdatedAt: FlexibleCodexDateParser.date(from: dateString) ?? fallbackDate)
+            startedAt: parsedDate,
+            lastUpdatedAt: parsedDate ?? fallbackDate)
     }
 
     nonisolated private func flatten(_ object: [String: Any]) -> [String: [String]] {
@@ -228,24 +263,87 @@ struct CodexThreadCatalogReader: CodexSessionScanning, @unchecked Sendable {
             }
     }
 
+    nonisolated private func textPreview(from file: URL) -> String {
+        guard let handle = try? FileHandle(forReadingFrom: file) else {
+            return ""
+        }
+        defer {
+            try? handle.close()
+        }
+
+        var data = Data()
+        let byteLimit = Int(min(maximumBytesPerFile, maximumPreviewBytes))
+        while data.count < byteLimit {
+            if Task.isCancelled {
+                break
+            }
+
+            let chunkLimit = min(64 * 1_024, byteLimit - data.count)
+            guard chunkLimit > 0,
+                  let chunk = try? handle.read(upToCount: chunkLimit),
+                  chunk.isEmpty == false
+            else {
+                break
+            }
+            data.append(chunk)
+
+            if data.filter({ $0 == 0x0A }).count >= 400 {
+                break
+            }
+        }
+
+        return String(decoding: data, as: UTF8.self)
+    }
+
     nonisolated private func modificationDate(for url: URL) -> Date {
         (try? url.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
     }
 }
 
-private enum FlexibleCodexDateParser {
-    nonisolated static func date(from string: String?) -> Date? {
+actor CodexThreadCatalogCache {
+    private var signature: CodexThreadCatalogSignature?
+    private var records: [CodexSessionRecord] = []
+
+    func records(matching signature: CodexThreadCatalogSignature) -> [CodexSessionRecord]? {
+        guard self.signature == signature else {
+            return nil
+        }
+        return records
+    }
+
+    func store(_ records: [CodexSessionRecord], for signature: CodexThreadCatalogSignature) {
+        self.signature = signature
+        self.records = records
+    }
+}
+
+struct CodexThreadCatalogSignature: Hashable, Sendable {
+    var files: [CodexThreadCatalogFileSignature]
+}
+
+struct CodexThreadCatalogFileSignature: Hashable, Sendable {
+    var path: String
+    var modifiedAt: Date
+    var byteCount: Int
+}
+
+private final class FlexibleCodexDateParser {
+    private let fractionalFormatter = ISO8601DateFormatter()
+    private let internetFormatter = ISO8601DateFormatter()
+
+    init() {
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        internetFormatter.formatOptions = [.withInternetDateTime]
+    }
+
+    func date(from string: String?) -> Date? {
         guard let string, string.isEmpty == false else {
             return nil
         }
 
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = formatter.date(from: string) {
+        if let date = fractionalFormatter.date(from: string) {
             return date
         }
-
-        formatter.formatOptions = [.withInternetDateTime]
-        return formatter.date(from: string)
+        return internetFormatter.date(from: string)
     }
 }

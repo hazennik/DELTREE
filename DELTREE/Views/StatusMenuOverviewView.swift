@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuOverviewView: View {
+    @Environment(\.appTheme) private var theme
+
     var footprint: StorageFootprint
     var lastCodexImpactBytes: Int64
     var hasRecentGrowth: Bool
@@ -9,20 +11,42 @@ struct StatusMenuOverviewView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            let badgeTint = theme.markerTint(statusTint)
+
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Label("DELTREE", systemImage: "leaf.fill")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                if theme.isClassic {
+                    Text("[ DELTREE ]")
+                        .font(theme.font(.headline))
+                        .foregroundStyle(theme.selectionText)
+                } else {
+                    Label("DELTREE", systemImage: "leaf.fill")
+                        .font(theme.font(.headline))
+                        .foregroundStyle(theme.primaryText)
+                }
 
                 Spacer(minLength: 8)
 
-                Text(statusText)
-                    .font(.caption)
-                    .foregroundStyle(statusTint)
+                Text(theme.isClassic ? "[\(statusText.uppercased())]" : statusText)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(badgeTint)
                     .lineLimit(1)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(statusTint.opacity(0.14), in: Capsule())
+                    .background {
+                        if theme.isClassic {
+                            Rectangle()
+                                .fill(theme.controlFill)
+                        } else {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(badgeTint.opacity(0.14))
+                        }
+                    }
+                    .overlay {
+                        if theme.isClassic {
+                            Rectangle()
+                                .stroke(badgeTint, lineWidth: 1)
+                        }
+                    }
             }
 
             HStack(spacing: 8) {
@@ -30,13 +54,13 @@ struct StatusMenuOverviewView: View {
                     title: "Total",
                     value: StorageFormatters.byteCount(footprint.totalBytes),
                     systemImage: "externaldrive",
-                    tint: AppPalette.device)
+                    tint: theme.domainTint(.deviceSupport))
 
                 StatusMenuMetricTileView(
                     title: "Cleanable",
                     value: StorageFormatters.byteCount(footprint.reclaimableBytes),
                     systemImage: "trash",
-                    tint: AppPalette.codex)
+                    tint: theme.safe)
             }
 
             StatusMenuGaugeRowView(
@@ -44,10 +68,11 @@ struct StatusMenuOverviewView: View {
                 value: StorageFormatters.byteCount(footprint.codexAttributedBytes),
                 detail: codexDetailText,
                 systemImage: "terminal",
-                tint: AppPalette.codex,
+                tint: theme.safe,
                 share: footprint.totalBytes > 0 ? Double(footprint.codexAttributedBytes) / Double(footprint.totalBytes) : 0)
         }
         .padding(12)
+        .background(theme.background)
     }
 
     private var statusText: String {
@@ -62,12 +87,12 @@ struct StatusMenuOverviewView: View {
 
     private var statusTint: Color {
         if isScanning {
-            return AppPalette.simulator
+            return theme.accent
         }
         if footprint.hasLowDiskSpace {
-            return AppPalette.xcode
+            return theme.warning
         }
-        return AppPalette.codex
+        return theme.safe
     }
 
     private var codexDetailText: String {

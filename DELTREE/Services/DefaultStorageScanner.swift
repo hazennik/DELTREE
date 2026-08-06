@@ -135,6 +135,10 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
         var classifiedItems: [StorageItem] = []
 
         for item in items {
+            if Task.isCancelled {
+                break
+            }
+
             var item = item
             var decision = safetyPolicy.classify(item: item, configuration: configuration, now: now)
             if needsOpenFileCheck(item: item, decision: decision) {

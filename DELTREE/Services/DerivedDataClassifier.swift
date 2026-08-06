@@ -47,6 +47,11 @@ struct DerivedDataClassifier {
         }
 
         for case let url as URL in enumerator {
+            if Task.isCancelled {
+                enumerator.skipDescendants()
+                break
+            }
+
             if extensions.contains(url.pathExtension.lowercased()) {
                 return url
             }

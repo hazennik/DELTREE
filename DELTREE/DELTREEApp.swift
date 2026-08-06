@@ -23,6 +23,16 @@ struct DELTREEApp: App {
                 .frame(width: 520, height: 420)
         }
         .modelContainer(container.modelContainer)
+        .commands {
+            if container.updateService.isVisible {
+                CommandGroup(after: .appInfo) {
+                    Button("Check for Updates...") {
+                        container.updateService.checkForUpdates()
+                    }
+                    .disabled(container.updateService.canCheckForUpdates == false)
+                }
+            }
+        }
     }
 
     private static func makeModelContainer() -> ModelContainer {

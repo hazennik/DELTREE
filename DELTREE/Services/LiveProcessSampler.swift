@@ -13,7 +13,8 @@ struct LiveProcessSampler: ProcessSampling {
         do {
             let output = try await ProcessRunner.run(
                 executableURL: URL(fileURLWithPath: "/bin/ps"),
-                arguments: ["-axo", "pid=,comm=,args="])
+                arguments: ["-axo", "pid=,comm=,args="],
+                timeoutSeconds: 3)
             guard output.terminationStatus == 0 else {
                 return ProcessSnapshot(sampledAt: Date(), processes: [])
             }
@@ -78,7 +79,10 @@ struct LiveLsofOpenFileChecker: OpenFileChecking, @unchecked Sendable {
         }
 
         do {
-            let output = try await ProcessRunner.run(executableURL: lsofURL, arguments: arguments)
+            let output = try await ProcessRunner.run(
+                executableURL: lsofURL,
+                arguments: arguments,
+                timeoutSeconds: 5)
             let stdout = String(decoding: output.stdout, as: UTF8.self)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             let stderr = String(decoding: output.stderr, as: UTF8.self)

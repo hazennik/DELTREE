@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct StatusMenuMetricTileView: View {
+    @Environment(\.appTheme) private var theme
+
     var title: String
     var value: String
     var systemImage: String
@@ -8,18 +10,25 @@ struct StatusMenuMetricTileView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: systemImage)
-                .foregroundStyle(tint)
-                .frame(width: 18)
+            if theme.isClassic {
+                Text(theme.classicGlyph(for: systemImage))
+                    .font(theme.font(.caption))
+                    .foregroundStyle(tint)
+                    .frame(width: 36, alignment: .leading)
+            } else {
+                Image(systemName: systemImage)
+                    .foregroundStyle(theme.markerTint(tint))
+                    .frame(width: 18)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(theme.isClassic ? title.uppercased() : title)
+                    .font(theme.font(.caption))
+                    .foregroundStyle(theme.secondaryText)
                     .lineLimit(1)
 
                 Text(value)
-                    .font(.headline)
+                    .font(theme.font(.headline))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -30,6 +39,7 @@ struct StatusMenuMetricTileView: View {
         .padding(.horizontal, 9)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+        .foregroundStyle(theme.primaryText)
+        .appPanel(padding: 0)
     }
 }

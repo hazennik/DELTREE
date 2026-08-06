@@ -10,8 +10,9 @@ Before filing an issue, include:
 - Xcode version
 - DELTREE app version or commit
 - whether Full Disk Access is enabled
-- the output of `Tools/deltree --dry-run`
+- redacted diagnostics from `Tools/deltree diagnose --json`
 - any relevant `.xcresult` or screenshot, if safe to share
 
 Never attach private Codex transcripts or proprietary project files unless explicitly requested.
 
+See [docs/SUPPORT_WORKFLOW.md](docs/SUPPORT_WORKFLOW.md) for crash and symbolication handling.

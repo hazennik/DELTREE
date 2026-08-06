@@ -5,7 +5,8 @@ struct LiveSimctlClient: SimctlClient {
         do {
             let output = try await ProcessRunner.run(
                 executableURL: URL(fileURLWithPath: "/usr/bin/xcrun"),
-                arguments: ["simctl", "list", "devices", "--json"])
+                arguments: ["simctl", "list", "devices", "--json"],
+                timeoutSeconds: 8)
             guard output.terminationStatus == 0 else {
                 return []
             }

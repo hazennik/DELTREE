@@ -1,18 +1,27 @@
 import SwiftUI
 
 struct SafetyBadgeView: View {
+    @Environment(\.appTheme) private var theme
+
     var safety: SafetyClassification
     var isActive: Bool
 
     var body: some View {
-        Label(title, systemImage: symbolName)
-            .font(.caption)
-            .foregroundStyle(color)
-            .lineLimit(1)
+        Group {
+            if theme.isClassic {
+                Text(title)
+            } else {
+                Label(title, systemImage: symbolName)
+            }
+        }
+        .font(theme.font(.caption))
+        .foregroundStyle(color)
+        .lineLimit(1)
+        .accessibilityLabel(accessibilityTitle)
     }
 
     private var title: String {
-        isActive ? "Active" : safety.displayName
+        theme.safetyTitle(safety, isActive: isActive)
     }
 
     private var symbolName: String {
@@ -34,20 +43,10 @@ struct SafetyBadgeView: View {
     }
 
     private var color: Color {
-        if isActive {
-            return AppPalette.simulator
-        }
-        switch safety {
-        case .safeToTrash:
-            return AppPalette.codex
-        case .probablySafe:
-            return AppPalette.caution
-        case .reviewRecommended:
-            return AppPalette.xcode
-        case .keep:
-            return .secondary
-        case .unknown:
-            return .secondary
-        }
+        theme.markerTint(theme.safetyTint(safety, isActive: isActive))
+    }
+
+    private var accessibilityTitle: String {
+        isActive ? "Active" : safety.displayName
     }
 }

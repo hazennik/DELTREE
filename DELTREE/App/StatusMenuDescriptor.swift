@@ -53,6 +53,7 @@ enum StatusMenuDescriptorBuilder {
         lastDelta: StorageDelta,
         isScanning: Bool,
         safeItemCount: Int,
+        allowsMenuCleanup: Bool = true,
         cleanupSuggestions: [StatusMenuCleanupSuggestion] = []) -> StatusMenuDescriptor
     {
         var items: [StatusMenuItemDescriptor] = [
@@ -81,7 +82,7 @@ enum StatusMenuDescriptorBuilder {
             items.append(.safety(footprint: footprint, safeItemCount: safeItemCount))
         }
 
-        let visibleCleanupSuggestions = cleanupSuggestions
+        let visibleCleanupSuggestions = (allowsMenuCleanup ? cleanupSuggestions : [])
             .sorted { lhs, rhs in
                 if lhs.bytes == rhs.bytes {
                     return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
@@ -113,7 +114,11 @@ enum StatusMenuDescriptorBuilder {
             .section(title: "Actions"),
             .command(title: "Open Dashboard", command: .openDashboard, keyEquivalent: "", isEnabled: true),
             .command(title: "Scan Now", command: .scanNow, keyEquivalent: "r", isEnabled: isScanning == false),
-            .command(title: "Clean Safe Items...", command: .cleanSafe, keyEquivalent: "", isEnabled: footprint.reclaimableBytes > 0),
+            .command(
+                title: "Clean Safe Items...",
+                command: .cleanSafe,
+                keyEquivalent: "",
+                isEnabled: allowsMenuCleanup && footprint.reclaimableBytes > 0),
             .separator,
             .command(title: "Settings...", command: .openSettings, keyEquivalent: ",", isEnabled: true),
             .command(title: "Quit DELTREE", command: .quit, keyEquivalent: "q", isEnabled: true),

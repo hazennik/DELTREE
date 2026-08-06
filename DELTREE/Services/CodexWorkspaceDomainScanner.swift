@@ -15,6 +15,7 @@ struct CodexWorkspaceDomainScanner: DomainScanning {
 
     func scan(context: DomainScanContext) async -> DomainScanResult {
         var result = DomainScanResult.empty
+        let sessionIndex = CodexSessionMatcher.Index(sessions: context.codexSessions)
 
         for root in roots {
             if DirectoryScannerHelpers.missingOrUnreadableRoot(root, context: context, result: &result) {
@@ -43,18 +44,15 @@ struct CodexWorkspaceDomainScanner: DomainScanning {
                     "suggestedAction": suggestedAction(for: candidate).rawValue,
                     "state": state(for: candidate, context: context),
                 ]
-                metadata.merge(CodexSessionMatcher.metadata(for: candidate.path, sessions: context.codexSessions)) { current, _ in current }
-                metadata.merge(
-                    CodexSessionMatcher.sessionStorageMetadata(
-                        for: candidate.path,
-                        sessions: context.codexSessions,
-                        now: context.now,
-                        staleAgeDays: context.configuration.staleAgeDays))
-                { _, new in new }
-
-                let latestSessionActivityDate = CodexSessionMatcher.latestSessionActivityDate(
+                let pathMetadata = CodexSessionMatcher.pathMetadata(
                     for: candidate.path,
-                    sessions: context.codexSessions)
+                    index: sessionIndex,
+                    now: context.now,
+                    staleAgeDays: context.configuration.staleAgeDays)
+                metadata.merge(pathMetadata.directMetadata) { current, _ in current }
+                metadata.merge(pathMetadata.storageMetadata) { _, new in new }
+
+                let latestSessionActivityDate = pathMetadata.latestSessionActivityDate
                 if let latestSessionActivityDate {
                     metadata["state"] = DirectoryScannerHelpers.state(
                         ageDays: DirectoryScannerHelpers.ageDays(since: latestSessionActivityDate, now: context.now),
