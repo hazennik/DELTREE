@@ -22,7 +22,7 @@ TRASH ONLY. LOCAL ONLY. NO TELEMETRY.
 
 ## Install
 
-Signed public downloads are not published yet. For now, build from source:
+Signed public downloads are not published yet. Until the first notarized release is published, build from source:
 
 ```sh
 git clone https://github.com/hazennik/DELTREE.git
@@ -31,7 +31,19 @@ make build
 open build/DerivedData/Build/Products/Debug/DELTREE.app
 ```
 
-When the first public release is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases). Homebrew Cask support is planned after notarized releases stabilize.
+When the first public release is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
+
+```sh
+curl -L -o DELTREE.zip https://github.com/hazennik/DELTREE/releases/latest/download/DELTREE.zip
+ditto -x -k DELTREE.zip .
+open DELTREE.app
+```
+
+Homebrew Cask support is staged for the notarized release channel:
+
+```sh
+brew install --cask hazennik/deltree/deltree
+```
 
 ## Build
 
@@ -51,7 +63,7 @@ make analyze
 make cli-dry-run
 ```
 
-`make test` runs the unit test bundle. UI tests launch a generated macOS runner app and may require local signing trust, so run them explicitly with `make ui-test`.
+`make test` runs the unit test bundle. `make ui-test` performs a deterministic signed menu-bar launch smoke test. The legacy Xcode UI automation runner remains available as `make xcode-ui-test` for local investigation.
 
 Formatting and linting use SwiftFormat and SwiftLint:
 
@@ -93,6 +105,23 @@ DELTREE is intentionally conservative.
 - Every cleanup plan is revalidated before execution.
 
 Read the full policy in [docs/SAFETY.md](docs/SAFETY.md).
+
+## Screenshots
+
+Modern is the primary public screenshot set because it best matches repeated day-to-day macOS use.
+
+![Modern dashboard](docs/assets/screenshots/modern-dashboard.png)
+
+![Modern menu-bar dropdown](docs/assets/screenshots/modern-menu-bar-dropdown.png)
+
+![Modern cleanup preflight](docs/assets/screenshots/modern-cleanup-preflight.png)
+
+Classic keeps the retro command-prompt identity available as a smaller secondary set.
+
+<p>
+  <img src="docs/assets/screenshots/classic-dashboard.png" alt="Classic dashboard" width="49%">
+  <img src="docs/assets/screenshots/classic-menu-bar-dropdown.png" alt="Classic menu-bar dropdown" width="32%">
+</p>
 
 ## What It Does
 
@@ -149,12 +178,14 @@ Packaging notes live in [Packaging/README.md](Packaging/README.md) and release s
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Production Readiness](docs/PRODUCTION_READINESS.md)
+- [Permissions & Troubleshooting](docs/PERMISSIONS.md)
 - [Safety Policy](docs/SAFETY.md)
 - [CLI](docs/CLI.md)
 - [Release Process](docs/RELEASING.md)
 - [Release QA](docs/RELEASE_QA.md)
 - [Homebrew Cask Plan](docs/HOMEBREW.md)
 - [Support Workflow](docs/SUPPORT_WORKFLOW.md)
+- [Issue Triage](docs/TRIAGE.md)
 - [Icon Pipeline](docs/ICON.md)
 - [Privacy](PRIVACY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)

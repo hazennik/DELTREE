@@ -22,6 +22,21 @@ If SwiftFormat or SwiftLint are not installed locally, install them first:
 brew install swiftformat swiftlint
 ```
 
+## Release Preflight
+
+Run the single-command preflight from a clean release-candidate branch:
+
+```sh
+Scripts/release-preflight.sh v1.0.0-rc.1 --repo hazennik/DELTREE
+```
+
+The preflight fails on a dirty working tree, missing or mismatched changelog notes, failed local checks, failed packaging dry-runs, appcast dry-run failures, or Sparkle signing dry-run failures.
+After a GitHub Release is published, verify live assets and appcast enclosure URLs:
+
+```sh
+Scripts/release-preflight.sh v1.0.0-rc.1 --repo hazennik/DELTREE --post-publish
+```
+
 ## Package
 
 ```sh
@@ -121,6 +136,7 @@ Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app, create
 ## Release Checklist
 
 - Confirm cleanup safety tests pass.
+- Run `Scripts/release-preflight.sh <tag> --repo hazennik/DELTREE` from a clean branch.
 - Confirm manual scan on a machine with Xcode installed.
 - Confirm CLI dry run.
 - Confirm no production hard-delete path.
@@ -130,5 +146,5 @@ Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app, create
 - Validate the matching dated `CHANGELOG.md` section.
 - Generate Sparkle appcast only after signing the final zip.
 - Attach `DELTREE.zip`, `DELTREE.zip.sha256`, `DELTREE.dSYM.zip`, `DELTREE.dSYM.zip.sha256`, and `appcast.xml` to the GitHub Release.
-- Run the post-release asset verifier against the published release.
+- Run `Scripts/release-preflight.sh <tag> --repo hazennik/DELTREE --post-publish` against the published release.
 - Complete [Release QA](RELEASE_QA.md) before marking the release public GA.

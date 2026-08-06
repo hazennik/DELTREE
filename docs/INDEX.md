@@ -15,10 +15,12 @@ DELTREE is a local-only macOS menu-bar utility for safely understanding and clea
 - [Architecture](ARCHITECTURE.md)
 - [CLI](CLI.md)
 - [Production Readiness](PRODUCTION_READINESS.md)
+- [Permissions & Troubleshooting](PERMISSIONS.md)
 - [Release Process](RELEASING.md)
 - [Release QA](RELEASE_QA.md)
 - [Homebrew Cask Plan](HOMEBREW.md)
 - [Support Workflow](SUPPORT_WORKFLOW.md)
+- [Issue Triage](TRIAGE.md)
 - [Icon Pipeline](ICON.md)
 
 ## Project Docs

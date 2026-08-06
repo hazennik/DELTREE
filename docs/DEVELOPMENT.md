@@ -31,8 +31,15 @@ make appcast-check
 make spark-sign-check
 ```
 
-`make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` when validating launch behavior on a trusted local machine. `make ui-test` is wrapped by `Scripts/run-with-timeout.rb`; override the watchdog with `UI_TEST_TIMEOUT_SECONDS=240 make ui-test` when the local machine is slow. A timeout is still a failed UI-test run, not a pass.
+`make test` skips `DELTREEUITests` because macOS UI-test runner apps can require local signing trust. Use `make ui-test` to validate signed menu-bar launch behavior on a trusted local machine. It builds the app, verifies `LSUIElement`, launches with initial scanning disabled, and exits through `DELTREE_EXIT_AFTER_LAUNCH=1`.
+`make xcode-ui-test` keeps the legacy Xcode UI automation target available for deeper local debugging, but it can hang in Xcode's worker materialization phase on some macOS/Xcode combinations.
 `make package-check` performs dry-run package validation for both Developer ID and Homebrew distribution channels.
+
+Regenerate README and social-preview screenshots from the app's real SwiftUI views:
+
+```sh
+make export-screenshots
+```
 
 ## Project Layout
 
@@ -72,6 +79,7 @@ make icon-check
 make script-test
 swift test
 make ui-test
+make export-screenshots
 Tools/deltree --dry-run --json
 rg "removeItem|trashItem|simctl" DELTREE DELTREETests Tools Scripts
 ```

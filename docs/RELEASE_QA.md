@@ -39,6 +39,7 @@ Run on a Mac that has not built DELTREE locally.
 
 ## Public Media
 
-- Capture polished real app screenshots from the clean-machine RC build.
-- Replace temporary README media with optimized PNG/GIF assets before public GA.
+- Run `make export-screenshots` after the release-candidate build and review every PNG under `docs/assets/screenshots`.
+- Confirm the README uses the Modern dashboard and menu-bar dropdown as the main set, with Classic/retro screenshots as the smaller secondary set.
+- Confirm `docs/assets/screenshots/social-preview.png` is current before updating GitHub repository social preview settings.
 - Keep the retro command-prompt identity in repo assets, not at the expense of macOS-native UI clarity.

@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -22,6 +23,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        let environment = ProcessInfo.processInfo.environment
+        if let screenshotDirectoryPath = environment["DELTREE_SCREENSHOT_OUTPUT_DIR"],
+           screenshotDirectoryPath.isEmpty == false
+        {
+            Task { @MainActor in
+                do {
+                    try ScreenshotExportService.export(
+                        to: URL(fileURLWithPath: screenshotDirectoryPath, isDirectory: true))
+                    NSApp.terminate(nil)
+                } catch {
+                    fputs("DELTREE screenshot export failed: \(error.localizedDescription)\n", stderr)
+                    exit(1)
+                }
+            }
+            return
+        }
+
         ProcessInfo.processInfo.disableAutomaticTermination(Self.automaticTerminationReason)
         didDisableAutomaticTermination = true
         container.mainThreadHangWatchdog.start()
@@ -35,8 +53,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settings: container.settings,
             openDashboard: { dashboardWindowController.show() },
             openSettings: { settingsWindowController.show() })
-        if ProcessInfo.processInfo.environment["DELTREE_DISABLE_INITIAL_SCAN"] != "1" {
+        if environment["DELTREE_DISABLE_INITIAL_SCAN"] != "1" {
             container.dashboardViewModel.start()
+        }
+        if environment["DELTREE_EXIT_AFTER_LAUNCH"] == "1" {
+            DispatchQueue.main.async {
+                NSApp.terminate(nil)
+            }
         }
     }
 

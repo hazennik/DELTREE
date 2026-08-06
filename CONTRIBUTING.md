@@ -17,6 +17,8 @@ make check
 Tools/deltree diagnose --json
 ```
 
+Use [docs/TRIAGE.md](docs/TRIAGE.md) when labeling public issues or deciding whether a report needs private diagnostics.
+
 ## Commit Style
 
 Use short imperative commit messages:

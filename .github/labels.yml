@@ -1,6 +1,9 @@
 - name: bug
   color: d73a4a
   description: Something is broken.
+- name: needs-triage
+  color: cfd3d7
+  description: Needs maintainer classification.
 - name: needs-diagnostics
   color: ffb347
   description: Needs redacted `Tools/deltree diagnose --json` output.
@@ -22,6 +25,18 @@
 - name: performance
   color: fbca04
   description: Speed, memory, battery, or responsiveness.
+- name: documentation
+  color: 0075ca
+  description: README, docs, examples, screenshots, or contributor guidance.
+- name: ui
+  color: 7057ff
+  description: Dashboard, menu-bar panel, settings, screenshots, accessibility, or visual polish.
+- name: enhancement
+  color: a2eeef
+  description: New feature or behavior improvement.
+- name: question
+  color: d876e3
+  description: Support request or discussion that is not yet classified.
 - name: dependencies
   color: 0366d6
   description: Dependency updates.

@@ -14,6 +14,7 @@ Ask users for:
 
 Use labels consistently:
 
+- `needs-triage`
 - `needs-diagnostics`
 - `crash`
 - `data-safety`
@@ -21,6 +22,12 @@ Use labels consistently:
 - `cleanup`
 - `release`
 - `performance`
+- `documentation`
+- `ui`
+- `enhancement`
+- `question`
+
+See [Issue Triage](TRIAGE.md) for severity definitions and public-label usage.
 
 ## Crash Reports
 

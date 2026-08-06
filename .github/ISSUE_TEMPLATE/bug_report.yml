@@ -1,7 +1,7 @@
 name: Bug report
 description: Report a reproducible DELTREE problem.
 title: "[Bug]: "
-labels: ["bug", "needs-diagnostics"]
+labels: ["bug", "needs-triage", "needs-diagnostics"]
 body:
   - type: textarea
     id: summary

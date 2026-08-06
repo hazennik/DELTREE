@@ -7,7 +7,7 @@ DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
 UI_TEST_TIMEOUT_SECONDS ?= 120
 
-.PHONY: analyze appcast-check build check cli-dry-run docs-check format homebrew-check icon-check lint package-check release repository-check script-test spark-sign-check swift-test test ui-test workflow-check
+.PHONY: analyze appcast-check build check cli-dry-run docs-check export-screenshots format homebrew-check icon-check lint package-check release repository-check script-test spark-sign-check swift-test test ui-test workflow-check xcode-ui-test
 
 build:
 	$(XCODEBUILD) build -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=NO
@@ -16,6 +16,9 @@ test:
 	DELTREE_DISABLE_INITIAL_SCAN=1 $(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -parallel-testing-enabled NO -skip-testing:DELTREEUITests CODE_SIGNING_ALLOWED=NO
 
 ui-test:
+	UI_TEST_TIMEOUT_SECONDS=$(UI_TEST_TIMEOUT_SECONDS) XCODEBUILD=$(XCODEBUILD) PROJECT=$(PROJECT) SCHEME=$(SCHEME) DESTINATION='$(DESTINATION)' DERIVED_DATA_PATH='$(DERIVED_DATA_PATH)' zsh Scripts/ui-launch-smoke.sh
+
+xcode-ui-test:
 	DELTREE_DISABLE_INITIAL_SCAN=1 ruby Scripts/run-with-timeout.rb $(UI_TEST_TIMEOUT_SECONDS) -- $(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -only-testing:DELTREEUITests -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 30 -maximum-test-execution-time-allowance 45
 
 swift-test:
@@ -62,6 +65,9 @@ appcast-check:
 
 spark-sign-check:
 	zsh Scripts/sign-sparkle-update.sh --dry-run
+
+export-screenshots:
+	zsh Scripts/export-screenshots.sh
 
 docs-check:
 	ruby Scripts/check-docs-links.rb

@@ -40,7 +40,8 @@ Run UI tests separately on a trusted local Mac:
 make ui-test
 ```
 
-`make ui-test` has an outer watchdog through `Scripts/run-with-timeout.rb`, but a timed-out UI test is still a release blocker. The timeout only prevents local Xcode worker hangs from blocking the audit indefinitely.
+`make ui-test` is the release-gate launch smoke test. It builds the locally signed app, verifies the menu-bar `LSUIElement` configuration, launches with initial scanning disabled, and exits through `DELTREE_EXIT_AFTER_LAUNCH=1`.
+Run `make xcode-ui-test` when investigating the Xcode UI automation runner itself; that target is not the public release gate because Xcode worker materialization can hang before tests execute.
 
 ## Manual Smoke Tests
 
@@ -54,6 +55,7 @@ make ui-test
 - Confirm booted simulator devices are never deleted or erased.
 - Relaunch the app and confirm persisted settings, history, and manual overrides load correctly.
 - Run `Tools/deltree --dry-run --json` and confirm the CLI does not mutate local storage.
+- Run `make export-screenshots` after any visible UI change and confirm the modern dashboard/menu screenshots and smaller Classic screenshots are not blank or clipped.
 
 ## Public GA Gates
 
