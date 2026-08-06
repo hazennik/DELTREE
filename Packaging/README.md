@@ -11,6 +11,8 @@ Required local configuration:
 - `DELTREE_SPARKLE_PRIVATE_KEY_FILE` or `DELTREE_SPARKLE_PRIVATE_KEY_BASE64`: Sparkle EdDSA private key material used only by `Scripts/sign-sparkle-update.sh`.
 - `DELTREE_SPARKLE_PUBLIC_ED_KEY`: Sparkle public key embedded in the app Info.plist.
 
+Use [Local-Only Release Setup](../docs/LOCAL_RELEASE.md) for the recommended Keychain-backed release configuration. `Scripts/release-local.sh` runs the full local release path from a clean tag.
+
 The package script builds a signed archive and zip, optionally submits it for notarization, staples the app before recreating the zip, packages matching dSYMs, and writes SHA-256 checksum files.
 
 ```sh

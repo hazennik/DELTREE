@@ -29,9 +29,13 @@ Release/
 # Local secrets and signing state
 .env
 .env.*
+release.env
+local-release.env
+.deltree-release.env
 *.p8
 *.cer
 *.p12
+sparkle-private-key*
 notarization-profile.json
 
 # Logs and reports

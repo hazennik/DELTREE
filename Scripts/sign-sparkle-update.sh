@@ -10,6 +10,7 @@ extracts the EdDSA signature for appcast generation.
 
 Environment:
   DELTREE_SPARKLE_SIGN_UPDATE_BIN       Explicit path to sign_update.
+  DELTREE_SPARKLE_ACCOUNT               Optional Sparkle Keychain account.
   DELTREE_SPARKLE_PRIVATE_KEY_FILE      Sparkle EdDSA private key file.
   DELTREE_SPARKLE_PRIVATE_KEY_BASE64    Base64-encoded private key file contents.
   DELTREE_RELEASE_ZIP_PATH              Zip path. Defaults to build/export/DELTREE.zip.
@@ -120,6 +121,9 @@ if [[ -z "$key_file" && -n "${DELTREE_SPARKLE_PRIVATE_KEY_BASE64:-}" ]]; then
 fi
 
 sign_command=("$sign_update_bin")
+if [[ -n "${DELTREE_SPARKLE_ACCOUNT:-}" ]]; then
+  sign_command+=(--account "$DELTREE_SPARKLE_ACCOUNT")
+fi
 if [[ -n "$key_file" ]]; then
   if [[ ! -f "$key_file" ]]; then
     echo "Sparkle private key file not found: $key_file" >&2

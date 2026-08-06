@@ -168,7 +168,7 @@ Scripts/install-cli.sh
 
 DELTREE is intended for Developer ID distribution outside the Mac App Store because it needs to inspect developer folders and move approved items to Trash.
 
-Packaging notes live in [Packaging/README.md](Packaging/README.md) and release steps live in [docs/RELEASING.md](docs/RELEASING.md). Public distribution requires repository secrets for Developer ID signing, notarization, Sparkle appcast signing, and release asset hosting.
+Packaging notes live in [Packaging/README.md](Packaging/README.md), release steps live in [docs/RELEASING.md](docs/RELEASING.md), and local signing setup lives in [docs/LOCAL_RELEASE.md](docs/LOCAL_RELEASE.md). Public distribution uses local Developer ID signing, Apple notarization, Sparkle appcast signing, and GitHub Release asset hosting.
 
 ## Documentation
 

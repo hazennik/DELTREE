@@ -7,8 +7,10 @@ DELTREE is intended for Developer ID distribution outside the Mac App Store.
 - Developer ID Application certificate installed locally.
 - Apple Developer Team ID.
 - Notarization keychain profile configured for `xcrun notarytool`.
-- Sparkle EdDSA public key, private key file/secret, and a real appcast URL before public updates are enabled.
+- Sparkle EdDSA public key, Keychain-backed private key, and a real appcast URL before public updates are enabled.
 - `DELTREE_DEVELOPMENT_TEAM` configured locally only when opening the Xcode project with signing enabled.
+
+For this repository, the default production path is local-only release signing from Ryan's Mac. Follow [Local-Only Release Setup](LOCAL_RELEASE.md) before creating downloadable releases.
 
 ## Build And Test
 
@@ -38,6 +40,14 @@ Scripts/release-preflight.sh v1.0.0-rc.1 --repo hazennik/DELTREE --post-publish
 ```
 
 ## Package
+
+For a complete local release, use:
+
+```sh
+Scripts/release-local.sh v1.0.0-rc.1 --repo hazennik/DELTREE --draft
+```
+
+For packaging only:
 
 ```sh
 DELTREE_DEVELOPER_ID_APPLICATION="Developer ID Application: Example" \
@@ -93,7 +103,9 @@ Upload `DELTREE.dSYM.zip` with every release. It is not part of the Sparkle appc
 
 ## GitHub Release Automation
 
-The `Release` workflow runs on `v*` tags and manual dispatch. It expects these repository secrets:
+The default release path does not use GitHub-hosted signing. The `Release` workflow is present for future automation, but the job is skipped unless repository variable `DELTREE_RELEASE_EXECUTOR` is set to `github-actions`.
+
+If hosted signing is enabled later, the `Release` workflow runs on `v*` tags and manual dispatch. It expects these repository secrets:
 
 - `DELTREE_DEVELOPER_ID_CERTIFICATE_BASE64`
 - `DELTREE_DEVELOPER_ID_CERTIFICATE_PASSWORD`
@@ -120,11 +132,13 @@ Scripts/check-release-assets.sh "$DELTREE_RELEASE_TAG" --repo "$GITHUB_REPOSITOR
 
 ## Credential Safety
 
-Apple Developer and Sparkle credentials must never be committed to the repository. Store them only as GitHub Actions encrypted secrets or local keychain/private files.
+Apple Developer and Sparkle credentials must never be committed to the repository. For the default release path, store them only in local Keychain/private files on Ryan's Mac.
 
-The release workflow is intentionally separate from pull-request CI. It runs only from `v*` tags or manual dispatch, so normal public pull requests do not receive Developer ID, notarization, or Sparkle private-key material.
+The hosted release workflow is intentionally separate from pull-request CI and is opt-in. Normal public pull requests do not receive Developer ID, notarization, or Sparkle private-key material.
 
-The Developer ID certificate is imported into a temporary GitHub Actions keychain during the release job. The App Store Connect API key is decoded into the runner's temporary directory for notarization, and the Sparkle private key is used only to sign the final update zip.
+In local release mode, the Developer ID certificate, notarytool profile, and Sparkle update-signing key stay in this Mac's Keychain. The local env file stores IDs, paths, and public values only.
+
+If hosted signing is enabled later, the Developer ID certificate is imported into a temporary GitHub Actions keychain during the release job. The App Store Connect API key is decoded into the runner's temporary directory for notarization, and the Sparkle private key is used only to sign the final update zip.
 
 If any signing credential is exposed or suspected to be exposed, revoke it in Apple Developer or App Store Connect, rotate the matching GitHub secret, and rerun release validation with a new build.
 
