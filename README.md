@@ -18,11 +18,11 @@ TRASH ONLY. LOCAL ONLY. NO TELEMETRY.
 
 ![DELTREE command-prompt icon](docs/assets/deltree-icon-preview.png)
 
-> Status: production-candidate/private beta. The app and repository now include the public release gates, but GA still requires a real signed/notarized release run, Sparkle update smoke test, and clean-machine QA.
+> Status: public-source ready. Signed app downloads are not published yet; app GA still requires a real signed/notarized release run, Sparkle update smoke test, and clean-machine QA.
 
 ## Install
 
-Signed public downloads are not published yet. Until the first notarized release is published, build from source:
+Signed app downloads are not published yet. Until the first notarized release is published, build from source:
 
 ```sh
 git clone https://github.com/hazennik/DELTREE.git
@@ -31,7 +31,7 @@ make build
 open build/DerivedData/Build/Products/Debug/DELTREE.app
 ```
 
-When the first public release is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
+When the first signed app release is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
 
 ```sh
 curl -L -o DELTREE.zip https://github.com/hazennik/DELTREE/releases/latest/download/DELTREE.zip
@@ -178,6 +178,7 @@ Packaging notes live in [Packaging/README.md](Packaging/README.md) and release s
 - [Architecture](docs/ARCHITECTURE.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Production Readiness](docs/PRODUCTION_READINESS.md)
+- [Public Release Checklist](docs/PUBLIC_RELEASE_CHECKLIST.md)
 - [Permissions & Troubleshooting](docs/PERMISSIONS.md)
 - [Safety Policy](docs/SAFETY.md)
 - [CLI](docs/CLI.md)

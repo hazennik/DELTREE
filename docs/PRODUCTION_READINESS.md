@@ -1,6 +1,6 @@
 # Production Readiness
 
-DELTREE can be called production ready only after both engineering guardrails and release-distribution gates pass. Until then, the repository status remains production-candidate/private beta.
+DELTREE's source repository can be public before signed app downloads exist. The app should be called public GA only after both engineering guardrails and release-distribution gates pass.
 
 ## Runtime Guardrails
 
@@ -63,5 +63,5 @@ Run `make xcode-ui-test` when investigating the Xcode UI automation runner itsel
 - Staple and validate the app on a clean Mac that has not built DELTREE locally.
 - Publish a release candidate with `DELTREE.zip`, checksum files, dSYM archive, and Sparkle appcast assets.
 - Complete a Sparkle update smoke test from one signed build to the next.
-- Replace temporary README media with polished screenshots or GIFs from the clean-machine release-candidate build.
+- Review README media and replace screenshots or GIFs whenever the clean-machine release-candidate build changes visible UI.
 - Complete the full [Release QA](RELEASE_QA.md) checklist before calling the app public GA.

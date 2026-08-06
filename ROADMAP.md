@@ -5,7 +5,7 @@
 - Publish signed and notarized GitHub Releases.
 - Publish Sparkle appcast artifacts alongside releases.
 - Add a Homebrew cask after the first public signed release.
-- Replace placeholder screenshots with release-captured app screenshots and short workflow GIFs.
+- Keep screenshots current and add short workflow GIFs after release-candidate builds.
 - Keep CI green for Xcode build/test/analyze, SwiftPM core tests, lint, scripts, and package dry runs.
 
 ## Product

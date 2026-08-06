@@ -118,6 +118,16 @@ The workflow validates the matching `CHANGELOG.md` section, signs/notarizes/stap
 Scripts/check-release-assets.sh "$DELTREE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY"
 ```
 
+## Credential Safety
+
+Apple Developer and Sparkle credentials must never be committed to the repository. Store them only as GitHub Actions encrypted secrets or local keychain/private files.
+
+The release workflow is intentionally separate from pull-request CI. It runs only from `v*` tags or manual dispatch, so normal public pull requests do not receive Developer ID, notarization, or Sparkle private-key material.
+
+The Developer ID certificate is imported into a temporary GitHub Actions keychain during the release job. The App Store Connect API key is decoded into the runner's temporary directory for notarization, and the Sparkle private key is used only to sign the final update zip.
+
+If any signing credential is exposed or suspected to be exposed, revoke it in Apple Developer or App Store Connect, rotate the matching GitHub secret, and rerun release validation with a new build.
+
 ## Homebrew
 
 Homebrew Cask distribution should wait until signed, notarized GitHub Releases and Sparkle appcasts are stable. The cask will need the release zip URL, SHA-256 checksum, bundle identifier, and uninstall/zap paths.
