@@ -121,6 +121,7 @@ archive_command=(
   -configuration Release
   -archivePath "$archive_path"
   DEVELOPMENT_TEAM="$team_id"
+  CODE_SIGN_STYLE=Manual
   CODE_SIGN_IDENTITY="$identity"
   CODE_SIGNING_ALLOWED=YES
   MARKETING_VERSION="$marketing_version"
@@ -136,6 +137,7 @@ fi
 
 if ((dry_run)); then
   print -r -- "Dry run: ${archive_command[*]}"
+  deltree_codesign_developer_id_app "$app_path" "$identity" 1
   deltree_create_zip "$app_path" "$zip_path" 1
   print -r -- "Dry run: write SHA-256 \"$(deltree_sha256_path "$zip_path")\""
   deltree_package_dsym "$archive_path" "$app_path" "$export_path" 1
@@ -155,6 +157,7 @@ if ((dry_run)); then
 fi
 
 "${archive_command[@]}"
+deltree_codesign_developer_id_app "$app_path" "$identity"
 deltree_create_zip "$app_path" "$zip_path"
 deltree_package_dsym "$archive_path" "$app_path" "$export_path"
 deltree_write_sha256 "$zip_path"

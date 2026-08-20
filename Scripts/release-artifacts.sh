@@ -194,6 +194,65 @@ deltree_verify_codesign() {
   "$codesign_bin" --verify --deep --strict --verbose=2 "$bundle"
 }
 
+deltree_codesign_developer_id_item() {
+  local item="$1"
+  local identity="$2"
+  local dry_run="${3:-0}"
+  local codesign_bin="${CODESIGN_BIN:-/usr/bin/codesign}"
+  local -a command=(
+    "$codesign_bin"
+    --force
+    --options runtime
+    --timestamp
+    --sign "$identity"
+    "$item"
+  )
+
+  if [[ "$dry_run" == "1" ]]; then
+    print -r -- "Dry run: ${command[*]}"
+    return 0
+  fi
+
+  "${command[@]}"
+}
+
+deltree_codesign_developer_id_app() {
+  local bundle="$1"
+  local identity="$2"
+  local dry_run="${3:-0}"
+  local sparkle_framework="$bundle/Contents/Frameworks/Sparkle.framework"
+  local sparkle_version="$sparkle_framework/Versions/Current"
+  local -a sparkle_items
+  local item
+
+  if [[ -z "$identity" ]]; then
+    echo "Developer ID signing identity is required." >&2
+    return 1
+  fi
+
+  if [[ -d "$sparkle_framework" ]]; then
+    if [[ ! -d "$sparkle_version" ]]; then
+      sparkle_version="$sparkle_framework/Versions/B"
+    fi
+
+    sparkle_items=(
+      "$sparkle_version/XPCServices/Downloader.xpc"
+      "$sparkle_version/XPCServices/Installer.xpc"
+      "$sparkle_version/Updater.app"
+      "$sparkle_version/Autoupdate"
+      "$sparkle_framework"
+    )
+
+    for item in "${sparkle_items[@]}"; do
+      if [[ -e "$item" || -L "$item" ]]; then
+        deltree_codesign_developer_id_item "$item" "$identity" "$dry_run" || return 1
+      fi
+    done
+  fi
+
+  deltree_codesign_developer_id_item "$bundle" "$identity" "$dry_run"
+}
+
 deltree_verify_distribution_policy() {
   local bundle="$1"
   local syspolicy_bin="${SYSPOLICY_CHECK_BIN:-/usr/bin/syspolicy_check}"

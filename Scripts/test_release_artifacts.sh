@@ -11,9 +11,13 @@ bin_dir="$temp_dir/bin"
 app="$temp_dir/DELTREE.app"
 archive="$temp_dir/DELTREE.xcarchive"
 dsym="$archive/dSYMs/DELTREE.app.dSYM"
+sparkle="$app/Contents/Frameworks/Sparkle.framework/Versions/B"
 log="$temp_dir/calls.log"
 mkdir -p "$bin_dir" "$app/Contents/MacOS" "$dsym/Contents/Resources/DWARF"
+mkdir -p "$sparkle/XPCServices/Downloader.xpc" "$sparkle/XPCServices/Installer.xpc" "$sparkle/Updater.app"
+ln -s B "$app/Contents/Frameworks/Sparkle.framework/Versions/Current"
 : >"$app/Contents/MacOS/DELTREE"
+: >"$sparkle/Autoupdate"
 : >"$dsym/Contents/Resources/DWARF/DELTREE"
 : >"$log"
 
@@ -110,6 +114,14 @@ fi
 
 deltree_verify_packaged_app "$app"
 grep -Fq -- 'codesign --verify --deep --strict --verbose=2' "$log"
+
+deltree_codesign_developer_id_app "$app" "Developer ID Application: Example"
+grep -Fq -- 'codesign --force --options runtime --timestamp --sign Developer ID Application: Example' "$log"
+grep -Fq -- 'Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc' "$log"
+grep -Fq -- 'Sparkle.framework/Versions/Current/XPCServices/Installer.xpc' "$log"
+grep -Fq -- 'Sparkle.framework/Versions/Current/Updater.app' "$log"
+grep -Fq -- 'Sparkle.framework/Versions/Current/Autoupdate' "$log"
+grep -Fq -- 'Sparkle.framework' "$log"
 
 export XATTR_BIN="$bin_dir/xattr_quarantined"
 if deltree_verify_packaged_app "$app" 2>/dev/null; then

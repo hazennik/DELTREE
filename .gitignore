@@ -29,14 +29,27 @@ Release/
 # Local secrets and signing state
 .env
 .env.*
+*.env
+!*.env.example
+!*.env.sample
 release.env
 local-release.env
 .deltree-release.env
+AuthKey_*.p8
 *.p8
+*.key
+*.pem
 *.cer
+*.crt
+*.der
 *.p12
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
 sparkle-private-key*
 notarization-profile.json
+private/
+.config/
 
 # Logs and reports
 *.log

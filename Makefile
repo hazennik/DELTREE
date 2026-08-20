@@ -7,7 +7,7 @@ DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
 UI_TEST_TIMEOUT_SECONDS ?= 120
 
-.PHONY: analyze appcast-check build check cli-dry-run docs-check export-screenshots format homebrew-check icon-check lint package-check release repository-check script-test spark-sign-check swift-test test ui-test workflow-check xcode-ui-test
+.PHONY: analyze appcast-check build check cli-dry-run docs-check export-screenshots format homebrew-check icon-check lint package-check release repository-check script-test secrets-check spark-sign-check swift-test test ui-test workflow-check xcode-ui-test
 
 build:
 	$(XCODEBUILD) build -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=NO
@@ -59,6 +59,10 @@ package-check:
 
 repository-check:
 	zsh Scripts/check-repository-size.sh
+	zsh Scripts/check-no-secrets.sh
+
+secrets-check:
+	zsh Scripts/check-no-secrets.sh
 
 appcast-check:
 	zsh Scripts/generate-appcast.sh --dry-run
