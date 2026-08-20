@@ -121,8 +121,10 @@ if [[ -z "$key_file" && -n "${DELTREE_SPARKLE_PRIVATE_KEY_BASE64:-}" ]]; then
 fi
 
 sign_command=("$sign_update_bin")
+verify_command=("$sign_update_bin" --verify)
 if [[ -n "${DELTREE_SPARKLE_ACCOUNT:-}" ]]; then
   sign_command+=(--account "$DELTREE_SPARKLE_ACCOUNT")
+  verify_command+=(--account "$DELTREE_SPARKLE_ACCOUNT")
 fi
 if [[ -n "$key_file" ]]; then
   if [[ ! -f "$key_file" ]]; then
@@ -130,8 +132,10 @@ if [[ -n "$key_file" ]]; then
     exit 1
   fi
   sign_command+=(--ed-key-file "$key_file")
+  verify_command+=(--ed-key-file "$key_file")
 fi
 sign_command+=("$zip_path")
+verify_command+=("$zip_path")
 
 signature_output="$("${sign_command[@]}")"
 signature="$(print -r -- "$signature_output" | sed -nE 's/.*sparkle:edSignature="([^"]+)".*/\1/p' | head -1)"
@@ -141,7 +145,8 @@ if [[ -z "$signature" ]]; then
   exit 1
 fi
 
-"$sign_update_bin" --verify "$zip_path" "$signature" >/dev/null
+verify_command+=("$signature")
+"${verify_command[@]}" >/dev/null
 
 if [[ -n "$env_output" ]]; then
   print -r -- "DELTREE_SPARKLE_SIGNATURE=$signature" >>"$env_output"

@@ -48,10 +48,12 @@ esac
 zip_path="$temp_dir/DELTREE.zip"
 printf 'fake zip data' >"$zip_path"
 
-signature="$(DELTREE_SPARKLE_SIGN_UPDATE_BIN="$bin_dir/sign_update" \
+signature="$(DELTREE_SPARKLE_ACCOUNT=deltree \
+  DELTREE_SPARKLE_SIGN_UPDATE_BIN="$bin_dir/sign_update" \
   zsh "$root/Scripts/sign-sparkle-update.sh" --zip "$zip_path" --signature-only)"
 [[ "$signature" == "mock-signature" ]]
 grep -Fq -- 'sign_update ' "$log"
+grep -Fq -- '--account deltree' "$log"
 grep -Fq -- '--verify' "$log"
 grep -Fq -- 'mock-signature' "$log"
 
