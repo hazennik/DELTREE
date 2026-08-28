@@ -27,7 +27,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string></string>
+	<string>Copyright © 2026 Ryan Nicoletti.</string>
 	<key>SUFeedURL</key>
 	<string>$(DELTREE_SPARKLE_FEED_URL)</string>
 	<key>SUPublicEDKey</key>

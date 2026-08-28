@@ -4,9 +4,15 @@ DELTREE is local-only and does not provide a network service.
 
 ## Reporting
 
-While this repository is private, report security issues directly to the repository owner instead of opening a public issue.
+Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/hazennik/DELTREE/security/advisories/new).
 
-Before public launch, enable GitHub private vulnerability reporting or add a monitored security contact. Security reports should not include public issue details until a fix is available.
+Do not open a public issue for an unpatched vulnerability or include private paths, Codex transcripts, signing material, or proprietary project data in a report. If private vulnerability reporting is temporarily unavailable, contact the repository owner through a private channel listed on the [maintainer's GitHub profile](https://github.com/hazennik).
+
+Include the affected version or commit, macOS and Xcode versions, impact, reproduction steps, and the minimum redacted diagnostics needed to investigate. Maintainers will acknowledge reports as soon as practical and coordinate disclosure after a fix is available.
+
+## Supported Versions
+
+Security fixes are provided for the latest published release and the current `main` branch. Older prerelease builds may be asked to upgrade before investigation continues.
 
 ## Sensitive Areas
 

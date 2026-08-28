@@ -45,12 +45,25 @@ struct DashboardView: View {
         } message: {
             Text(viewModel.cleanupMessage ?? "")
         }
+        .alert("DELTREE Error", isPresented: errorMessageBinding) {
+            Button("OK") {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
     }
 
     private var cleanupMessageBinding: Binding<Bool> {
         Binding(
             get: { viewModel.cleanupMessage != nil },
             set: { if $0 == false { viewModel.cleanupMessage = nil } })
+    }
+
+    private var errorMessageBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if $0 == false { viewModel.errorMessage = nil } })
     }
 
 }

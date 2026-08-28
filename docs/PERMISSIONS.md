@@ -18,7 +18,7 @@ Notifications are optional. They are used for scan and cleanup completion notice
 
 DELTREE separates scanning from cleanup. A scan inventories candidate storage; cleanup requires a reviewed plan and explicit confirmation.
 
-Regular files and folders are moved through macOS Trash when possible. Simulator device cleanup uses Apple's simulator tooling for simulator devices rather than directly removing device directories. DELTREE records skipped items when it cannot safely classify or access a candidate.
+Regular files and folders are moved through macOS Trash when possible. Simulator device cleanup uses Apple's simulator tooling rather than directly removing device directories. Simulator delete and erase actions permanently remove the affected simulator data, are identified in preflight, and cannot be recovered from Trash. DELTREE records skipped items when it cannot safely classify or access a candidate.
 
 ## Common Issues
 

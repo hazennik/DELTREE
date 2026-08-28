@@ -13,10 +13,14 @@ archive="$temp_dir/DELTREE.xcarchive"
 dsym="$archive/dSYMs/DELTREE.app.dSYM"
 sparkle="$app/Contents/Frameworks/Sparkle.framework/Versions/B"
 log="$temp_dir/calls.log"
-mkdir -p "$bin_dir" "$app/Contents/MacOS" "$dsym/Contents/Resources/DWARF"
+mkdir -p "$bin_dir" "$app/Contents/MacOS" "$app/Contents/Resources" "$dsym/Contents/Resources/DWARF"
 mkdir -p "$sparkle/XPCServices/Downloader.xpc" "$sparkle/XPCServices/Installer.xpc" "$sparkle/Updater.app"
 ln -s B "$app/Contents/Frameworks/Sparkle.framework/Versions/Current"
 : >"$app/Contents/MacOS/DELTREE"
+print -r -- 'MIT License' >"$app/Contents/Resources/DELTREE-LICENSE.txt"
+print -r -- 'Copyright (c) 2026 Ryan Nicoletti' >>"$app/Contents/Resources/DELTREE-LICENSE.txt"
+print -r -- 'Copyright (c) 2006-2013 Andy Matuschak.' >"$app/Contents/Resources/Sparkle-LICENSE.txt"
+print -r -- 'bspatch.c and bsdiff.c' >>"$app/Contents/Resources/Sparkle-LICENSE.txt"
 : >"$sparkle/Autoupdate"
 : >"$dsym/Contents/Resources/DWARF/DELTREE"
 : >"$log"
@@ -114,6 +118,20 @@ fi
 
 deltree_verify_packaged_app "$app"
 grep -Fq -- 'codesign --verify --deep --strict --verbose=2' "$log"
+
+mv "$app/Contents/Resources/Sparkle-LICENSE.txt" "$app/Contents/Resources/Sparkle-LICENSE.missing"
+if deltree_verify_packaged_app "$app" 2>/dev/null; then
+  echo "App without third-party notices unexpectedly passed verification." >&2
+  exit 1
+fi
+mv "$app/Contents/Resources/Sparkle-LICENSE.missing" "$app/Contents/Resources/Sparkle-LICENSE.txt"
+
+mv "$app/Contents/Resources/DELTREE-LICENSE.txt" "$app/Contents/Resources/DELTREE-LICENSE.missing"
+if deltree_verify_packaged_app "$app" 2>/dev/null; then
+  echo "App without its DELTREE license unexpectedly passed verification." >&2
+  exit 1
+fi
+mv "$app/Contents/Resources/DELTREE-LICENSE.missing" "$app/Contents/Resources/DELTREE-LICENSE.txt"
 
 deltree_codesign_developer_id_app "$app" "Developer ID Application: Example"
 grep -Fq -- 'codesign --force --options runtime --timestamp --sign Developer ID Application: Example' "$log"

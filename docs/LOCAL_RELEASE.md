@@ -1,6 +1,6 @@
 # Local-Only Release Setup
 
-DELTREE releases are intended to be built, signed, notarized, and published from Ryan's Mac. Do not put Apple Developer credentials, App Store Connect `.p8` keys, Sparkle private keys, `.p12` files, or passwords in GitHub secrets unless the project intentionally moves back to hosted release signing.
+DELTREE releases are intended to be built, signed, notarized, and published from a designated maintainer Mac. Do not put Apple Developer credentials, App Store Connect `.p8` keys, Sparkle private keys, `.p12` files, or passwords in GitHub secrets unless the project intentionally moves back to hosted release signing.
 
 ## What App Store Connect Is Used For
 

@@ -1,6 +1,6 @@
 # Public Release Checklist
 
-This checklist keeps the repository ready so the final source-publication step is only changing GitHub visibility from private to public.
+This checklist tracks the remaining repository settings and release evidence required for public source publication and downloadable app distribution.
 
 ## Already Ready In The Repo
 
@@ -8,20 +8,22 @@ This checklist keeps the repository ready so the final source-publication step i
 - CI runs lint, docs, scripts, SwiftPM tests, Xcode tests, Release build, analyzer, CLI dry run, package dry run, appcast dry run, and Sparkle signing dry run.
 - README screenshots, social-preview image, app icon, issue templates, and release scripts are present.
 - Source install instructions are clear while signed app downloads are pending.
+- Simulator filesystem cleanup is blocked in the scanner, planner, and executor; simulator delete/erase preflight identifies irreversible data removal.
+- Complete DELTREE, Sparkle, and bundled-component license notices are included in the app bundle and enforced by release artifact checks.
 
 ## Do Before Making The Source Public
 
 1. Set the GitHub repository social preview image to `docs/assets/screenshots/social-preview.png`.
-2. Confirm GitHub labels match `.github/labels.yml`.
+2. Confirm every custom label in `.github/labels.yml` exists on GitHub; standard GitHub default labels may remain in addition.
 3. Confirm the latest `main` CI run is green.
 4. Confirm `make check` and `make ui-test` pass locally.
-5. Confirm there are no committed secrets or private local paths in docs.
+5. Confirm there are no committed secrets or private local paths in docs or fixtures.
 6. Change the repository visibility to public.
 7. Immediately after public visibility is available, protect `main` with required PRs and required CI checks.
 
 ## Do Before Publishing Downloadable Apps
 
-Signed downloadable apps are released from Ryan's Mac using [Local-Only Release Setup](LOCAL_RELEASE.md). Before the first app download is published:
+Signed downloadable apps are released from a designated maintainer Mac using [Local-Only Release Setup](LOCAL_RELEASE.md). Before the first app download is published:
 
 1. Install the Developer ID Application certificate and private key in this Mac's Keychain.
 2. Create the App Store Connect API key used only for notarization.

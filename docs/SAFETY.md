@@ -5,12 +5,12 @@ DELTREE exists to explain and safely reclaim developer storage. It should never 
 ## Hard Rules
 
 - Never clean booted or active simulators.
-- Never permanently delete files in v1.
+- Never permanently delete regular files or folders in v1; move them to Trash.
 - Never silently clean anything.
 - Always revalidate cleanup plans before execution.
 - Check non-simulator cleanup candidates with `lsof` before labeling them safe.
 - Always use Trash for file and folder cleanup.
-- Only use `simctl delete` or `simctl erase` for explicit simulator actions.
+- Only use `simctl delete` or `simctl erase` for explicit simulator actions, and identify those actions as irreversible before confirmation.
 - Never include archives, dSYMs, runtimes, DeviceSupport, or simulator images in one-click safe cleanup.
 
 ## One-Click Safe Cleanup
@@ -20,7 +20,7 @@ Only `Safe to Remove` items with safe actions are eligible.
 Examples:
 
 - stale Codex-attributed XCTest devices
-- unavailable simulator devices
+- unavailable simulator devices, using `simctl delete` with an irreversible-action warning
 - old `.xcresult` bundles
 - stale Codex temporary/work folders
 - stale CoreSimulator caches
@@ -67,4 +67,4 @@ xcodebuild test -scheme DELTREE -project DELTREE.xcodeproj -destination 'platfor
 rg "removeItem|trashItem|simctl" DELTREE DELTREETests Tools Scripts
 ```
 
-Production code should show Trash usage and approved `simctl` actions, not permanent deletion.
+Production code should route regular files and folders through Trash. Simulator device actions must use approved `simctl` commands and clearly disclose their irreversible effects.

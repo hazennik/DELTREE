@@ -61,7 +61,7 @@ DELTREE always shows a cleanup preflight before action. The preflight lists:
 - risks
 - action explanations
 
-File and folder cleanup moves items to Trash. Simulator cleanup uses explicit `simctl` actions when appropriate.
+File and folder cleanup moves items to Trash. Simulator cleanup uses explicit `simctl` actions when appropriate. `simctl delete` and `simctl erase` permanently remove the affected simulator data and cannot be recovered from Trash; the preflight identifies these actions before confirmation.
 
 ## Manual Overrides
 

@@ -120,6 +120,33 @@ struct CleanupExecutorTests {
         #expect(await simctl.deletedUDIDs().isEmpty)
     }
 
+    @Test @MainActor func executorRejectsDirectFilesystemCleanupForSimulatorDevice() async {
+        let trash = RecordingTrashService()
+        let simctl = RecordingSimctlCommandClient()
+        let executor = DefaultCleanupExecutor(
+            trashService: trash,
+            simctlClient: simctl,
+            simctlDeviceClient: StaticSimctlClient(devices: [
+                Self.simulatorDevice(udid: "SIM-123", state: "Shutdown", isAvailable: true),
+            ]),
+            openFileChecker: RecordingOpenFileChecker(result: .clear))
+        let simulator = Self.item(
+            path: "/tmp/device",
+            domain: .coreSimulatorDevices,
+            kind: .simulatorDevice,
+            metadata: ["udid": "SIM-123"])
+        let action = CleanupPlanAction(item: simulator, action: .moveToTrash, reason: "Invalid direct cleanup.")
+        let plan = CleanupPlan(actions: [action], blockedItems: [])
+
+        let result = await executor.execute(plan)
+
+        #expect(result.completedActions.isEmpty)
+        #expect(result.failedActions[action] == CleanupExecutionError.invalidSimulatorAction(.moveToTrash).localizedDescription)
+        #expect(await trash.trashedPaths().isEmpty)
+        #expect(await simctl.deletedUDIDs().isEmpty)
+        #expect(await simctl.erasedUDIDs().isEmpty)
+    }
+
     private static func item(
         path: String,
         domain: StorageDomain = .xcResults,

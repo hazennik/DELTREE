@@ -194,6 +194,34 @@ deltree_verify_codesign() {
   "$codesign_bin" --verify --deep --strict --verbose=2 "$bundle"
 }
 
+deltree_verify_license_notices() {
+  local bundle="$1"
+  local deltree_license="$bundle/Contents/Resources/DELTREE-LICENSE.txt"
+  local sparkle_license="$bundle/Contents/Resources/Sparkle-LICENSE.txt"
+
+  if [[ ! -s "$deltree_license" ]]; then
+    echo "DELTREE license notice is missing from the app bundle: $deltree_license" >&2
+    return 1
+  fi
+
+  if ! grep -Fq 'MIT License' "$deltree_license" || \
+     ! grep -Fq 'Copyright (c) 2026 Ryan Nicoletti' "$deltree_license"; then
+    echo "DELTREE license notice is incomplete: $deltree_license" >&2
+    return 1
+  fi
+
+  if [[ ! -s "$sparkle_license" ]]; then
+    echo "Sparkle license notice is missing from the app bundle: $sparkle_license" >&2
+    return 1
+  fi
+
+  if ! grep -Fq 'Copyright (c) 2006-2013 Andy Matuschak.' "$sparkle_license" || \
+     ! grep -Fq 'bspatch.c and bsdiff.c' "$sparkle_license"; then
+    echo "Sparkle license notice is incomplete: $sparkle_license" >&2
+    return 1
+  fi
+}
+
 deltree_codesign_developer_id_item() {
   local item="$1"
   local identity="$2"
@@ -275,6 +303,7 @@ deltree_verify_stapled_notarization() {
 deltree_verify_packaged_app() {
   local bundle="$1"
 
+  deltree_verify_license_notices "$bundle" || return 1
   deltree_verify_no_quarantine_attribute "$bundle" || return 1
   deltree_verify_codesign "$bundle" || return 1
 }

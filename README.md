@@ -18,7 +18,7 @@ TRASH ONLY. LOCAL ONLY. NO TELEMETRY.
 
 ![DELTREE command-prompt icon](docs/assets/deltree-icon-preview.png)
 
-> Status: public-source ready. Signed app downloads are not published yet; app GA still requires a real signed/notarized release run, Sparkle update smoke test, and clean-machine QA.
+> Status: release-candidate preparation. Local checks pass, but public GA still requires green hosted CI, a current signed/notarized release candidate, Sparkle update testing, and clean-machine QA.
 
 ## Install
 
@@ -99,7 +99,7 @@ DELTREE is intentionally conservative.
 
 - No full-disk crawl by default.
 - No silent cleanup.
-- No permanent file deletion in v1.
+- Regular files and folders are moved to Trash; explicit simulator delete/erase actions permanently remove simulator data.
 - Booted or active simulators are never cleaned.
 - Archives, dSYMs, runtimes, DeviceSupport, and simulator images are excluded from one-click cleanup.
 - Every cleanup plan is revalidated before execution.
@@ -133,7 +133,7 @@ Classic keeps the retro command-prompt identity available as a smaller secondary
 - Correlates filesystem changes with Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
 - Labels items as `Safe to Remove`, `Probably Safe`, `Review First`, `Do Not Remove`, or `Unknown`.
 - Moves approved files to Trash instead of hard-deleting them.
-- Uses approved `simctl delete` and `simctl erase` commands for simulator-specific actions.
+- Uses explicit `simctl delete` and `simctl erase` commands for simulator-specific actions and identifies them as irreversible in cleanup preflight.
 - Persists scan history, recent growth, manual overrides, and cleanup records with SwiftData.
 
 ## Menu Bar States

@@ -5,8 +5,8 @@ DELTREE's source repository can be public before signed app downloads exist. The
 ## Runtime Guardrails
 
 - Cleanup execution must fail closed. Each action is revalidated immediately before execution for active, pinned, ignored, blocked-domain, unsafe-classification, missing-path, open-file, and simulator-state changes.
-- File cleanup must use Trash. Permanent deletion is not part of v1 production behavior.
-- Simulator cleanup must use only explicit `simctl delete` or `simctl erase` actions, and booted or now-available devices must be skipped.
+- Regular file and folder cleanup must use Trash. Permanent regular-file deletion is not part of v1 production behavior.
+- Simulator cleanup must use only explicit `simctl delete` or `simctl erase` actions, identify their irreversible effects before confirmation, and skip booted devices or devices whose availability changed.
 - Scanning must stay bounded to known developer roots unless the user opts into additional roots.
 - Large filesystem walks must be cancellable, and default file-size scans must use the production entry budget.
 - Codex thread/session previews must be bounded so unusually large logs do not become unbounded memory reads.

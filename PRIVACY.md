@@ -22,7 +22,8 @@ Operational history is retained with bounded limits. Manual overrides persist un
 
 - It does not upload scan results, cleanup history, paths, account data, or project metadata.
 - It does not crawl the full disk by default.
-- It does not permanently delete files in v1.
+- It does not permanently delete regular files or folders; those are moved to Trash.
+- Explicit simulator delete and erase actions use `simctl` and permanently remove the affected simulator data after confirmation.
 - It does not perform silent cleanup.
 
 Developer ID builds may use Sparkle to check the public appcast for software updates. Homebrew builds disable in-app Sparkle update UI. Sparkle update checks do not include DELTREE scan results or cleanup history.

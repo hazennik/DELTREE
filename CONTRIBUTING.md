@@ -1,6 +1,8 @@
 # Contributing
 
-This repository is private while DELTREE is still taking shape. Contributions should still follow the same bar as a public project.
+DELTREE welcomes focused bug reports, documentation improvements, tests, and code contributions that preserve its conservative cleanup model.
+
+Before starting a large change, open an issue so maintainers and contributors can align on scope and safety implications.
 
 ## Pull Request Expectations
 

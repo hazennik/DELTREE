@@ -42,7 +42,7 @@ struct SimulatorDeviceDomainScanner: DomainScanning {
 
                 var metadata: [String: String] = [
                     "root": rootPath,
-                    "suggestedAction": StorageAction.moveToTrash.rawValue,
+                    "suggestedAction": StorageAction.none.rawValue,
                 ]
                 if let device {
                     metadata["udid"] = device.udid

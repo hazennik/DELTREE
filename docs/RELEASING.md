@@ -10,7 +10,7 @@ DELTREE is intended for Developer ID distribution outside the Mac App Store.
 - Sparkle EdDSA public key, Keychain-backed private key, and a real appcast URL before public updates are enabled.
 - `DELTREE_DEVELOPMENT_TEAM` configured locally only when opening the Xcode project with signing enabled.
 
-For this repository, the default production path is local-only release signing from Ryan's Mac. Follow [Local-Only Release Setup](LOCAL_RELEASE.md) before creating downloadable releases.
+For this repository, the default production path is local-only release signing from a designated maintainer Mac. Follow [Local-Only Release Setup](LOCAL_RELEASE.md) before creating downloadable releases.
 
 ## Build And Test
 
@@ -132,7 +132,7 @@ Scripts/check-release-assets.sh "$DELTREE_RELEASE_TAG" --repo "$GITHUB_REPOSITOR
 
 ## Credential Safety
 
-Apple Developer and Sparkle credentials must never be committed to the repository. For the default release path, store them only in local Keychain/private files on Ryan's Mac.
+Apple Developer and Sparkle credentials must never be committed to the repository. For the default release path, store them only in local Keychain/private files on the designated maintainer Mac.
 
 The hosted release workflow is intentionally separate from pull-request CI and is opt-in. Normal public pull requests do not receive Developer ID, notarization, or Sparkle private-key material.
 

@@ -15,7 +15,8 @@ struct DefaultCleanupPlanner: CleanupPlanning, @unchecked Sendable {
             if let action = preflightAction(
                 for: item,
                 requestedAction: item.suggestedAction == .none ? .moveToTrash : item.suggestedAction,
-                allowReviewItems: false)
+                allowReviewItems: false,
+                requiresOneClickSafeAction: true)
             {
                 actions.append(action)
             } else {
@@ -28,7 +29,11 @@ struct DefaultCleanupPlanner: CleanupPlanning, @unchecked Sendable {
 
     func planCleanup(for item: StorageItem, action: StorageAction, in snapshot: StorageSnapshot) -> CleanupPlan {
         if let current = snapshot.items.first(where: { $0.path == item.path }),
-           let preflightAction = preflightAction(for: current, requestedAction: action, allowReviewItems: true)
+           let preflightAction = preflightAction(
+               for: current,
+               requestedAction: action,
+               allowReviewItems: true,
+               requiresOneClickSafeAction: false)
         {
             return CleanupPlan(actions: [preflightAction], blockedItems: [])
         }
@@ -38,7 +43,8 @@ struct DefaultCleanupPlanner: CleanupPlanning, @unchecked Sendable {
     private func preflightAction(
         for item: StorageItem,
         requestedAction: StorageAction,
-        allowReviewItems: Bool) -> CleanupPlanAction?
+        allowReviewItems: Bool,
+        requiresOneClickSafeAction: Bool) -> CleanupPlanAction?
     {
         guard item.isActive == false,
               item.isPinned == false,
@@ -46,6 +52,17 @@ struct DefaultCleanupPlanner: CleanupPlanning, @unchecked Sendable {
               blockedDomain(item.domain) == false,
               requestedAction.isCleanupExecutionAction
         else {
+            return nil
+        }
+
+        if requiresOneClickSafeAction, requestedAction.isOneClickSafeCleanupAction == false {
+            return nil
+        }
+
+        if item.domain == .coreSimulatorDevices,
+           requestedAction != .deleteUnavailableSimulator,
+           requestedAction != .eraseSimulator
+        {
             return nil
         }
 

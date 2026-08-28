@@ -39,7 +39,9 @@ struct DefaultSafetyPolicy: SafetyClassifying {
                 return SafetyDecision(classification: .safeToTrash, reason: "Unavailable simulator devices can be recreated by Xcode.")
             }
             if codexAttributed && isStale(item: item, now: now, staleAgeDays: configuration.keepSimulatorsUsedWithinDays) {
-                return SafetyDecision(classification: .safeToTrash, reason: "This stale simulator was attributed to Codex-driven Xcode work.")
+                return SafetyDecision(
+                    classification: .probablySafe,
+                    reason: "This stale simulator was attributed to Codex-driven Xcode work, but its app data should be reviewed before an explicit simctl action.")
             }
             if stale {
                 return SafetyDecision(classification: .probablySafe, reason: "This shutdown simulator is stale, but review its app data before removal.")

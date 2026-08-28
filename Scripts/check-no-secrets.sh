@@ -46,6 +46,36 @@ if [[ -n "$content_matches" ]]; then
   print -r -- "$content_matches" >&2
 fi
 
+history_sensitive_files="$(
+  for commit in $(git rev-list --all); do
+    git ls-tree -r --name-only "$commit"
+  done | sort -u | while IFS= read -r history_file; do
+    case "$history_file" in
+      *.env.example|*.env.sample) continue ;;
+    esac
+    if [[ "$history_file" =~ $sensitive_file_regex ]]; then
+      print -r -- "$history_file"
+    fi
+  done
+)"
+
+if [[ -n "$history_sensitive_files" ]]; then
+  report "Sensitive file names exist in reachable Git history:"
+  print -r -- "$history_sensitive_files" >&2
+fi
+
+history_content_matches="$(
+  for commit in $(git rev-list --all); do
+    git grep -I -l -E -e "$content_secret_regex" "$commit" -- . \
+      ':(exclude)Scripts/check-no-secrets.sh' || true
+  done | sort -u
+)"
+
+if [[ -n "$history_content_matches" ]]; then
+  report "Private key or token patterns exist in reachable Git history:"
+  print -r -- "$history_content_matches" >&2
+fi
+
 if ((failures > 0)); then
   printf 'Secret check failed with %d issue(s).\n' "$failures" >&2
   exit 1

@@ -14,6 +14,18 @@ struct SafetyPolicyTests {
         #expect(decision.classification == .keep)
     }
 
+    @Test func availableStaleCodexSimulatorRequiresReview() {
+        var item = Self.item(domain: .coreSimulatorDevices, kind: .simulatorDevice)
+        item.attribution = .xcodeViaCodex
+        item.lastUsedAt = Date().addingTimeInterval(-30 * 86_400)
+        item.metadata["isAvailable"] = "true"
+
+        let decision = policy.classify(item: item, configuration: .standard, now: Date())
+
+        #expect(decision.classification == .probablySafe)
+        #expect(decision.reason.contains("explicit simctl action"))
+    }
+
     @Test func archivesAndRuntimesAreNotOneClickSafe() {
         let archive = Self.item(domain: .archives, kind: .archive)
         let runtime = Self.item(domain: .simulatorRuntimes, kind: .simulatorRuntime)
@@ -137,7 +149,47 @@ struct StorageScannerOpenFileCheckTests {
         let checkedPaths = await checker.checkedPaths()
 
         #expect(item.safety == .safeToTrash)
+        #expect(item.suggestedAction == .deleteUnavailableSimulator)
         #expect(checkedPaths.isEmpty)
+    }
+
+    @Test func availableSimulatorDoesNotSuggestFilesystemCleanup() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent("DELTREE-available-simulator-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+
+        let deviceURL = root.appendingPathComponent("Library/Developer/CoreSimulator/Devices/SIM-456", isDirectory: true)
+        try fileManager.createDirectory(at: deviceURL, withIntermediateDirectories: true)
+        try Data("fixture".utf8).write(to: deviceURL.appendingPathComponent("data"))
+
+        let checker = RecordingOpenFileChecker(result: .unavailable("lsof should not run"))
+        let scanner = DefaultStorageScanner(
+            rootCatalog: StorageRootCatalog(homeDirectory: root),
+            fileManager: fileManager,
+            fileSizeScanner: LiveFileSizeScanner(fileManager: fileManager),
+            simctlClient: StaticSimctlClient(devices: [
+                SimctlDevice(
+                    udid: "SIM-456",
+                    name: "Available iPhone",
+                    state: "Shutdown",
+                    isAvailable: true,
+                    availabilityError: nil,
+                    runtimeIdentifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-0",
+                    dataPath: deviceURL.path,
+                    logPath: nil,
+                    lastBootedAt: Date().addingTimeInterval(-30 * 86_400)),
+            ]),
+            codexSessionScanner: EmptyCodexSessionScanner(),
+            processSampler: EmptyProcessSampler(),
+            openFileChecker: checker,
+            attributionTracker: LiveAttributionTracker())
+
+        let snapshot = await scanner.scan(configuration: .standard, now: Date())
+        let item = try #require(snapshot.items.first { $0.path == deviceURL.standardizedFileURL.path })
+
+        #expect(item.suggestedAction == .none)
+        #expect(item.safety != .safeToTrash)
+        #expect(await checker.checkedPaths().isEmpty)
     }
 
     private func scanCodexCache(openFileCheckResult: OpenFileCheckResult) async throws -> ScanResult {

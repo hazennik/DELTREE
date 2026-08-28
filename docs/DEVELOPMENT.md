@@ -59,7 +59,7 @@ make export-screenshots
 ## Engineering Rules
 
 - Keep cleanup conservative.
-- Do not add permanent delete paths.
+- Do not add permanent regular-file delete paths; simulator actions must stay behind explicit, accurately worded `simctl` confirmation.
 - Keep scanners bounded to known roots unless the user opts into custom roots.
 - Prefer service protocols for filesystem, process, simctl, Trash, and persistence behavior.
 - Keep UI state testable through descriptors and view models.

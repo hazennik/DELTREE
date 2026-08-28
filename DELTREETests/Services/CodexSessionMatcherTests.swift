@@ -7,19 +7,19 @@ struct CodexSessionMatcherTests {
         let session = CodexSessionRecord(
             id: "task-123",
             title: "Build Storage Inspector",
-            workingDirectory: "/Users/ryan/Documents/GitHub/DELTREE",
-            sourcePath: "/Users/ryan/.codex/sessions/task-123.json",
+            workingDirectory: "/Users/developer/Documents/GitHub/DELTREE",
+            sourcePath: "/Users/developer/.codex/sessions/task-123.json",
             startedAt: Date(timeIntervalSince1970: 100),
             lastUpdatedAt: Date(timeIntervalSince1970: 200))
 
         let metadata = CodexSessionMatcher.metadata(
-            for: "/Users/ryan/Documents/GitHub/DELTREE/Build/Result.xcresult",
+            for: "/Users/developer/Documents/GitHub/DELTREE/Build/Result.xcresult",
             sessions: [session])
 
         #expect(metadata["codexSessionID"] == "task-123")
         #expect(metadata["codexTaskTitle"] == "Build Storage Inspector")
-        #expect(metadata["codexWorkingDirectory"] == "/Users/ryan/Documents/GitHub/DELTREE")
-        #expect(metadata["codexSessionSource"] == "/Users/ryan/.codex/sessions/task-123.json")
+        #expect(metadata["codexWorkingDirectory"] == "/Users/developer/Documents/GitHub/DELTREE")
+        #expect(metadata["codexSessionSource"] == "/Users/developer/.codex/sessions/task-123.json")
         #expect(metadata["codexSessionLastUpdatedAt"] != nil)
     }
 
@@ -28,7 +28,7 @@ struct CodexSessionMatcherTests {
             id: "abc-456",
             title: "",
             workingDirectory: nil,
-            sourcePath: "/Users/ryan/.codex/sessions/abc-456.json",
+            sourcePath: "/Users/developer/.codex/sessions/abc-456.json",
             startedAt: nil,
             lastUpdatedAt: nil)
 
@@ -40,19 +40,19 @@ struct CodexSessionMatcherTests {
     @Test func sessionStorageMetadataSummarizesProjectDateAndDescription() {
         let now = Date(timeIntervalSince1970: 2_000_000)
         let lastUpdatedAt = now.addingTimeInterval(-30 * 86_400)
-        let sessionRoot = "/Users/ryan/.codex/sessions"
+        let sessionRoot = "/Users/developer/.codex/sessions"
         let session = CodexSessionRecord(
             id: "session-1",
             title: "Update Mac storage cleanup guard",
-            workingDirectory: "/Users/ryan/Documents/GitHub/DELTREE",
+            workingDirectory: "/Users/developer/Documents/GitHub/DELTREE",
             sourcePath: "\(sessionRoot)/2026/08/02/session-1.jsonl",
             startedAt: nil,
             lastUpdatedAt: lastUpdatedAt)
         let outsideSession = CodexSessionRecord(
             id: "session-2",
             title: "Unrelated work",
-            workingDirectory: "/Users/ryan/Documents/GitHub/Other",
-            sourcePath: "/Users/ryan/.codex/tasks/session-2.jsonl",
+            workingDirectory: "/Users/developer/Documents/GitHub/Other",
+            sourcePath: "/Users/developer/.codex/tasks/session-2.jsonl",
             startedAt: nil,
             lastUpdatedAt: lastUpdatedAt)
 
@@ -87,7 +87,7 @@ struct CodexSessionMatcherTests {
         let session = CodexSessionRecord(
             id: "session-1",
             title: "Explain stale Codex session storage",
-            workingDirectory: "/Users/ryan/Documents/GitHub/DELTREE",
+            workingDirectory: "/Users/developer/Documents/GitHub/DELTREE",
             sourcePath: sessionFile.path,
             startedAt: nil,
             lastUpdatedAt: lastUpdatedAt)
@@ -126,7 +126,7 @@ struct CodexSessionMatcherTests {
         try fileManager.createDirectory(at: archivedRoot, withIntermediateDirectories: true)
         let sessionFile = archivedRoot.appendingPathComponent("archived-1.jsonl")
         let json = """
-        {"id":"archived-1","cwd":"/Users/ryan/Documents/GitHub/DELTREE","updated_at":"2026-06-01T12:00:00Z","text":"Review old Codex session cleanup"}
+        {"id":"archived-1","cwd":"/Users/developer/Documents/GitHub/DELTREE","updated_at":"2026-06-01T12:00:00Z","text":"Review old Codex session cleanup"}
         """
         try Data(json.utf8).write(to: sessionFile)
 

@@ -10,7 +10,7 @@ struct SimctlDeviceParserTests {
             "com.apple.CoreSimulator.SimRuntime.iOS-26-0": [
               {
                 "availabilityError": "runtime profile not found",
-                "dataPath": "/Users/ryan/Library/Developer/CoreSimulator/Devices/ABC",
+                "dataPath": "/Users/developer/Library/Developer/CoreSimulator/Devices/ABC",
                 "isAvailable": false,
                 "lastBootedAt": "2026-07-01T12:34:56Z",
                 "name": "iPhone 16 Pro",

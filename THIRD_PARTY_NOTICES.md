@@ -20,3 +20,6 @@ CodexBar repository: https://github.com/steipete/CodexBar
 DELTREE uses Sparkle 2 for Developer ID app updates. Sparkle is distributed under the MIT license.
 
 Sparkle repository: https://github.com/sparkle-project/Sparkle
+
+The complete Sparkle and bundled-component license text is kept in
+[`DELTREE/Resources/Sparkle-LICENSE.txt`](DELTREE/Resources/Sparkle-LICENSE.txt) and is included in distributed app bundles.

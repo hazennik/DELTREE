@@ -5,21 +5,21 @@ import Testing
 struct DiagnosticRedactorTests {
     @Test func redactsShareSensitivePathAndIdentifierSegments() {
         let redactor = DiagnosticRedactor(
-            homeDirectory: "/Users/ryan",
-            username: "ryan")
+            homeDirectory: "/Users/developer",
+            username: "developer")
         let raw = """
-        /Users/ryan/Documents/GitHub/SecretProject/Build
-        ryan@example.com
+        /Users/developer/Documents/GitHub/SecretProject/Build
+        developer@example.com
         task-1234567890abcdef
         8B4E7664-4E91-4E2D-9FA1-41F49869D64D
-        /Users/ryan/Library/Developer/Xcode/DerivedData/SecretProject-abcd1234EFGH5678/Index.noindex
+        /Users/developer/Library/Developer/Xcode/DerivedData/SecretProject-abcd1234EFGH5678/Index.noindex
         /var/folders/s7/private-cache/path
         """
 
         let redacted = redactor.redact(raw)
 
-        #expect(redacted.contains("/Users/ryan") == false)
-        #expect(redacted.contains("ryan@example.com") == false)
+        #expect(redacted.contains("/Users/developer") == false)
+        #expect(redacted.contains("developer@example.com") == false)
         #expect(redacted.contains("1234567890abcdef") == false)
         #expect(redacted.contains("8B4E7664-4E91-4E2D-9FA1-41F49869D64D") == false)
         #expect(redacted.contains("abcd1234EFGH5678") == false)

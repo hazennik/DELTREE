@@ -53,6 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settings: container.settings,
             openDashboard: { dashboardWindowController.show() },
             openSettings: { settingsWindowController.show() })
+        if let startupWarning = container.startupWarning {
+            presentStartupWarning(startupWarning)
+        }
         if environment["DELTREE_DISABLE_INITIAL_SCAN"] != "1" {
             container.dashboardViewModel.start()
         }
@@ -74,5 +77,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private static var isRunningUnitTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+    }
+
+    private func presentStartupWarning(_ message: String) {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "DELTREE history is not being saved"
+        alert.informativeText = message
+        alert.addButton(withTitle: "Continue")
+        alert.runModal()
     }
 }

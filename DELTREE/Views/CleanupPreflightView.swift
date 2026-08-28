@@ -31,7 +31,7 @@ struct CleanupPreflightView: View {
                     .monospacedDigit()
             }
 
-            Text(theme.isClassic ? "DELTREE WILL USE TRASH FOR FILES AND FOLDERS, OR APPROVED SIMCTL COMMANDS FOR SIMULATOR ACTIONS. NOTHING IS PERMANENTLY DELETED BY THE APP." : "DELTREE will use Trash for files and folders, or approved simctl commands for simulator actions. Nothing is permanently deleted by the app.")
+            Text(theme.isClassic ? cleanupDisclosure.uppercased() : cleanupDisclosure)
                 .foregroundStyle(theme.secondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -131,5 +131,12 @@ struct CleanupPreflightView: View {
 
     private var showsHighImpactWarning: Bool {
         confirmationThresholdBytes > 0 && plan.reclaimableBytes >= confirmationThresholdBytes
+    }
+
+    private var cleanupDisclosure: String {
+        if plan.permanentlyRemovesSimulatorData {
+            return "Files and folders are moved to Trash. Simulator delete and erase actions use simctl, permanently remove the affected simulator data, and cannot be recovered from Trash."
+        }
+        return "Files and folders are moved to Trash and remain recoverable until Trash is emptied."
     }
 }

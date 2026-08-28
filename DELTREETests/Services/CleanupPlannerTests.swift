@@ -30,6 +30,46 @@ struct CleanupPlannerTests {
         #expect(plan.blockedItems.count == 2)
     }
 
+    @Test func preflightBlocksDirectFilesystemCleanupForSimulatorDevices() throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory.appendingPathComponent("DELTREE-simulator-plan-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+
+        var simulator = Self.item(path: root.path)
+        simulator.domain = .coreSimulatorDevices
+        simulator.kind = .simulatorDevice
+        simulator.suggestedAction = .moveToTrash
+        simulator.metadata["udid"] = "SIM-123"
+        let snapshot = StorageSnapshot(
+            capturedAt: Date(),
+            items: [simulator],
+            missingPaths: [],
+            unreadablePaths: [])
+        let planner = DefaultCleanupPlanner(fileManager: fileManager)
+
+        let safePlan = planner.planSafeCleanup(from: snapshot)
+        let individualPlan = planner.planCleanup(for: simulator, action: .moveToTrash, in: snapshot)
+
+        #expect(safePlan.actions.isEmpty)
+        #expect(safePlan.blockedItems == [simulator])
+        #expect(individualPlan.actions.isEmpty)
+        #expect(individualPlan.blockedItems == [simulator])
+    }
+
+    @Test func cleanupPlanReportsIrreversibleSimulatorActions() {
+        let item = Self.item(path: "/tmp/simulator")
+        let deletePlan = CleanupPlan(
+            actions: [CleanupPlanAction(item: item, action: .deleteUnavailableSimulator, reason: "Fixture")],
+            blockedItems: [])
+        let trashPlan = CleanupPlan(
+            actions: [CleanupPlanAction(item: item, action: .moveToTrash, reason: "Fixture")],
+            blockedItems: [])
+
+        #expect(deletePlan.permanentlyRemovesSimulatorData)
+        #expect(trashPlan.permanentlyRemovesSimulatorData == false)
+    }
+
     private static func item(path: String) -> StorageItem {
         StorageItem(
             id: path,

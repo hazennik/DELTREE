@@ -4,7 +4,7 @@ This checklist must pass before DELTREE is called public GA.
 
 ## Release Candidate
 
-Use `v1.0.0-rc.1` for the first full private release candidate.
+Use `v1.0.0-rc.1` for the first full release candidate.
 
 Required CI proof:
 
@@ -25,6 +25,8 @@ Run on a Mac that has not built DELTREE locally.
 - Confirm `xcrun stapler validate DELTREE.app` succeeds.
 - Launch DELTREE, run a scan, and confirm no full-disk crawl occurs.
 - Move at least one safe test fixture to Trash through the cleanup confirmation flow.
+- Confirm an available CoreSimulator device is never offered direct filesystem or Trash cleanup.
+- Confirm simulator delete/erase preflight calls the action irreversible and does not claim that all cleanup is recoverable.
 - Relaunch DELTREE and confirm history/settings remain stable.
 - Uninstall DELTREE, reinstall from the same release zip, and relaunch.
 - Run `Tools/deltree diagnose --json` and confirm the output is redacted.

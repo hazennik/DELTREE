@@ -83,6 +83,13 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
             throw CleanupExecutionError.unsafeClassification(item.safety)
         }
 
+        if item.domain == .coreSimulatorDevices,
+           action != .deleteUnavailableSimulator,
+           action != .eraseSimulator
+        {
+            throw CleanupExecutionError.invalidSimulatorAction(action)
+        }
+
         if item.domain == .coreSimulatorDevices || action == .deleteUnavailableSimulator || action == .eraseSimulator {
             try validateSimulatorState(for: planAction, currentSimctlDevices: currentSimctlDevices ?? [])
         }
@@ -202,6 +209,7 @@ enum CleanupExecutionError: LocalizedError, Equatable {
     case pathHasOpenFiles(String)
     case openFileCheckUnavailable(path: String, reason: String)
     case unsafeClassification(SafetyClassification)
+    case invalidSimulatorAction(StorageAction)
     case simulatorNotFound(String)
     case simulatorBooted(String)
     case simulatorNoLongerUnavailable(String)
@@ -229,6 +237,8 @@ enum CleanupExecutionError: LocalizedError, Equatable {
             "Open-file validation for \(path) could not be completed: \(reason)"
         case let .unsafeClassification(safety):
             "\(safety.displayName) items cannot be executed as cleanup actions."
+        case let .invalidSimulatorAction(action):
+            "\(action.displayName) cannot be used for a simulator device. Use an approved simctl action."
         case let .simulatorNotFound(udid):
             "Simulator \(udid) is no longer present in simctl."
         case let .simulatorBooted(udid):

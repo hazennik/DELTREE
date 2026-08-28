@@ -1,8 +1,6 @@
 # Support
 
-This is a private development repository.
-
-For now, support is handled through private GitHub issues.
+Use [GitHub Issues](https://github.com/hazennik/DELTREE/issues) for reproducible bugs and support questions that are safe to discuss publicly. Use [GitHub private vulnerability reporting](https://github.com/hazennik/DELTREE/security/advisories/new) for security-sensitive reports.
 
 Before filing an issue, include:
 

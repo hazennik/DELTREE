@@ -9,8 +9,10 @@ struct DELTREEApp: App {
     @State private var container: AppContainer
 
     init() {
-        let modelContainer = Self.makeModelContainer()
-        let appContainer = AppContainer(modelContainer: modelContainer)
+        let modelContainerBootstrap = Self.makeModelContainer()
+        let appContainer = AppContainer(
+            modelContainer: modelContainerBootstrap.container,
+            startupWarning: modelContainerBootstrap.warning)
         _container = State(wrappedValue: appContainer)
         appDelegate.configure(appContainer)
     }
@@ -35,7 +37,12 @@ struct DELTREEApp: App {
         }
     }
 
-    private static func makeModelContainer() -> ModelContainer {
+    private struct ModelContainerBootstrap {
+        var container: ModelContainer
+        var warning: String?
+    }
+
+    private static func makeModelContainer() -> ModelContainerBootstrap {
         let schema = Schema([
             ScanHistoryRecord.self,
             CleanupHistoryRecord.self,
@@ -46,11 +53,13 @@ struct DELTREEApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return ModelContainerBootstrap(container: container, warning: nil)
         } catch {
             let fallbackConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
             if let fallback = try? ModelContainer(for: schema, configurations: [fallbackConfiguration]) {
-                return fallback
+                let warning = "DELTREE could not open its on-disk history database and is using temporary in-memory storage for this launch. Scan, attribution, cleanup history, and manual overrides will not persist. Underlying error: \(error.localizedDescription)"
+                return ModelContainerBootstrap(container: fallback, warning: warning)
             }
             preconditionFailure("Could not create ModelContainer: \(error)")
         }

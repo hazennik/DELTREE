@@ -128,4 +128,14 @@ enum StorageAction: String, CaseIterable, Codable, Hashable, Sendable {
             false
         }
     }
+
+    nonisolated var permanentlyRemovesSimulatorData: Bool {
+        switch self {
+        case .deleteUnavailableSimulator, .eraseSimulator:
+            true
+        case .none, .moveToTrash, .cleanDerivedData, .removeXCResult, .removeCodexWorkspace,
+             .revealInFinder, .copyPath, .exportReport, .ignore, .markUserOwned, .resetAttribution:
+            false
+        }
+    }
 }

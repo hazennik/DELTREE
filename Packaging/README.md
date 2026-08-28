@@ -13,7 +13,7 @@ Required local configuration:
 
 Use [Local-Only Release Setup](../docs/LOCAL_RELEASE.md) for the recommended Keychain-backed release configuration. `Scripts/release-local.sh` runs the full local release path from a clean tag.
 
-The package script builds a signed archive and zip, optionally submits it for notarization, staples the app before recreating the zip, packages matching dSYMs, and writes SHA-256 checksum files.
+The package script builds a signed archive and zip, verifies the bundled DELTREE and Sparkle license notices, optionally submits the app for notarization, staples it before recreating the zip, packages matching dSYMs, and writes SHA-256 checksum files.
 
 ```sh
 DELTREE_DEVELOPER_ID_APPLICATION="Developer ID Application: Example" \

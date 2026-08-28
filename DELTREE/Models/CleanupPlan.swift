@@ -64,4 +64,8 @@ struct CleanupPlan: Identifiable, Hashable, Sendable {
     var itemCount: Int {
         actions.count
     }
+
+    var permanentlyRemovesSimulatorData: Bool {
+        actions.contains { $0.action.permanentlyRemovesSimulatorData }
+    }
 }

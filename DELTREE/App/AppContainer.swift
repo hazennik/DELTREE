@@ -9,9 +9,11 @@ final class AppContainer {
     let mainThreadHangWatchdog: MainThreadHangWatchdog
     let memoryPressureMonitor: MemoryPressureMonitor
     let updateService: AppUpdateService
+    let startupWarning: String?
 
-    init(modelContainer: ModelContainer) {
+    init(modelContainer: ModelContainer, startupWarning: String? = nil) {
         self.modelContainer = modelContainer
+        self.startupWarning = startupWarning
 
         let settings = AppSettingsStore()
         let mainThreadHangWatchdog = MainThreadHangWatchdog.makeDefault()
