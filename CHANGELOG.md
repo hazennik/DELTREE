@@ -6,9 +6,12 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 ## Unreleased
 
+## [1.0.0-rc.1] - 2026-08-30
+
 ### Added
 
 - Public release readiness automation and documentation refinements.
+- Protected GitHub Pages prerelease update feed and validated appcast staging workflow.
 - Bundled DELTREE, Sparkle, and bundled-component license notices in distributed apps.
 - Initial LSUIElement menu-bar app shell.
 - Abstract icon-only menu-bar state indicator.
