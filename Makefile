@@ -39,8 +39,10 @@ workflow-check:
 script-test:
 	zsh -n Scripts/*.sh Tools/deltree
 	ruby -c Scripts/run-with-timeout.rb
+	ruby Scripts/test_docs_link_helpers.rb
 	zsh Scripts/test_release_artifacts.sh
 	zsh Scripts/test_release_pipeline.sh
+	zsh Scripts/test_sparkle_feed_url.sh
 	zsh Scripts/test_repository_size.sh
 	zsh Scripts/test_cli_diagnostics.sh
 

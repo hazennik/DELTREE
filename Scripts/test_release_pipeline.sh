@@ -5,7 +5,19 @@ root="${0:A:h:h}"
 temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/deltree-release-pipeline-tests.XXXXXX")"
 trap 'rm -rf "$temp_dir"' EXIT
 
-zsh "$root/Scripts/validate-changelog.sh" v1.0.0-rc.1 \
+changelog_fixture="$temp_dir/CHANGELOG.md"
+{
+  print -r -- '# Changelog'
+  print -r -- ''
+  print -r -- '## [1.0.0-rc.1] - 2026-08-04'
+  print -r -- ''
+  print -r -- '### Added'
+  print -r -- ''
+  print -r -- '- Initial LSUIElement menu-bar app shell.'
+} >"$changelog_fixture"
+
+DELTREE_CHANGELOG_PATH="$changelog_fixture" \
+  zsh "$root/Scripts/validate-changelog.sh" v1.0.0-rc.1 \
   --notes-output "$temp_dir/release-notes.md" \
   --html-output "$temp_dir/release-notes.html" \
   --env-output "$temp_dir/release.env" >/dev/null
@@ -15,7 +27,8 @@ grep -Fq '<h3>Added</h3>' "$temp_dir/release-notes.html"
 grep -Fq 'DELTREE_RELEASE_VERSION=1.0.0-rc.1' "$temp_dir/release.env"
 grep -Fq 'DELTREE_MARKETING_VERSION=1.0.0' "$temp_dir/release.env"
 
-if zsh "$root/Scripts/validate-changelog.sh" v9.9.9 2>/dev/null; then
+if DELTREE_CHANGELOG_PATH="$changelog_fixture" \
+  zsh "$root/Scripts/validate-changelog.sh" v9.9.9 2>/dev/null; then
   echo "Missing changelog release unexpectedly passed validation." >&2
   exit 1
 fi

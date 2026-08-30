@@ -1,18 +1,18 @@
 # Security
 
-DELTREE is local-only and does not provide a network service.
+DELTREE processes scan and cleanup data locally and does not provide a network service. Direct Developer ID builds may retrieve a public Sparkle appcast and update archive over HTTPS.
 
 ## Reporting
 
 Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/hazennik/DELTREE/security/advisories/new).
 
-Do not open a public issue for an unpatched vulnerability or include private paths, Codex transcripts, signing material, or proprietary project data in a report. If private vulnerability reporting is temporarily unavailable, contact the repository owner through a private channel listed on the [maintainer's GitHub profile](https://github.com/hazennik).
+Do not open a public issue for an unpatched vulnerability or include private paths, Codex transcripts, signing material, or proprietary project data in a report. If private vulnerability reporting is temporarily unavailable, retain the report and retry later rather than disclosing it publicly.
 
 Include the affected version or commit, macOS and Xcode versions, impact, reproduction steps, and the minimum redacted diagnostics needed to investigate. Maintainers will acknowledge reports as soon as practical and coordinate disclosure after a fix is available.
 
 ## Supported Versions
 
-Security fixes are provided for the latest published release and the current `main` branch. Older prerelease builds may be asked to upgrade before investigation continues.
+Before the first release, security work targets the current `main` branch. After releases begin, security fixes will target the latest published release and `main`; older prerelease builds may be asked to upgrade before investigation continues.
 
 ## Sensitive Areas
 

@@ -8,7 +8,8 @@ Use `v1.0.0-rc.1` for the first full release candidate.
 
 Required CI proof:
 
-- Release workflow completes with real Developer ID, notarization, and Sparkle secrets.
+- The selected release path completes with real Developer ID signing, notarization, and Sparkle credentials. For the default local path, `Scripts/release-local.sh v1.0.0-rc.1 --repo hazennik/DELTREE --draft` succeeds.
+- The prerelease build uses a stable prerelease-channel appcast URL; GitHub's `/releases/latest/` redirect is reserved for stable releases because it excludes prereleases.
 - The checks in [Production Readiness](PRODUCTION_READINESS.md) pass on the release-candidate branch.
 - GitHub Release contains `DELTREE.zip`, `DELTREE.zip.sha256`, `DELTREE.dSYM.zip`, `DELTREE.dSYM.zip.sha256`, and `appcast.xml`.
 - `Scripts/check-release-assets.sh v1.0.0-rc.1 --repo hazennik/DELTREE` passes after publishing.

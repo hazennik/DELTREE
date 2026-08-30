@@ -10,20 +10,6 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 - Public release readiness automation and documentation refinements.
 - Bundled DELTREE, Sparkle, and bundled-component license notices in distributed apps.
-
-### Changed
-
-- Simulator cleanup now uses only explicit `simctl` actions and accurately warns when simulator data removal is irreversible.
-- Persistence-store fallback now presents a visible warning when history will not be saved.
-
-### Fixed
-
-- Prevented available CoreSimulator device directories from entering direct Trash cleanup.
-
-## [1.0.0-rc.1] - 2026-08-04
-
-### Added
-
 - Initial LSUIElement menu-bar app shell.
 - Abstract icon-only menu-bar state indicator.
 - Storage scanners for Codex and Xcode developer paths.
@@ -35,3 +21,12 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 - Dashboard, filters, details, rules, settings, and cleanup history.
 - Bounded `deltree` CLI dry-run helper.
 - Packaging and release scaffolding.
+
+### Changed
+
+- Simulator cleanup now uses only explicit `simctl` actions and accurately warns when simulator data removal is irreversible.
+- Persistence-store fallback now presents a visible warning when history will not be saved.
+
+### Fixed
+
+- Prevented available CoreSimulator device directories from entering direct Trash cleanup.

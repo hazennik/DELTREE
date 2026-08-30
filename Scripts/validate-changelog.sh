@@ -49,7 +49,7 @@ while (($#)); do
 done
 
 repo_root="${0:A:h:h}"
-changelog="$repo_root/CHANGELOG.md"
+changelog="${DELTREE_CHANGELOG_PATH:-$repo_root/CHANGELOG.md}"
 
 ruby - "$changelog" "$tag" "$notes_output" "$html_output" "$env_output" <<'RUBY'
 require "cgi"

@@ -39,7 +39,7 @@ cask "deltree" do
 
   url "https://github.com/hazennik/DELTREE/releases/download/v#{version}/DELTREE-homebrew.zip"
   name "DELTREE"
-  desc "Local-only macOS utility for safely managing Codex and Xcode storage"
+  desc "Privacy-first macOS utility for safely managing Codex and Xcode storage"
   homepage "https://github.com/hazennik/DELTREE"
 
   depends_on macos: ">= :sonoma"

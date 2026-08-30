@@ -4,6 +4,7 @@
 require "pathname"
 require "set"
 require "uri"
+require_relative "docs_link_helpers"
 
 root = Pathname.new(Dir.pwd)
 markdown_files = Dir.glob("**/*.md", File::FNM_DOTMATCH)
@@ -17,23 +18,13 @@ def local_link?(target)
   true
 end
 
-def normalize_anchor(text)
-  text
-    .downcase
-    .gsub(/<[^>]+>/, "")
-    .gsub(/[`*_~]/, "")
-    .gsub(/[^a-z0-9 _-]/, "")
-    .strip
-    .gsub(/\s+/, "-")
-end
-
 anchors_by_file = {}
 markdown_files.each do |path|
   anchors = Set.new
   File.readlines(path, chomp: true).each do |line|
     next unless line =~ /\A(#{'#'}{1,6})\s+(.+?)\s*#*\z/
 
-    anchors << normalize_anchor(Regexp.last_match(2))
+    anchors << DocsLinkHelpers.normalize_anchor(Regexp.last_match(2))
   end
   anchors_by_file[Pathname.new(path).cleanpath.to_s] = anchors
 end
@@ -65,7 +56,7 @@ markdown_files.each do |path|
     next if anchor.to_s.empty?
     next unless resolved.extname.downcase == ".md"
 
-    normalized_anchor = normalize_anchor(anchor)
+    normalized_anchor = DocsLinkHelpers.normalize_anchor(anchor)
     unless anchors_by_file.fetch(resolved.to_s, Set.new).include?(normalized_anchor)
       failures << "#{path}: missing anchor ##{anchor} in #{resolved}"
     end

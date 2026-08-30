@@ -1,6 +1,8 @@
 # Roadmap
 
-## Public Open Source Readiness
+## Downloadable Release Readiness
+
+The source repository is public and protected. Remaining distribution milestones are:
 
 - Publish signed and notarized GitHub Releases.
 - Publish Sparkle appcast artifacts alongside releases.

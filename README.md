@@ -4,19 +4,18 @@
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-0f766e)](https://www.apple.com/macos/)
 [![Swift 6](https://img.shields.io/badge/Swift-6-f05138)](https://swift.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/hazennik/DELTREE?display_name=tag&sort=semver)](https://github.com/hazennik/DELTREE/releases)
 
-DELTREE is a local-only macOS menu-bar utility for understanding and safely managing the disk space created by Codex-driven iOS and macOS development.
+DELTREE is a privacy-first macOS menu-bar utility for understanding and safely managing the disk space created by Codex-driven iOS and macOS development.
 
 It scans bounded Codex and Xcode storage locations, explains what it found, labels cleanup risk, and only performs cleanup after explicit confirmation.
 
 ```text
 C:\> DELTREE
 SCAN CODEX + XCODE STORAGE
-TRASH ONLY. LOCAL ONLY. NO TELEMETRY.
+TRASH ONLY. LOCAL DATA. NO TELEMETRY.
 ```
 
-> Status: public release candidate. Local and hosted CI pass. Public GA still requires a current signed and notarized release candidate, end-to-end Sparkle update testing, and clean-machine QA.
+> Status: pre-release. The source repository is public and its required CI gates are active, but no signed DELTREE release candidate has been published. The first downloadable RC still requires Developer ID signing, Apple notarization, clean-machine QA, and end-to-end Sparkle update testing.
 
 ## Install
 
@@ -29,19 +28,16 @@ make build
 open build/DerivedData/Build/Products/Debug/DELTREE.app
 ```
 
-When the first signed app release is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
+When the first signed prerelease is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
 
 ```sh
-curl -L -o DELTREE.zip https://github.com/hazennik/DELTREE/releases/latest/download/DELTREE.zip
+release_tag="v1.0.0-rc.1"
+curl -fL -o DELTREE.zip "https://github.com/hazennik/DELTREE/releases/download/$release_tag/DELTREE.zip"
 ditto -x -k DELTREE.zip .
 open DELTREE.app
 ```
 
-Homebrew Cask support is staged for the notarized release channel:
-
-```sh
-brew install --cask hazennik/deltree/deltree
-```
+Homebrew Cask support is planned after signed and notarized GitHub Releases are proven. No DELTREE cask is published yet.
 
 ## Build
 
@@ -87,7 +83,7 @@ make spark-sign-check
 
 ## Privacy
 
-DELTREE is local-only. It reads known developer paths, local Codex metadata when present, and local process state for attribution. It does not upload scan results, cleanup history, paths, account data, or project metadata.
+DELTREE processes storage data locally. It reads known developer paths, local Codex metadata when present, and local process state for attribution. It does not upload scan results, cleanup history, paths, account data, or project metadata. Direct Developer ID builds may contact GitHub Releases over HTTPS through Sparkle to check for updates; update checks do not include DELTREE scan data.
 
 Read the full policy in [PRIVACY.md](PRIVACY.md).
 
