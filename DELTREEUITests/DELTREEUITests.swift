@@ -2,7 +2,7 @@
 //  DELTREEUITests.swift
 //  DELTREEUITests
 //
-//  Created by Ryan Nicoletti on 8/1/26.
+//  DELTREE UI tests.
 //
 
 import XCTest

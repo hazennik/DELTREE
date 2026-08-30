@@ -104,7 +104,7 @@ print -r -- "ditto $*" >>"$log_file"
 destination="${@: -1}"
 mkdir -p "$destination/DELTREE.app/Contents/Resources"
 print -r -- "MIT License" >"$destination/DELTREE.app/Contents/Resources/DELTREE-LICENSE.txt"
-print -r -- "Copyright (c) 2026 Ryan Nicoletti" >>"$destination/DELTREE.app/Contents/Resources/DELTREE-LICENSE.txt"
+print -r -- "Copyright (c) 2026 DELTREE contributors" >>"$destination/DELTREE.app/Contents/Resources/DELTREE-LICENSE.txt"
 print -r -- "Copyright (c) 2006-2013 Andy Matuschak." >"$destination/DELTREE.app/Contents/Resources/Sparkle-LICENSE.txt"
 print -r -- "bspatch.c and bsdiff.c" >>"$destination/DELTREE.app/Contents/Resources/Sparkle-LICENSE.txt"
 '

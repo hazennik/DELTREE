@@ -16,9 +16,7 @@ SCAN CODEX + XCODE STORAGE
 TRASH ONLY. LOCAL ONLY. NO TELEMETRY.
 ```
 
-![DELTREE command-prompt icon](docs/assets/deltree-icon-preview.png)
-
-> Status: release-candidate preparation. Local checks pass, but public GA still requires green hosted CI, a current signed/notarized release candidate, Sparkle update testing, and clean-machine QA.
+> Status: public release candidate. Local and hosted CI pass. Public GA still requires a current signed and notarized release candidate, end-to-end Sparkle update testing, and clean-machine QA.
 
 ## Install
 
