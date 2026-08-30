@@ -28,6 +28,10 @@ let slots = [
 
 var outputDirectory = "DELTREE/Assets.xcassets/AppIcon.appiconset"
 var previewPath = "docs/assets/deltree-icon-preview.png"
+var sourceImagePath = "docs/assets/deltree-icon-source.png"
+var classicImageDirectory = "DELTREE/Assets.xcassets/ClassicAppIcon.imageset"
+var classicPreviewPath = "docs/assets/deltree-icon-classic-preview.png"
+var classicSourceImagePath = "docs/assets/deltree-icon-classic-source.png"
 var arguments = Array(CommandLine.arguments.dropFirst())
 
 while arguments.isEmpty == false {
@@ -37,17 +41,32 @@ while arguments.isEmpty == false {
         outputDirectory = arguments.removeFirst()
     case "--preview":
         previewPath = arguments.removeFirst()
+    case "--source":
+        sourceImagePath = arguments.removeFirst()
+    case "--classic-output-dir":
+        classicImageDirectory = arguments.removeFirst()
+    case "--classic-preview":
+        classicPreviewPath = arguments.removeFirst()
+    case "--classic-source":
+        classicSourceImagePath = arguments.removeFirst()
     default:
         fputs("Unknown argument: \(argument)\n", stderr)
         exit(2)
     }
 }
 
-func color(_ red: CGFloat, _ green: CGFloat, _ blue: CGFloat, _ alpha: CGFloat = 1) -> NSColor {
-    NSColor(calibratedRed: red / 255, green: green / 255, blue: blue / 255, alpha: alpha)
+func makeImageSourceRect(for image: NSImage) -> NSRect {
+    let sourceSize = image.size
+    let cropSide = min(sourceSize.width, sourceSize.height)
+
+    return NSRect(
+        x: (sourceSize.width - cropSide) / 2,
+        y: (sourceSize.height - cropSide) / 2,
+        width: cropSide,
+        height: cropSide)
 }
 
-func drawIcon(pixels: Int) throws -> NSBitmapImageRep {
+func drawIcon(from sourceImage: NSImage, pixels: Int) throws -> NSBitmapImageRep {
     guard let bitmap = NSBitmapImageRep(
         bitmapDataPlanes: nil,
         pixelsWide: pixels,
@@ -75,66 +94,18 @@ func drawIcon(pixels: Int) throws -> NSBitmapImageRep {
 
     context.setShouldAntialias(true)
     context.setAllowsAntialiasing(true)
-    context.interpolationQuality = .none
+    context.interpolationQuality = .high
 
     let rect = CGRect(origin: .zero, size: CGSize(width: pixels, height: pixels))
     context.clear(rect)
 
-    let inset = CGFloat(pixels) * 0.08
-    let body = rect.insetBy(dx: inset, dy: inset)
-    let radius = CGFloat(pixels) * 0.19
-    let bodyPath = NSBezierPath(roundedRect: body, xRadius: radius, yRadius: radius)
-
-    color(4, 6, 5).setFill()
-    bodyPath.fill()
-
-    color(54, 255, 140).setStroke()
-    bodyPath.lineWidth = max(2, CGFloat(pixels) * 0.018)
-    bodyPath.stroke()
-
-    let titleBar = CGRect(
-        x: body.minX + body.width * 0.08,
-        y: body.maxY - body.height * 0.22,
-        width: body.width * 0.84,
-        height: max(2, body.height * 0.055))
-    color(246, 183, 40).setFill()
-    NSBezierPath(roundedRect: titleBar, xRadius: titleBar.height / 2, yRadius: titleBar.height / 2).fill()
-
-    let prompt = pixels < 64 ? ">" : "C:\\>"
-    let promptSize = CGFloat(pixels) * (pixels < 64 ? 0.48 : 0.2)
-    let promptFont = NSFont.monospacedSystemFont(ofSize: promptSize, weight: .bold)
-    let promptAttributes: [NSAttributedString.Key: Any] = [
-        .font: promptFont,
-        .foregroundColor: color(72, 255, 154),
-    ]
-    let promptRect = CGRect(
-        x: body.minX + body.width * 0.16,
-        y: body.minY + body.height * (pixels < 64 ? 0.28 : 0.38),
-        width: body.width * 0.78,
-        height: body.height * 0.3)
-    (prompt as NSString).draw(in: promptRect, withAttributes: promptAttributes)
-
-    if pixels >= 128 {
-        let labelFont = NSFont.monospacedSystemFont(ofSize: CGFloat(pixels) * 0.115, weight: .semibold)
-        let labelAttributes: [NSAttributedString.Key: Any] = [
-            .font: labelFont,
-            .foregroundColor: color(246, 183, 40),
-        ]
-        let labelRect = CGRect(
-            x: body.minX + body.width * 0.18,
-            y: body.minY + body.height * 0.22,
-            width: body.width * 0.74,
-            height: body.height * 0.18)
-        ("DELTREE" as NSString).draw(in: labelRect, withAttributes: labelAttributes)
-    }
-
-    let cursorRect = CGRect(
-        x: body.minX + body.width * 0.68,
-        y: body.minY + body.height * 0.34,
-        width: max(2, body.width * 0.1),
-        height: max(2, body.height * 0.06))
-    color(246, 183, 40).setFill()
-    NSBezierPath(rect: cursorRect).fill()
+    sourceImage.draw(
+        in: rect,
+        from: makeImageSourceRect(for: sourceImage),
+        operation: .copy,
+        fraction: 1,
+        respectFlipped: false,
+        hints: [.interpolation: NSImageInterpolation.high])
 
     return bitmap
 }
@@ -151,9 +122,20 @@ func writePNG(_ bitmap: NSBitmapImageRep, to url: URL) throws {
 let fileManager = FileManager.default
 let outputURL = URL(fileURLWithPath: outputDirectory, isDirectory: true)
 try fileManager.createDirectory(at: outputURL, withIntermediateDirectories: true)
+let classicOutputURL = URL(fileURLWithPath: classicImageDirectory, isDirectory: true)
+try fileManager.createDirectory(at: classicOutputURL, withIntermediateDirectories: true)
+
+guard let sourceImage = NSImage(contentsOfFile: sourceImagePath) else {
+    fputs("Unable to load icon source image: \(sourceImagePath)\n", stderr)
+    exit(3)
+}
+guard let classicSourceImage = NSImage(contentsOfFile: classicSourceImagePath) else {
+    fputs("Unable to load classic icon source image: \(classicSourceImagePath)\n", stderr)
+    exit(3)
+}
 
 for slot in slots {
-    try writePNG(try drawIcon(pixels: slot.pixels), to: outputURL.appendingPathComponent(slot.filename))
+    try writePNG(try drawIcon(from: sourceImage, pixels: slot.pixels), to: outputURL.appendingPathComponent(slot.filename))
 }
 
 let contents: [String: Any] = [
@@ -175,6 +157,29 @@ try json.write(to: outputURL.appendingPathComponent("Contents.json"), options: .
 
 let previewURL = URL(fileURLWithPath: previewPath)
 try fileManager.createDirectory(at: previewURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-try writePNG(try drawIcon(pixels: 512), to: previewURL)
+try writePNG(try drawIcon(from: sourceImage, pixels: 512), to: previewURL)
+
+let classicAssetFilename = "classic-app-icon.png"
+try writePNG(try drawIcon(from: classicSourceImage, pixels: 1024), to: classicOutputURL.appendingPathComponent(classicAssetFilename))
+
+let classicContents: [String: Any] = [
+    "images": [
+        [
+            "filename": classicAssetFilename,
+            "idiom": "universal",
+            "scale": "1x",
+        ],
+    ],
+    "info": [
+        "author": "xcode",
+        "version": 1,
+    ],
+]
+let classicJSON = try JSONSerialization.data(withJSONObject: classicContents, options: [.prettyPrinted, .sortedKeys])
+try classicJSON.write(to: classicOutputURL.appendingPathComponent("Contents.json"), options: .atomic)
+
+let classicPreviewURL = URL(fileURLWithPath: classicPreviewPath)
+try fileManager.createDirectory(at: classicPreviewURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+try writePNG(try drawIcon(from: classicSourceImage, pixels: 512), to: classicPreviewURL)
 
 print("Generated DELTREE app icon assets.")

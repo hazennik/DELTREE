@@ -120,6 +120,11 @@ Several tools can remove Xcode or general developer caches. DELTREE focuses on e
 
 ## Screenshots
 
+| Modern | Classic |
+| --- | --- |
+| <img src="docs/assets/deltree-icon-preview.png" alt="Modern DELTREE app icon" width="96"> | <img src="docs/assets/deltree-icon-classic-preview.png" alt="Classic DELTREE app icon" width="96"> |
+| Primary public look for repeated day-to-day macOS use. | Retro command-prompt identity for users who prefer Classic. |
+
 Modern is the primary public screenshot set because it best matches repeated day-to-day macOS use.
 
 ![Modern dashboard](docs/assets/screenshots/modern-dashboard.png)

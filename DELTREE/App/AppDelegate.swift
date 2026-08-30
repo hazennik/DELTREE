@@ -48,11 +48,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settingsWindowController = SettingsWindowController(container: container)
         self.dashboardWindowController = dashboardWindowController
         self.settingsWindowController = settingsWindowController
+        ApplicationIconController.apply(visualMode: container.settings.visualMode)
         statusItemController = StatusItemController(
             viewModel: container.dashboardViewModel,
             settings: container.settings,
             openDashboard: { dashboardWindowController.show() },
-            openSettings: { settingsWindowController.show() })
+            openSettings: { settingsWindowController.show() },
+            onAppearanceChange: { [weak container] in
+                guard let container else {
+                    return
+                }
+                ApplicationIconController.apply(visualMode: container.settings.visualMode)
+            })
         if let startupWarning = container.startupWarning {
             presentStartupWarning(startupWarning)
         }

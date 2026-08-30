@@ -14,7 +14,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         viewModel: DashboardViewModel,
         settings: AppSettingsStore,
         openDashboard: @escaping () -> Void,
-        openSettings: @escaping () -> Void)
+        openSettings: @escaping () -> Void,
+        onAppearanceChange: @escaping () -> Void = {})
     {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         self.viewModel = viewModel
@@ -34,6 +35,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
         settings.onAppearanceChange = { [weak self] in
             self?.updateStatusItem()
+            onAppearanceChange()
         }
         updateStatusItem()
     }
