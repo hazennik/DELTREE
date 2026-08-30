@@ -28,7 +28,7 @@ This checklist records completed public-source work and the remaining evidence r
 - [x] The current tree and reachable history pass the repository's private-key and token-pattern checks.
 - [x] `make ui-test` passes on the trusted release Mac.
 
-## Do Before Publishing Downloadable Apps
+## Do Before Publishing The First Downloadable Candidate
 
 Signed downloadable apps are released from a designated maintainer Mac using [Local-Only Release Setup](LOCAL_RELEASE.md). Before the first app download is published:
 
@@ -39,9 +39,13 @@ Signed downloadable apps are released from a designated maintainer Mac using [Lo
 5. Configure a stable prerelease-channel appcast URL; GitHub's `/releases/latest/` redirect excludes release candidates.
 6. Run `Scripts/release-local.sh <tag> --repo hazennik/DELTREE --draft`.
 7. Complete [Release QA](RELEASE_QA.md) against the draft release artifact.
-8. Publish the GitHub Release only after the notarized app, appcast, checksums, and update flow pass.
+8. Publish the GitHub prerelease only after the notarized app, appcast, checksums, and clean-machine candidate QA pass.
 
 The first downloadable release should use the notarized `DELTREE.zip`; do not publish a virtual-machine or raw disk image. A `.dmg` is optional later and requires its own signing, notarization, and clean-machine QA.
+
+## Do Before Public GA
+
+The first candidate cannot update from itself. Publish a second signed candidate through the same Developer ID and Sparkle channel, then complete the RC.1-to-RC.2 update test in [Release QA](RELEASE_QA.md). Verify discovery, release notes, download, EdDSA validation, installation, and relaunch before describing Sparkle as release-tested or DELTREE as public GA.
 
 ## Optional GitHub-Hosted Signing
 

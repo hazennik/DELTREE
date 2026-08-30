@@ -180,10 +180,11 @@ final class DashboardViewModel {
     }
 
     var selectedItem: StorageItem? {
+        let visibleItems = filteredItems
         guard let selectedItemID else {
-            return filteredItems.first
+            return visibleItems.first
         }
-        return snapshot.items.first { $0.id == selectedItemID }
+        return visibleItems.first { $0.id == selectedItemID } ?? visibleItems.first
     }
 
     func start() {

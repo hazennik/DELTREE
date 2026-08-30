@@ -4,6 +4,8 @@ DELTREE welcomes focused bug reports, documentation improvements, tests, and cod
 
 Before starting a large change, open an issue so maintainers and contributors can align on scope and safety implications.
 
+Agents and agent-assisted contributors should also follow [AGENTS.md](AGENTS.md), especially its cleanup-safety and credential-handling rules.
+
 ## Pull Request Expectations
 
 - Keep changes scoped.

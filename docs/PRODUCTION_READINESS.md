@@ -61,8 +61,8 @@ Run `make xcode-ui-test` when investigating the Xcode UI automation runner itsel
 
 - Complete a real Developer ID signed and notarized package run.
 - Staple and validate the app on a clean Mac that has not built DELTREE locally.
-- Publish a release candidate with `DELTREE.zip`, checksum files, dSYM archive, and Sparkle appcast assets.
+- Publish a first release candidate with `DELTREE.zip`, checksum files, dSYM archive, and Sparkle appcast assets.
 - Publish release candidates as immutable GitHub prereleases so their tags and attached assets cannot be replaced after publication.
-- Complete a Sparkle update smoke test from one signed build to the next.
+- Publish a second signed candidate and complete a Sparkle update smoke test from the first candidate to the second.
 - Review README media and replace screenshots or GIFs whenever the clean-machine release-candidate build changes visible UI.
 - Complete the full [Release QA](RELEASE_QA.md) checklist before calling the app public GA.

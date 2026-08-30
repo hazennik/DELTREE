@@ -7,7 +7,7 @@ Before filing an issue, include:
 - macOS version
 - Xcode version
 - DELTREE app version or commit
-- whether Full Disk Access is enabled
+- which custom root is unreadable and whether it uses a normal file-access grant or Full Disk Access
 - redacted diagnostics from `Tools/deltree diagnose --json`
 - any relevant `.xcresult` or screenshot, if safe to share
 

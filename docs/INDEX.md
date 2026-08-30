@@ -32,4 +32,5 @@ DELTREE is a privacy-first macOS menu-bar utility that processes Codex and Xcode
 - [Security](../SECURITY.md)
 - [Support](../SUPPORT.md)
 - [Contributing](../CONTRIBUTING.md)
+- [Agent Guide](../AGENTS.md)
 - [Third-Party Notices](../THIRD_PARTY_NOTICES.md)
