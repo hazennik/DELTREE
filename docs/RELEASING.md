@@ -98,13 +98,30 @@ Scripts/generate-appcast.sh
 
 The appcast is written to `build/export/appcast.xml` by default.
 
+## Prerelease Feed
+
+Release candidates use the permanent GitHub Pages URL:
+
+```text
+https://hazennik.github.io/DELTREE/prerelease/appcast.xml
+```
+
+The served source is `docs/prerelease/appcast.xml` on protected `main`. After publishing an immutable RC, stage the exact published appcast only after the release zip, checksums, dSYM archive, signature metadata, notarization, stapling, and live URLs pass validation:
+
+```sh
+Scripts/stage-prerelease-feed.sh v1.0.0-rc.1 --repo hazennik/DELTREE
+```
+
+Commit the staged appcast on a branch and merge it through the normal protected pull-request path. This makes every feed change reviewable and prevents an unvalidated release asset from being advertised to installed apps.
+
 ## Sparkle Candidate Sequence
 
 One signed release cannot prove an update path by itself. Use two sequential candidates before public GA:
 
 1. Publish `v1.0.0-rc.1` as the signed, notarized baseline and install it in `/Applications` on the QA Mac.
-2. Publish `v1.0.0-rc.2` with the same Developer ID identity, Sparkle public key, and prerelease feed.
-3. From the installed RC.1 app, choose **Check for Updates...** and verify discovery, release notes, download, EdDSA validation, installation, and relaunch into RC.2.
+2. Publish `v1.0.0-rc.2` with the same Developer ID identity and Sparkle public key.
+3. Validate RC.2 and merge its staged `docs/prerelease/appcast.xml` through a protected pull request.
+4. From the installed RC.1 app, choose **Check for Updates...** and verify discovery, release notes, download, EdDSA validation, installation, and relaunch into RC.2.
 
 The first RC proves packaging and clean-machine installation. The second RC proves the first real Sparkle update path. Do not describe Sparkle as release-tested until that RC.1-to-RC.2 check passes.
 

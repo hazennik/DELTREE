@@ -43,10 +43,9 @@ export DELTREE_APP_STORE_CONNECT_ISSUER_ID="00000000-0000-0000-0000-000000000000
 export DELTREE_APP_STORE_CONNECT_API_KEY_FILE="$HOME/.config/deltree/private/AuthKey_ABC123DEFG.p8"
 
 export DELTREE_SPARKLE_PUBLIC_ED_KEY="YOUR_SPARKLE_PUBLIC_ED25519_KEY"
-# This releases/latest URL is for stable releases. Prerelease builds require a
-# stable prerelease-channel appcast URL because GitHub excludes prereleases from
-# its latest-release redirect.
-export DELTREE_SPARKLE_FEED_URL="https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml"
+# Release candidates use the protected GitHub Pages channel below. Before a
+# stable GA build, replace it with the GitHub Releases latest/download appcast.
+export DELTREE_SPARKLE_FEED_URL="https://hazennik.github.io/DELTREE/prerelease/appcast.xml"
 # Optional if you generated Sparkle keys under a non-default Keychain account.
 # export DELTREE_SPARKLE_ACCOUNT="deltree"
 # Optional fallback if you choose a private key file instead of Sparkle Keychain storage.

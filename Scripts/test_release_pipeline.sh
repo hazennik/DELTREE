@@ -5,6 +5,12 @@ root="${0:A:h:h}"
 temp_dir="$(mktemp -d "${TMPDIR:-/tmp}/deltree-release-pipeline-tests.XXXXXX")"
 trap 'rm -rf "$temp_dir"' EXIT
 
+ruby -rrexml/document -e '
+  document = REXML::Document.new(File.read(ARGV.fetch(0)))
+  abort "Prerelease feed root must be rss." unless document.root&.name == "rss"
+  abort "Prerelease feed channel is missing." unless document.root.elements["channel"]
+' "$root/docs/prerelease/appcast.xml"
+
 changelog_fixture="$temp_dir/CHANGELOG.md"
 {
   print -r -- '# Changelog'
@@ -138,6 +144,29 @@ zsh "$root/Scripts/check-release-assets.sh" v1.0.0-rc.1 \
   --skip-network >/dev/null
 
 grep -Fq 'stapler validate' "$log"
+
+feed_output="$temp_dir/pages/prerelease/appcast.xml"
+ZIPINFO_BIN="$bin_dir/zipinfo" \
+DITTO_BIN="$bin_dir/ditto" \
+XATTR_BIN="$bin_dir/xattr" \
+CODESIGN_BIN="$bin_dir/codesign" \
+SYSPOLICY_CHECK_BIN="$bin_dir/syspolicy_check" \
+STAPLER_BIN="$bin_dir/stapler" \
+zsh "$root/Scripts/stage-prerelease-feed.sh" v1.0.0-rc.1 \
+  --repo hazennik/DELTREE \
+  --local-dir "$asset_dir" \
+  --output "$feed_output" \
+  --skip-network >/dev/null
+
+cmp -s "$asset_dir/appcast.xml" "$feed_output"
+
+if zsh "$root/Scripts/stage-prerelease-feed.sh" v1.0.0 \
+  --local-dir "$asset_dir" \
+  --output "$feed_output" \
+  --skip-network >/dev/null 2>&1; then
+  echo "Stable tag unexpectedly accepted for the prerelease feed." >&2
+  exit 1
+fi
 
 digest="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 zsh "$root/Scripts/generate-homebrew-cask.sh" \
