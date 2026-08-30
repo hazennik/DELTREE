@@ -1,8 +1,2 @@
-# Update ownership as maintainers are added.
+# Every pull request requires review from the repository owner.
 * @hazennik
-
-/.github/ @hazennik
-/Scripts/ @hazennik
-/Packaging/ @hazennik
-/DELTREE/Services/ @hazennik
-/DELTREE/Models/ @hazennik

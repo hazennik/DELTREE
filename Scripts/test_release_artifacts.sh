@@ -18,7 +18,7 @@ mkdir -p "$sparkle/XPCServices/Downloader.xpc" "$sparkle/XPCServices/Installer.x
 ln -s B "$app/Contents/Frameworks/Sparkle.framework/Versions/Current"
 : >"$app/Contents/MacOS/DELTREE"
 print -r -- 'MIT License' >"$app/Contents/Resources/DELTREE-LICENSE.txt"
-print -r -- 'Copyright (c) 2026 Ryan Nicoletti' >>"$app/Contents/Resources/DELTREE-LICENSE.txt"
+print -r -- 'Copyright (c) 2026 DELTREE contributors' >>"$app/Contents/Resources/DELTREE-LICENSE.txt"
 print -r -- 'Copyright (c) 2006-2013 Andy Matuschak.' >"$app/Contents/Resources/Sparkle-LICENSE.txt"
 print -r -- 'bspatch.c and bsdiff.c' >>"$app/Contents/Resources/Sparkle-LICENSE.txt"
 : >"$sparkle/Autoupdate"

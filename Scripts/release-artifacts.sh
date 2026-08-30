@@ -205,7 +205,7 @@ deltree_verify_license_notices() {
   fi
 
   if ! grep -Fq 'MIT License' "$deltree_license" || \
-     ! grep -Fq 'Copyright (c) 2026 Ryan Nicoletti' "$deltree_license"; then
+     ! grep -Fq 'Copyright (c) 2026 DELTREE contributors' "$deltree_license"; then
     echo "DELTREE license notice is incomplete: $deltree_license" >&2
     return 1
   fi
