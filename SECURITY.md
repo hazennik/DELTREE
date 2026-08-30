@@ -12,7 +12,7 @@ Include the affected version or commit, macOS and Xcode versions, impact, reprod
 
 ## Supported Versions
 
-Before the first release, security work targets the current `main` branch. After releases begin, security fixes will target the latest published release and `main`; older prerelease builds may be asked to upgrade before investigation continues.
+Security fixes target the latest published release, including the current prerelease candidate, and `main`; older prerelease builds may be asked to upgrade before investigation continues.
 
 ## Sensitive Areas
 

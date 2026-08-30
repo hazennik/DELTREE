@@ -1,9 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>DELTREE Prerelease Updates</title>
-    <link>https://github.com/hazennik/DELTREE/releases</link>
-    <description>Signed DELTREE release-candidate updates.</description>
-    <language>en</language>
+    <title>DELTREE Updates</title>
+    <item>
+      <title>Version 1.0.0-rc.1</title>
+      <sparkle:version>45</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <pubDate>Sun, 30 Aug 2026 14:50:01 +0000</pubDate>
+      <description><![CDATA[
+<h3>Added</h3>
+<ul>
+<li>Public release readiness automation and documentation refinements.</li>
+<li>Protected GitHub Pages prerelease update feed and validated appcast staging workflow.</li>
+<li>Bundled DELTREE, Sparkle, and bundled-component license notices in distributed apps.</li>
+<li>Initial LSUIElement menu-bar app shell.</li>
+<li>Abstract icon-only menu-bar state indicator.</li>
+<li>Storage scanners for Codex and Xcode developer paths.</li>
+<li>Simulator metadata enrichment through `simctl`.</li>
+<li>Codex/Xcode attribution and recent-growth tracking.</li>
+<li>Conservative safety classification and cleanup preflight.</li>
+<li>Trash-based cleanup execution and approved simulator commands.</li>
+<li>SwiftData scan, delta, override, attribution, and cleanup history.</li>
+<li>Dashboard, filters, details, rules, settings, and cleanup history.</li>
+<li>Bounded `deltree` CLI dry-run helper.</li>
+<li>Packaging and release scaffolding.</li>
+<li>Agent guidance for cleanup safety, privacy, testing, and release work.</li>
+<li>View-facing dashboard tests for menu labels, filtering, summaries, and selection.</li>
+<li>A stable Apple Development build target for repeated macOS permission testing.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Simulator cleanup now uses only explicit `simctl` actions and accurately warns when simulator data removal is irreversible.</li>
+<li>Persistence-store fallback now presents a visible warning when history will not be saved.</li>
+<li>Sparkle is pinned to exact version 2.9.6 instead of accepting any future 2.x release during dependency resolution.</li>
+<li>Release documentation now distinguishes first-candidate install testing from the two-candidate Sparkle update test required before public GA.</li>
+<li>The README now leads with Codex attribution, explains DELTREE&#39;s scope among developer cleaners, and routes detailed process documentation through the documentation index.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Prevented available CoreSimulator device directories from entering direct Trash cleanup.</li>
+<li>Prevented the detail pane from showing an item hidden by the active dashboard filters.</li>
+</ul>
+      ]]></description>
+      <enclosure
+        url="https://github.com/hazennik/DELTREE/releases/download/v1.0.0-rc.1/DELTREE.zip"
+        sparkle:edSignature="8tFWOZfCQ0lxtKCofx3uD+yGGwPdimTISLlPXTP52KO149wZFRnZLnpuYZMrreaCfVg/vo8O6Cc71eWw4QkbBw=="
+        length="2697659"
+        type="application/octet-stream" />
+    </item>
   </channel>
 </rss>

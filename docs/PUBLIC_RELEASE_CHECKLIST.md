@@ -7,7 +7,7 @@ This checklist records completed public-source work and the remaining evidence r
 - MIT license, code of conduct, contributing, support, security, privacy, and release docs are present.
 - CI runs lint, docs, scripts, SwiftPM tests, Xcode tests, Release build, analyzer, CLI dry run, package dry run, appcast dry run, and Sparkle signing dry run.
 - README screenshots, social-preview image, app icon, issue templates, and release scripts are present.
-- Source install instructions are clear while signed app downloads are pending.
+- Signed, notarized RC.1 install instructions and source-build instructions are both available.
 - Simulator filesystem cleanup is blocked in the scanner, planner, and executor; simulator delete/erase preflight identifies irreversible data removal.
 - Complete DELTREE, Sparkle, and bundled-component license notices are included in the app bundle and enforced by release artifact checks.
 
@@ -20,33 +20,31 @@ This checklist records completed public-source work and the remaining evidence r
 - [x] Pull requests from other authors require one code-owner approval. Only the repository owner can bypass that review rule, and only through an auditable pull request merge; technical and integrity gates remain mandatory.
 - [x] Merges are squash-only, merged branches are deleted, and automatic merging is disabled.
 - [x] GitHub Actions permits only GitHub-owned actions and requires full commit-SHA pins.
-- [x] Future `v*` tags are protected from updates and deletion.
-- [x] Future GitHub Releases are immutable after publication.
+- [x] `v*` tags are protected from updates and deletion; RC.1 uses that protected namespace.
+- [x] GitHub Release immutability is enabled; published RC.1 assets cannot be replaced or deleted.
 - [x] CodeQL default setup scans Actions, Ruby, and Swift with the extended query suite.
 - [x] The latest `main` CI run is green.
 - [x] `make check` passes locally.
 - [x] The current tree and reachable history pass the repository's private-key and token-pattern checks.
 - [x] `make ui-test` passes on the trusted release Mac.
 
-## Do Before Publishing The First Downloadable Candidate
+## First Downloadable Candidate
 
-Signed downloadable apps are released from a designated maintainer Mac using [Local-Only Release Setup](LOCAL_RELEASE.md). Before the first app download is published:
+Signed downloadable apps are released from a designated maintainer Mac using [Local-Only Release Setup](LOCAL_RELEASE.md). RC.1 now has this evidence:
 
-1. Install the Developer ID Application certificate and private key in this Mac's Keychain.
-2. Create the App Store Connect API key used only for notarization.
-3. Store the notarytool profile in Keychain with `Scripts/setup-local-release-secrets.sh`.
-4. Generate the Sparkle EdDSA key in Keychain and save only the public key in `~/.config/deltree/release.env`.
-5. Configure `https://hazennik.github.io/DELTREE/prerelease/appcast.xml`, which GitHub Pages publishes from protected `main`.
-6. Run `Scripts/release-local.sh <tag> --repo hazennik/DELTREE --draft`.
-7. Complete [Release QA](RELEASE_QA.md) against the draft release artifact.
-8. Publish the GitHub prerelease only after the notarized app, appcast, checksums, and clean-machine candidate QA pass.
-9. Run `Scripts/stage-prerelease-feed.sh <tag> --repo hazennik/DELTREE` and merge the staged appcast through a protected pull request.
+- [x] Developer ID, notarization, and Sparkle credentials remain in the maintainer Mac's Keychain or local configuration, outside the repository.
+- [x] Protected tag `v1.0.0-rc.1` points to a verified `main` commit with green CI and CodeQL checks.
+- [x] The app and its bundled Sparkle components are Developer ID signed, Apple-notarized, stapled, and accepted by Gatekeeper.
+- [x] The release zip, checksum files, dSYM archive, and signed appcast pass local, uploaded-draft, and public-download validation.
+- [x] GitHub publishes RC.1 as an immutable prerelease, not a GA release.
+- [x] The validated RC.1 appcast is published from protected `main` through the prerelease feed.
+- [ ] Complete [Release QA](RELEASE_QA.md) on a second Mac that has never built DELTREE.
 
 The first downloadable release should use the notarized `DELTREE.zip`; do not publish a virtual-machine or raw disk image. A `.dmg` is optional later and requires its own signing, notarization, and clean-machine QA.
 
 ## Do Before Public GA
 
-The first candidate cannot update from itself. Publish a second signed candidate through the same Developer ID and Sparkle channel, then complete the RC.1-to-RC.2 update test in [Release QA](RELEASE_QA.md). Verify discovery, release notes, download, EdDSA validation, installation, and relaunch before describing Sparkle as release-tested or DELTREE as public GA.
+The first candidate cannot update from itself. After RC.1 passes clean-machine QA, publish a second signed candidate through the same Developer ID and Sparkle channel, then complete the RC.1-to-RC.2 update test in [Release QA](RELEASE_QA.md). Verify discovery, release notes, download, EdDSA validation, installation, and relaunch before describing Sparkle as release-tested or DELTREE as public GA.
 
 ## Optional GitHub-Hosted Signing
 

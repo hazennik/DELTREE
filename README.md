@@ -15,11 +15,20 @@ SCAN CODEX + XCODE STORAGE
 TRASH ONLY. LOCAL DATA. NO TELEMETRY.
 ```
 
-> Status: pre-release. The source repository is public and its required CI gates are active, but no signed DELTREE release candidate has been published. The first downloadable RC still requires Developer ID signing, Apple notarization, and clean-machine QA. Public GA additionally requires an end-to-end Sparkle update test between two signed candidates.
+> Status: pre-release. Signed and notarized `v1.0.0-rc.1` is available for clean-machine testing. It is not public GA: clean-machine QA is still pending, and the complete Sparkle update path must be proven from RC.1 to a second signed candidate.
 
 ## Install
 
-Signed app downloads are not published yet. Until the first notarized release is published, build from source:
+Download the signed and Apple-notarized RC.1 test candidate from [GitHub Releases](https://github.com/hazennik/DELTREE/releases/tag/v1.0.0-rc.1):
+
+```sh
+release_tag="v1.0.0-rc.1"
+curl -fL -o DELTREE.zip "https://github.com/hazennik/DELTREE/releases/download/$release_tag/DELTREE.zip"
+ditto -x -k DELTREE.zip .
+open DELTREE.app
+```
+
+RC.1 is for release-candidate testing. To build from source instead:
 
 ```sh
 git clone https://github.com/hazennik/DELTREE.git
@@ -36,15 +45,6 @@ open build/DerivedData/Build/Products/Debug/DELTREE.app
 ```
 
 Keep the same certificate and bundle identifier between builds. No personal Team ID, certificate fingerprint, or signing identity belongs in the repository. See [Permissions & Troubleshooting](docs/PERMISSIONS.md) for details.
-
-When the first signed prerelease is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
-
-```sh
-release_tag="v1.0.0-rc.1"
-curl -fL -o DELTREE.zip "https://github.com/hazennik/DELTREE/releases/download/$release_tag/DELTREE.zip"
-ditto -x -k DELTREE.zip .
-open DELTREE.app
-```
 
 Homebrew Cask support is planned after signed and notarized GitHub Releases are proven. No DELTREE cask is published yet.
 
