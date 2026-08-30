@@ -5,7 +5,7 @@
 The source repository is public and protected. Remaining distribution milestones are:
 
 - Publish signed and notarized GitHub Releases.
-- Publish Sparkle appcast artifacts alongside releases.
+- Publish two sequential signed candidates and verify the Sparkle RC-to-RC update path.
 - Add a Homebrew cask after the first public signed release.
 - Keep screenshots current and add short workflow GIFs after release-candidate builds.
 - Keep CI green for Xcode build/test/analyze, SwiftPM core tests, lint, scripts, and package dry runs.

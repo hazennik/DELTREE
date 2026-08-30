@@ -12,6 +12,21 @@ Full Disk Access is not required for the standard scan paths. If a custom locati
 
 Notifications are optional. They are used for scan and cleanup completion notices, not for background tracking.
 
+### Permissions After Rebuilding From Source
+
+macOS tracks privacy grants against an app's code-signing identity. `make build` produces an unsigned, CI-equivalent app whose ad hoc identity changes with the executable, so a grant can be requested again after a rebuild. The fixed `build/DerivedData` path helps keep the launch location predictable but does not create a stable signing identity.
+
+Developers who repeatedly test protected custom roots should use their own stable Apple Development identity:
+
+```sh
+DELTREE_DEVELOPMENT_SIGNING_IDENTITY="APPLE_DEVELOPMENT_CERTIFICATE_SHA1" make signed-dev-build
+open build/DerivedData/Build/Products/Debug/DELTREE.app
+```
+
+Use the SHA-1 fingerprint of a local Apple Development certificate shown by `security find-identity -v -p codesigning`. Keep the same certificate and bundle identifier between builds. Do not commit a personal signing identity, certificate fingerprint, or Team ID.
+
+An entitlements file would not grant Full Disk Access. That access is controlled by the user in System Settings, and DELTREE should request it only when a custom root cannot be read with narrower access.
+
 ## Cleanup Behavior
 
 ![Cleanup preflight](assets/screenshots/modern-cleanup-preflight.png)
@@ -25,6 +40,8 @@ Regular files and folders are moved through macOS Trash when possible. Simulator
 ### Scan Shows Unreadable Paths
 
 Check that the folder still exists and that DELTREE has permission to read it. For custom scan roots, remove stale paths or add the current folder again from the app.
+
+If a previously granted custom root becomes unreadable after rebuilding from source, confirm that you used the same signed development identity and bundle identifier. Remove stale DELTREE entries from the relevant Privacy & Security pane before granting access to a differently signed build.
 
 ### Cleanup Skips an Item
 

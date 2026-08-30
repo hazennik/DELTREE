@@ -7,7 +7,7 @@
 
 DELTREE is a privacy-first macOS menu-bar utility for understanding and safely managing the disk space created by Codex-driven iOS and macOS development.
 
-It scans bounded Codex and Xcode storage locations, explains what it found, labels cleanup risk, and only performs cleanup after explicit confirmation.
+Unlike general developer-cache cleaners, it correlates bounded filesystem changes with local Codex tasks and Xcode activity. It explains what it found, labels cleanup risk, and revalidates every cleanup action immediately before execution.
 
 ```text
 C:\> DELTREE
@@ -15,7 +15,7 @@ SCAN CODEX + XCODE STORAGE
 TRASH ONLY. LOCAL DATA. NO TELEMETRY.
 ```
 
-> Status: pre-release. The source repository is public and its required CI gates are active, but no signed DELTREE release candidate has been published. The first downloadable RC still requires Developer ID signing, Apple notarization, clean-machine QA, and end-to-end Sparkle update testing.
+> Status: pre-release. The source repository is public and its required CI gates are active, but no signed DELTREE release candidate has been published. The first downloadable RC still requires Developer ID signing, Apple notarization, and clean-machine QA. Public GA additionally requires an end-to-end Sparkle update test between two signed candidates.
 
 ## Install
 
@@ -27,6 +27,15 @@ cd DELTREE
 make build
 open build/DerivedData/Build/Products/Debug/DELTREE.app
 ```
+
+`make build` creates an unsigned, CI-equivalent build. For repeated local use where macOS file-access grants must survive rebuilds, use a stable Apple Development identity:
+
+```sh
+DELTREE_DEVELOPMENT_SIGNING_IDENTITY="APPLE_DEVELOPMENT_CERTIFICATE_SHA1" make signed-dev-build
+open build/DerivedData/Build/Products/Debug/DELTREE.app
+```
+
+Keep the same certificate and bundle identifier between builds. No personal Team ID, certificate fingerprint, or signing identity belongs in the repository. See [Permissions & Troubleshooting](docs/PERMISSIONS.md) for details.
 
 When the first signed prerelease is ready, downloads will be published through [GitHub Releases](https://github.com/hazennik/DELTREE/releases):
 
@@ -100,6 +109,15 @@ DELTREE is intentionally conservative.
 
 Read the full policy in [docs/SAFETY.md](docs/SAFETY.md).
 
+## Why DELTREE
+
+Several tools can remove Xcode or general developer caches. DELTREE focuses on explaining storage created during Codex-driven Apple-platform work:
+
+- Local Codex task and process attribution, with confidence shown instead of treated as certainty.
+- Bounded developer-storage scanning rather than a default full-disk crawl.
+- Protected archives, runtimes, images, and DeviceSupport instead of broad one-click deletion.
+- A reviewed cleanup plan plus final execution-time revalidation, with regular files moved to Trash.
+
 ## Screenshots
 
 Modern is the primary public screenshot set because it best matches repeated day-to-day macOS use.
@@ -119,12 +137,12 @@ Classic keeps the retro command-prompt identity available as a smaller secondary
 
 ## What It Does
 
+- Correlates filesystem changes with local Codex tasks and Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
 - Shows Codex/Xcode storage impact from a quiet menu-bar icon.
 - Uses DELTREE Classic by default: terminal-style panels, monospaced scan output, block storage meters, and explicit `[SAFE]` / `[REVIEW]` / `[KEEP]` labels.
 - Keeps the previous macOS-native visual system available as `Modern` from Settings.
 - Scans CoreSimulator devices, XCTest devices, DerivedData, result bundles, archives, DeviceSupport, simulator runtimes/images, SwiftPM caches, `~/.codex`, and Codex workspaces.
 - Enriches simulator rows with `simctl` metadata.
-- Correlates filesystem changes with Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
 - Labels items as `Safe to Remove`, `Probably Safe`, `Review First`, `Do Not Remove`, or `Unknown`.
 - Moves approved files to Trash instead of hard-deleting them.
 - Uses explicit `simctl delete` and `simctl erase` commands for simulator-specific actions and identifies them as irreversible in cleanup preflight.
@@ -166,25 +184,12 @@ Packaging notes live in [Packaging/README.md](Packaging/README.md), release step
 
 ## Documentation
 
-- [Vision](VISION.md)
-- [Roadmap](ROADMAP.md)
 - [User Guide](docs/USER_GUIDE.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Development](docs/DEVELOPMENT.md)
-- [Production Readiness](docs/PRODUCTION_READINESS.md)
-- [Public Release Checklist](docs/PUBLIC_RELEASE_CHECKLIST.md)
-- [Permissions & Troubleshooting](docs/PERMISSIONS.md)
 - [Safety Policy](docs/SAFETY.md)
-- [CLI](docs/CLI.md)
-- [Release Process](docs/RELEASING.md)
-- [Release QA](docs/RELEASE_QA.md)
-- [Homebrew Cask Plan](docs/HOMEBREW.md)
-- [Support Workflow](docs/SUPPORT_WORKFLOW.md)
-- [Issue Triage](docs/TRIAGE.md)
-- [Icon Pipeline](docs/ICON.md)
 - [Privacy](PRIVACY.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [Third-Party Notices](THIRD_PARTY_NOTICES.md)
+- [Development](docs/DEVELOPMENT.md)
+- [Release Readiness](docs/PUBLIC_RELEASE_CHECKLIST.md)
+- [Complete Documentation Index](docs/INDEX.md)
 
 ## License
 

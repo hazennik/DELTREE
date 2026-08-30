@@ -6,11 +6,21 @@ DESTINATION ?= platform=macOS,arch=arm64
 DERIVED_DATA_PATH ?= build/DerivedData
 XCODEBUILD ?= xcodebuild
 UI_TEST_TIMEOUT_SECONDS ?= 120
+DELTREE_DEVELOPMENT_BUNDLE_IDENTIFIER ?= com.Infrallabs.DELTREE
 
-.PHONY: analyze appcast-check build check cli-dry-run docs-check export-screenshots format homebrew-check icon-check lint package-check release repository-check script-test secrets-check spark-sign-check swift-test test ui-test workflow-check xcode-ui-test
+.PHONY: analyze appcast-check build check cli-dry-run docs-check export-screenshots format homebrew-check icon-check lint package-check release repository-check script-test secrets-check signed-dev-build spark-sign-check swift-test test ui-test workflow-check xcode-ui-test
 
 build:
 	$(XCODEBUILD) build -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=NO
+
+signed-dev-build:
+	@test -n "$(DELTREE_DEVELOPMENT_SIGNING_IDENTITY)" || (echo "Set DELTREE_DEVELOPMENT_SIGNING_IDENTITY to a local Apple Development certificate fingerprint." >&2; exit 2)
+	@$(XCODEBUILD) build -quiet -scheme $(SCHEME) -project $(PROJECT) -configuration Debug -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='$(DELTREE_DEVELOPMENT_SIGNING_IDENTITY)' DEVELOPMENT_TEAM='' PRODUCT_BUNDLE_IDENTIFIER='$(DELTREE_DEVELOPMENT_BUNDLE_IDENTIFIER)'
+	@codesign --verify --deep --strict '$(DERIVED_DATA_PATH)/Build/Products/Debug/DELTREE.app'
+	@codesign -d -r - '$(DERIVED_DATA_PATH)/Build/Products/Debug/DELTREE.app' 2>&1 | grep -q 'anchor apple' || (echo "The development build does not have a stable Apple-backed designated requirement." >&2; exit 2)
+	@if codesign -d -r - '$(DERIVED_DATA_PATH)/Build/Products/Debug/DELTREE.app' 2>&1 | grep -q 'cdhash'; then echo "The development build is still using a binary-specific ad hoc requirement." >&2; exit 2; fi
+	@codesign -dv '$(DERIVED_DATA_PATH)/Build/Products/Debug/DELTREE.app' 2>&1 | grep -Eq 'TeamIdentifier=[A-Z0-9]+' || (echo "The development build does not contain an Apple signing team identifier." >&2; exit 2)
+	@echo "Signed development build verified at $(DERIVED_DATA_PATH)/Build/Products/Debug/DELTREE.app"
 
 test:
 	DELTREE_DISABLE_INITIAL_SCAN=1 $(XCODEBUILD) test -scheme $(SCHEME) -project $(PROJECT) -destination '$(DESTINATION)' -derivedDataPath '$(DERIVED_DATA_PATH)' -parallel-testing-enabled NO -skip-testing:DELTREEUITests CODE_SIGNING_ALLOWED=NO

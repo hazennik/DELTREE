@@ -98,6 +98,16 @@ Scripts/generate-appcast.sh
 
 The appcast is written to `build/export/appcast.xml` by default.
 
+## Sparkle Candidate Sequence
+
+One signed release cannot prove an update path by itself. Use two sequential candidates before public GA:
+
+1. Publish `v1.0.0-rc.1` as the signed, notarized baseline and install it in `/Applications` on the QA Mac.
+2. Publish `v1.0.0-rc.2` with the same Developer ID identity, Sparkle public key, and prerelease feed.
+3. From the installed RC.1 app, choose **Check for Updates...** and verify discovery, release notes, download, EdDSA validation, installation, and relaunch into RC.2.
+
+The first RC proves packaging and clean-machine installation. The second RC proves the first real Sparkle update path. Do not describe Sparkle as release-tested until that RC.1-to-RC.2 check passes.
+
 ## dSYM Symbols
 
 `Scripts/package-release.sh` packages `build/export/DELTREE.dSYM.zip` from the Xcode archive. The script locates `DELTREE.xcarchive/dSYMs/DELTREE.app.dSYM`, compares `dwarfdump --uuid` output against `DELTREE.app/Contents/MacOS/DELTREE`, and fails the release if any architecture UUID is missing or mismatched.
@@ -174,4 +184,5 @@ Homebrew builds write `DELTREEDistributionChannel=homebrew` into the app, create
 - Generate Sparkle appcast only after signing the final zip.
 - Attach `DELTREE.zip`, `DELTREE.zip.sha256`, `DELTREE.dSYM.zip`, `DELTREE.dSYM.zip.sha256`, and `appcast.xml` to the GitHub Release.
 - Run `Scripts/release-preflight.sh <tag> --repo hazennik/DELTREE --post-publish` against the published release.
+- Before public GA, complete a Sparkle update from one signed release candidate to the next.
 - Complete [Release QA](RELEASE_QA.md) before marking the release public GA.

@@ -4,7 +4,7 @@ This checklist must pass before DELTREE is called public GA.
 
 ## Release Candidate
 
-Use `v1.0.0-rc.1` for the first full release candidate.
+Use `v1.0.0-rc.1` for the first full release candidate. Use `v1.0.0-rc.2` as the first update target; public GA requires evidence from both candidates.
 
 Required CI proof:
 
@@ -34,10 +34,11 @@ Run on a Mac that has not built DELTREE locally.
 
 ## Sparkle Smoke Test
 
-- Install the previous signed Developer ID build in `/Applications`.
-- Publish the next RC or GA appcast.
+- Install the signed RC.1 Developer ID build in `/Applications`.
+- Publish the RC.2 appcast through the same prerelease channel, Developer ID identity, and Sparkle public key.
 - Use `Check for Updates...`.
-- Confirm Sparkle sees the update, shows release notes, downloads the zip, validates the EdDSA signature, and relaunches the updated app.
+- Confirm Sparkle sees RC.2, shows release notes, downloads the zip, validates the EdDSA signature, and relaunches the updated app.
+- Confirm the relaunched app reports the RC.2 version and build number.
 - Confirm Homebrew-channel builds do not show Sparkle update UI.
 
 ## Public Media
