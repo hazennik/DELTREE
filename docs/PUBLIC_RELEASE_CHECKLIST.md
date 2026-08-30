@@ -36,10 +36,11 @@ Signed downloadable apps are released from a designated maintainer Mac using [Lo
 2. Create the App Store Connect API key used only for notarization.
 3. Store the notarytool profile in Keychain with `Scripts/setup-local-release-secrets.sh`.
 4. Generate the Sparkle EdDSA key in Keychain and save only the public key in `~/.config/deltree/release.env`.
-5. Configure a stable prerelease-channel appcast URL; GitHub's `/releases/latest/` redirect excludes release candidates.
+5. Configure `https://hazennik.github.io/DELTREE/prerelease/appcast.xml`, which GitHub Pages publishes from protected `main`.
 6. Run `Scripts/release-local.sh <tag> --repo hazennik/DELTREE --draft`.
 7. Complete [Release QA](RELEASE_QA.md) against the draft release artifact.
 8. Publish the GitHub prerelease only after the notarized app, appcast, checksums, and clean-machine candidate QA pass.
+9. Run `Scripts/stage-prerelease-feed.sh <tag> --repo hazennik/DELTREE` and merge the staged appcast through a protected pull request.
 
 The first downloadable release should use the notarized `DELTREE.zip`; do not publish a virtual-machine or raw disk image. A `.dmg` is optional later and requires its own signing, notarization, and clean-machine QA.
 

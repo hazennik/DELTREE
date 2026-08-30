@@ -69,10 +69,10 @@ export DELTREE_APP_STORE_CONNECT_KEY_ID="ABC123DEFG"
 export DELTREE_APP_STORE_CONNECT_ISSUER_ID="00000000-0000-0000-0000-000000000000"
 export DELTREE_APP_STORE_CONNECT_API_KEY_FILE="$HOME/.config/deltree/private/AuthKey_ABC123DEFG.p8"
 export DELTREE_SPARKLE_PUBLIC_ED_KEY="YOUR_SPARKLE_PUBLIC_ED25519_KEY"
-export DELTREE_SPARKLE_FEED_URL="https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml"
+export DELTREE_SPARKLE_FEED_URL="https://hazennik.github.io/DELTREE/prerelease/appcast.xml"
 ```
 
-The `/releases/latest/` feed works for stable releases only. GitHub excludes prereleases from that redirect, so release-candidate builds must set `DELTREE_SPARKLE_FEED_URL` to a stable prerelease-channel appcast URL. The release script rejects an RC configured with the stable-only redirect.
+GitHub Pages publishes the prerelease feed from `docs/prerelease/appcast.xml` on protected `main`. The `/releases/latest/` feed works for stable releases only because GitHub excludes prereleases from that redirect. The release script rejects an RC configured with the stable-only redirect.
 
 Store the notarization credentials in Keychain:
 
@@ -92,6 +92,18 @@ Scripts/release-local.sh v1.0.0-rc.1 --repo hazennik/DELTREE --draft
 ```
 
 Review the draft release assets, complete release QA, then publish the GitHub Release.
+
+After the prerelease is published, download and validate its exact assets before updating the permanent feed:
+
+```sh
+Scripts/stage-prerelease-feed.sh v1.0.0-rc.1 --repo hazennik/DELTREE
+git switch -c codex/publish-v1.0.0-rc.1-feed
+git add docs/prerelease/appcast.xml
+git commit -S -m "Publish v1.0.0-rc.1 update feed"
+git push -u origin codex/publish-v1.0.0-rc.1-feed
+```
+
+Open and merge a protected pull request for that one-file feed update. GitHub Pages then publishes the reviewed appcast at `https://hazennik.github.io/DELTREE/prerelease/appcast.xml`. Never copy an unverified or draft-release appcast into the Pages feed.
 
 GitHub Release immutability is enabled. Publishing a draft locks its tag and attached assets, so attach and verify the complete artifact set before publication. Corrections require a new version and tag rather than replacing a published asset.
 

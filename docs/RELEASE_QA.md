@@ -35,7 +35,9 @@ Run on a Mac that has not built DELTREE locally.
 ## Sparkle Smoke Test
 
 - Install the signed RC.1 Developer ID build in `/Applications`.
-- Publish the RC.2 appcast through the same prerelease channel, Developer ID identity, and Sparkle public key.
+- Publish RC.2 with the same Developer ID identity and Sparkle public key.
+- Run `Scripts/stage-prerelease-feed.sh v1.0.0-rc.2 --repo hazennik/DELTREE`, then merge the staged `docs/prerelease/appcast.xml` through a protected pull request.
+- Confirm `https://hazennik.github.io/DELTREE/prerelease/appcast.xml` serves RC.2 before checking for updates from RC.1.
 - Use `Check for Updates...`.
 - Confirm Sparkle sees RC.2, shows release notes, downloads the zip, validates the EdDSA signature, and relaunches the updated app.
 - Confirm the relaunched app reports the RC.2 version and build number.
