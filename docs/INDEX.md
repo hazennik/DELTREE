@@ -1,6 +1,6 @@
 # DELTREE Documentation Index
 
-DELTREE is a local-only macOS menu-bar utility for safely understanding and cleaning Codex and Xcode developer storage.
+DELTREE is a privacy-first macOS menu-bar utility that processes Codex and Xcode developer-storage data locally.
 
 ## First Reads
 

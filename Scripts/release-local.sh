@@ -116,6 +116,10 @@ version="${tag#v}"
 marketing_version="${version%%-*}"
 build_version="${DELTREE_BUILD_VERSION:-$(git rev-list --count "$tag")}"
 release_zip_url="${DELTREE_RELEASE_ZIP_URL:-https://github.com/$repo/releases/download/$tag/DELTREE.zip}"
+sparkle_feed_url="${DELTREE_SPARKLE_FEED_URL:-https://github.com/$repo/releases/latest/download/appcast.xml}"
+
+zsh Scripts/validate-sparkle-feed-url.sh "$tag" "$sparkle_feed_url"
+export DELTREE_SPARKLE_FEED_URL="$sparkle_feed_url"
 
 mkdir -p build/release
 

@@ -7,7 +7,7 @@ DELTREE is intended for Developer ID distribution outside the Mac App Store.
 - Developer ID Application certificate installed locally.
 - Apple Developer Team ID.
 - Notarization keychain profile configured for `xcrun notarytool`.
-- Sparkle EdDSA public key, Keychain-backed private key, and a real appcast URL before public updates are enabled.
+- Sparkle EdDSA public key, Keychain-backed private key, and a real HTTPS appcast URL before public updates are enabled. Release candidates require a stable prerelease-channel feed; GitHub's `/releases/latest/` redirect is for stable releases only.
 - `DELTREE_DEVELOPMENT_TEAM` configured locally only when opening the Xcode project with signing enabled.
 
 For this repository, the default production path is local-only release signing from a designated maintainer Mac. Follow [Local-Only Release Setup](LOCAL_RELEASE.md) before creating downloadable releases.
@@ -47,6 +47,8 @@ For a complete local release, use:
 Scripts/release-local.sh v1.0.0-rc.1 --repo hazennik/DELTREE --draft
 ```
 
+GitHub Release immutability is enabled. Complete the artifact set and QA on the draft before publication; a published tag or asset cannot be replaced, so corrections require a new version.
+
 For packaging only:
 
 ```sh
@@ -57,6 +59,7 @@ Scripts/package-release.sh --notarize --distribution developer-id
 ```
 
 The packaging script builds a signed archive and zip, submits the zip to Apple notarization when `--notarize` is present, staples the app, and recreates the zip.
+The notarized `DELTREE.zip` is the downloadable app artifact. Do not publish a virtual-machine image or raw disk image. A signed and notarized `.dmg` may be added later as an optional manual-install format, but it is not required for GitHub Releases or Sparkle updates.
 Developer ID is the default distribution channel. The archive writes `DELTREEDistributionChannel=developer-id` into the app Info.plist, and `DistributionChannel.allowsSparkleUpdates` returns `true` for that channel.
 The same package step also verifies that the archived dSYM UUIDs match the app binary for each architecture and writes `build/export/DELTREE.dSYM.zip` with `ditto --norsrc`.
 Packaging writes checksums beside the artifacts:
@@ -120,7 +123,7 @@ If hosted signing is enabled later, the `Release` workflow runs on `v*` tags and
 It also expects these repository variables:
 
 - `DELTREE_SPARKLE_PUBLIC_ED_KEY`
-- `DELTREE_SPARKLE_FEED_URL` when not using `https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml`
+- `DELTREE_SPARKLE_FEED_URL`; stable releases may use `https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml`, while release candidates require a stable prerelease-channel URL
 
 Set `DELTREE_RELEASE_ZIP_URL` as a repository variable if release assets are hosted somewhere other than GitHub Releases.
 

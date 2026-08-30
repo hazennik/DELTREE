@@ -72,6 +72,8 @@ export DELTREE_SPARKLE_PUBLIC_ED_KEY="YOUR_SPARKLE_PUBLIC_ED25519_KEY"
 export DELTREE_SPARKLE_FEED_URL="https://github.com/hazennik/DELTREE/releases/latest/download/appcast.xml"
 ```
 
+The `/releases/latest/` feed works for stable releases only. GitHub excludes prereleases from that redirect, so release-candidate builds must set `DELTREE_SPARKLE_FEED_URL` to a stable prerelease-channel appcast URL. The release script rejects an RC configured with the stable-only redirect.
+
 Store the notarization credentials in Keychain:
 
 ```sh
@@ -90,6 +92,8 @@ Scripts/release-local.sh v1.0.0-rc.1 --repo hazennik/DELTREE --draft
 ```
 
 Review the draft release assets, complete release QA, then publish the GitHub Release.
+
+GitHub Release immutability is enabled. Publishing a draft locks its tag and attached assets, so attach and verify the complete artifact set before publication. Corrections require a new version and tag rather than replacing a published asset.
 
 For a non-draft release:
 

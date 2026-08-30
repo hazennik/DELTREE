@@ -1,6 +1,6 @@
 # Support Workflow
 
-DELTREE support is designed to stay local-only. Do not ask users to upload raw scan inventories unless a maintainer explicitly needs private debugging details and the user agrees.
+DELTREE support is designed to minimize data disclosure. Do not ask users to upload raw scan inventories unless a maintainer explicitly needs private debugging details and the user agrees.
 
 ## Bug Reports
 
@@ -31,7 +31,7 @@ See [Issue Triage](TRIAGE.md) for severity definitions and public-label usage.
 
 ## Crash Reports
 
-GA does not include third-party crash analytics. Users may attach macOS crash logs manually.
+DELTREE does not include third-party crash analytics. Users may attach macOS crash logs manually.
 
 Maintainer flow:
 

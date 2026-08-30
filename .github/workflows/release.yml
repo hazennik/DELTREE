@@ -61,6 +61,8 @@ jobs:
           zip_url="${RELEASE_ZIP_URL_OVERRIDE:-https://github.com/$GITHUB_REPOSITORY/releases/download/$release_tag/DELTREE.zip}"
           feed_url="${DELTREE_SPARKLE_FEED_URL:-https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml}"
 
+          zsh Scripts/validate-sparkle-feed-url.sh "$release_tag" "$feed_url"
+
           mkdir -p build/release
           zsh Scripts/validate-changelog.sh "$release_tag" \
             --notes-output build/release/release-notes.md \

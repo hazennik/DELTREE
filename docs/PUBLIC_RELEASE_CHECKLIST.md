@@ -1,6 +1,6 @@
 # Public Release Checklist
 
-This checklist tracks the remaining repository settings and release evidence required for public source publication and downloadable app distribution.
+This checklist records completed public-source work and the remaining evidence required for downloadable app distribution.
 
 ## Already Ready In The Repo
 
@@ -11,15 +11,22 @@ This checklist tracks the remaining repository settings and release evidence req
 - Simulator filesystem cleanup is blocked in the scanner, planner, and executor; simulator delete/erase preflight identifies irreversible data removal.
 - Complete DELTREE, Sparkle, and bundled-component license notices are included in the app bundle and enforced by release artifact checks.
 
-## Do Before Making The Source Public
+## Public Source State
 
-1. Set the GitHub repository social preview image to `docs/assets/screenshots/social-preview.png`.
-2. Confirm every custom label in `.github/labels.yml` exists on GitHub; standard GitHub default labels may remain in addition.
-3. Confirm the latest `main` CI run is green.
-4. Confirm `make check` and `make ui-test` pass locally.
-5. Confirm there are no committed secrets or private local paths in docs or fixtures.
-6. Change the repository visibility to public.
-7. Immediately after public visibility is available, protect `main` with required PRs and required CI checks.
+- [x] The repository is public.
+- [x] The social preview uses `docs/assets/screenshots/social-preview.png`.
+- [x] Every custom label in `.github/labels.yml` exists on GitHub.
+- [x] `main` requires pull requests, verified commit signatures, and the full CI gate with administrator enforcement.
+- [x] Pull requests from other authors require one code-owner approval. Only the repository owner can bypass that review rule, and only through an auditable pull request merge; technical and integrity gates remain mandatory.
+- [x] Merges are squash-only, merged branches are deleted, and automatic merging is disabled.
+- [x] GitHub Actions permits only GitHub-owned actions and requires full commit-SHA pins.
+- [x] Future `v*` tags are protected from updates and deletion.
+- [x] Future GitHub Releases are immutable after publication.
+- [x] CodeQL default setup scans Actions, Ruby, and Swift with the extended query suite.
+- [x] The latest `main` CI run is green.
+- [x] `make check` passes locally.
+- [x] The current tree and reachable history pass the repository's private-key and token-pattern checks.
+- [x] `make ui-test` passes on the trusted release Mac.
 
 ## Do Before Publishing Downloadable Apps
 
@@ -29,9 +36,12 @@ Signed downloadable apps are released from a designated maintainer Mac using [Lo
 2. Create the App Store Connect API key used only for notarization.
 3. Store the notarytool profile in Keychain with `Scripts/setup-local-release-secrets.sh`.
 4. Generate the Sparkle EdDSA key in Keychain and save only the public key in `~/.config/deltree/release.env`.
-5. Run `Scripts/release-local.sh <tag> --repo hazennik/DELTREE --draft`.
-6. Complete [Release QA](RELEASE_QA.md) against the draft release artifact.
-7. Publish the GitHub Release only after the notarized app, appcast, checksums, and update flow pass.
+5. Configure a stable prerelease-channel appcast URL; GitHub's `/releases/latest/` redirect excludes release candidates.
+6. Run `Scripts/release-local.sh <tag> --repo hazennik/DELTREE --draft`.
+7. Complete [Release QA](RELEASE_QA.md) against the draft release artifact.
+8. Publish the GitHub Release only after the notarized app, appcast, checksums, and update flow pass.
+
+The first downloadable release should use the notarized `DELTREE.zip`; do not publish a virtual-machine or raw disk image. A `.dmg` is optional later and requires its own signing, notarization, and clean-machine QA.
 
 ## Optional GitHub-Hosted Signing
 

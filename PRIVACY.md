@@ -1,6 +1,6 @@
 # Privacy
 
-DELTREE is designed as a local-only utility.
+DELTREE is designed to process storage, project, and cleanup data locally.
 
 ## What DELTREE Reads
 
@@ -26,7 +26,7 @@ Operational history is retained with bounded limits. Manual overrides persist un
 - Explicit simulator delete and erase actions use `simctl` and permanently remove the affected simulator data after confirmation.
 - It does not perform silent cleanup.
 
-Developer ID builds may use Sparkle to check the public appcast for software updates. Homebrew builds disable in-app Sparkle update UI. Sparkle update checks do not include DELTREE scan results or cleanup history.
+Developer ID builds may use Sparkle over HTTPS to retrieve a public appcast and update archive from GitHub Releases. Homebrew builds disable in-app Sparkle update UI. Sparkle update checks do not include DELTREE scan results, project metadata, paths, account data, or cleanup history.
 
 ## Permissions
 

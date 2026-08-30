@@ -38,8 +38,8 @@ body:
     attributes:
       label: Install source
       options:
-        - GitHub Release
-        - Homebrew Cask
+        - GitHub Release (when available)
+        - Homebrew Cask (when available)
         - Built from source
         - Unknown
     validations:
