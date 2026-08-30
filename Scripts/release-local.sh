@@ -132,16 +132,15 @@ DELTREE_MARKETING_VERSION="$marketing_version" \
 DELTREE_BUILD_VERSION="$build_version" \
 Scripts/package-release.sh --notarize --distribution developer-id
 
-Scripts/sign-sparkle-update.sh \
+sparkle_signature="$(Scripts/sign-sparkle-update.sh \
   --zip build/export/DELTREE.zip \
-  --env-output build/release/sparkle.env
-
-source build/release/sparkle.env
+  --signature-only)"
 
 DELTREE_RELEASE_VERSION="$version" \
 DELTREE_MARKETING_VERSION="$marketing_version" \
 DELTREE_BUILD_VERSION="$build_version" \
 DELTREE_RELEASE_ZIP_URL="$release_zip_url" \
+DELTREE_SPARKLE_SIGNATURE="$sparkle_signature" \
 DELTREE_RELEASE_NOTES_HTML_PATH="build/release/release-notes.html" \
 Scripts/generate-appcast.sh
 
