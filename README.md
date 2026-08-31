@@ -15,20 +15,20 @@ SCAN CODEX + XCODE STORAGE
 TRASH ONLY. LOCAL DATA. NO TELEMETRY.
 ```
 
-> Status: pre-release. Signed and notarized `v1.0.0-rc.1` is available for clean-machine testing. It is not public GA: clean-machine QA is still pending, and the complete Sparkle update path must be proven from RC.1 to a second signed candidate.
+> Status: pre-release. Signed and notarized `v1.0.0-rc.2` is available for clean-machine testing. It is not public GA: clean-machine QA is still pending, and the complete Sparkle update path must be proven from RC.1 to a second signed candidate.
 
 ## Install
 
-Download the signed and Apple-notarized RC.1 test candidate from [GitHub Releases](https://github.com/hazennik/DELTREE/releases/tag/v1.0.0-rc.1):
+Download the signed and Apple-notarized RC.2 test candidate from [GitHub Releases](https://github.com/hazennik/DELTREE/releases/tag/v1.0.0-rc.2):
 
 ```sh
-release_tag="v1.0.0-rc.1"
+release_tag="v1.0.0-rc.2"
 curl -fL -o DELTREE.zip "https://github.com/hazennik/DELTREE/releases/download/$release_tag/DELTREE.zip"
 ditto -x -k DELTREE.zip .
 open DELTREE.app
 ```
 
-RC.1 is for release-candidate testing. To build from source instead:
+RC.2 is for release-candidate testing. To build from source instead:
 
 ```sh
 git clone https://github.com/hazennik/DELTREE.git

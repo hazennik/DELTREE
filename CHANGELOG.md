@@ -6,6 +6,12 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 ## Unreleased
 
+## [1.0.0-rc.2] - 2026-08-31
+
+### Fixed
+
+- Updated the downloadable app package to use the modern blue folder app icon as DELTREE's default app icon.
+
 ## [1.0.0-rc.1] - 2026-08-30
 
 ### Added
