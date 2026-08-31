@@ -55,6 +55,19 @@ struct AppSettingsStoreTests {
         #expect(changeCount == 1)
     }
 
+    @Test func documentsCodexAccessDefaultsOnAndPersistsDenial() throws {
+        let defaults = try Self.makeDefaults()
+        let store = AppSettingsStore(defaults: defaults)
+
+        #expect(store.scanDocumentsCodex)
+
+        store.scanDocumentsCodex = false
+        let restored = AppSettingsStore(defaults: defaults)
+
+        #expect(restored.scanDocumentsCodex == false)
+        #expect(restored.scanConfiguration.scanDocumentsCodex == false)
+    }
+
     private static func makeDefaults() throws -> UserDefaults {
         let suiteName = "deltree-settings-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))

@@ -65,6 +65,7 @@ private struct SettingsScanningSection: View {
         Section("Scanning") {
             Toggle("Watch developer folders for live attribution", isOn: $settings.watcherEnabled)
             Toggle("Auto-scan after Codex/Xcode activity", isOn: $settings.autoScanAfterActivity)
+            Toggle("Scan ~/Documents/Codex", isOn: $settings.scanDocumentsCodex)
             SettingsDoubleField(title: "Scan interval", prompt: "Minutes", value: $settings.scanIntervalMinutes)
             SettingsIntField(title: "Stale after", prompt: "Days", value: $settings.staleAgeDays)
         }
@@ -199,6 +200,7 @@ private struct ClassicSettingsContent: View {
                 ClassicSection("Scanning") {
                     ClassicToggleButton(title: "Watch developer folders", isOn: $settings.watcherEnabled)
                     ClassicToggleButton(title: "Auto-scan after activity", isOn: $settings.autoScanAfterActivity)
+                    ClassicToggleButton(title: "Scan ~/Documents/Codex", isOn: $settings.scanDocumentsCodex)
                     ClassicSettingsDoubleField(title: "Scan interval", prompt: "Minutes", value: $settings.scanIntervalMinutes)
                     ClassicSettingsIntField(title: "Stale after", prompt: "Days", value: $settings.staleAgeDays)
                 }

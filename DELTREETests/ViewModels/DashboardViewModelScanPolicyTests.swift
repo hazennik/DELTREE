@@ -137,6 +137,58 @@ struct DashboardViewModelScanPolicyTests {
         #expect(harness.viewModel.isScanning == false)
     }
 
+    @Test func deniedDocumentsAccessDisablesAutomaticRetries() async throws {
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false))
+        await harness.scanner.setSnapshot(StorageSnapshot(
+            capturedAt: harness.clock.now,
+            items: [],
+            missingPaths: [],
+            unreadablePaths: [harness.documentsCodexPath]))
+
+        harness.viewModel.start()
+        try await harness.waitForScanCompletion(count: 1)
+
+        #expect(harness.viewModel.settings.scanDocumentsCodex == false)
+        #expect(harness.viewModel.settings.scanConfiguration.scanDocumentsCodex == false)
+        #expect(harness.watcher.startedPaths.contains(harness.documentsCodexPath) == false)
+        harness.viewModel.stop()
+    }
+
+    @Test func verifiedDocumentsAccessEnablesFilesystemWatching() async throws {
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false))
+
+        harness.viewModel.start()
+        try await harness.waitForScanCompletion(count: 1)
+
+        #expect(harness.viewModel.settings.scanDocumentsCodex)
+        #expect(harness.watcher.startedPaths.contains(harness.documentsCodexPath))
+        harness.viewModel.stop()
+    }
+
+    @Test func cleanupExecutionIgnoresDuplicateSubmission() async throws {
+        let cleanupExecutor = CountingCleanupExecutor()
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false),
+            cleanupExecutor: cleanupExecutor)
+        let item = Self.item(index: 300)
+        let plan = CleanupPlan(
+            actions: [CleanupPlanAction(item: item, action: .moveToTrash, reason: "Fixture")],
+            blockedItems: [])
+
+        harness.viewModel.pendingCleanupPlan = plan
+        harness.viewModel.performCleanup(plan)
+        harness.viewModel.performCleanup(plan)
+        try await harness.waitForCleanupExecutionCount(1, executor: cleanupExecutor)
+
+        #expect(await cleanupExecutor.executionCount == 1)
+        #expect(harness.viewModel.pendingCleanupPlan == nil)
+    }
+
     @Test func memoryPressureTrimDropsOnlyRebuildableState() async throws {
         let harness = try await DashboardViewModelHarness(
             scanIntervalMinutes: 1,
@@ -222,13 +274,15 @@ private final class DashboardViewModelHarness {
     let watcher: RecordingStorageWatcher
     let clock: DashboardViewModelTestClock
     let persistence: InMemorySnapshotPersistence
+    let documentsCodexPath: String
 
     private let suiteName = "DELTREE.DashboardViewModelScanPolicyTests.\(UUID().uuidString)"
 
     init(
         scanIntervalMinutes: Double,
         powerState: PowerState,
-        persistedSnapshots: [StorageSnapshot] = []) async throws
+        persistedSnapshots: [StorageSnapshot] = [],
+        cleanupExecutor: any CleanupExecuting = NoopCleanupExecutor()) async throws
     {
         let scanner = RecordingStorageScanner()
         let scheduler = RecordingScanDelayScheduler()
@@ -251,11 +305,12 @@ private final class DashboardViewModelHarness {
         let homeDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("DELTREE-scan-policy-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: homeDirectory, withIntermediateDirectories: true)
+        documentsCodexPath = StorageRootCatalog(homeDirectory: homeDirectory).documentsCodexRoot.path
 
         viewModel = DashboardViewModel(
             scanner: scanner,
             cleanupPlanner: NoopCleanupPlanner(),
-            cleanupExecutor: NoopCleanupExecutor(),
+            cleanupExecutor: cleanupExecutor,
             persistence: persistence,
             settings: settings,
             watcher: watcher,
@@ -293,6 +348,12 @@ private final class DashboardViewModelHarness {
     func waitForScheduledDelayCount(_ expectedCount: Int) async throws {
         try await waitUntil {
             self.scheduler.scheduledDelays.count >= expectedCount
+        }
+    }
+
+    func waitForCleanupExecutionCount(_ expectedCount: Int, executor: CountingCleanupExecutor) async throws {
+        try await waitUntil {
+            await executor.executionCount >= expectedCount
         }
     }
 
@@ -352,6 +413,10 @@ private final class RecordingStorageScanner: StorageScanning, @unchecked Sendabl
         await state.setBlocksScans(blocksScans)
     }
 
+    func setSnapshot(_ snapshot: StorageSnapshot) async {
+        await state.setSnapshot(snapshot)
+    }
+
     func resumeBlockedScan() async {
         await state.resumeBlockedScan()
     }
@@ -360,6 +425,7 @@ private final class RecordingStorageScanner: StorageScanning, @unchecked Sendabl
 private actor RecordingStorageScannerState {
     var scanCount = 0
     private var blocksScans = false
+    private var snapshot: StorageSnapshot?
 
     func scan(now: Date) async -> StorageSnapshot {
         scanCount += 1
@@ -369,11 +435,15 @@ private actor RecordingStorageScannerState {
             }
             try? await Task.sleep(for: .milliseconds(10))
         }
-        return StorageSnapshot(capturedAt: now, items: [], missingPaths: [], unreadablePaths: [])
+        return snapshot ?? StorageSnapshot(capturedAt: now, items: [], missingPaths: [], unreadablePaths: [])
     }
 
     func setBlocksScans(_ blocksScans: Bool) {
         self.blocksScans = blocksScans
+    }
+
+    func setSnapshot(_ snapshot: StorageSnapshot) {
+        self.snapshot = snapshot
     }
 
     func resumeBlockedScan() {
@@ -458,6 +528,19 @@ private struct NoopCleanupPlanner: CleanupPlanning {
 private struct NoopCleanupExecutor: CleanupExecuting {
     func execute(_ plan: CleanupPlan) async -> CleanupExecutionResult {
         CleanupExecutionResult(performedAt: Date(), completedActions: [], failedActions: [:], skippedItems: [])
+    }
+}
+
+private actor CountingCleanupExecutor: CleanupExecuting {
+    private(set) var executionCount = 0
+
+    func execute(_ plan: CleanupPlan) async -> CleanupExecutionResult {
+        executionCount += 1
+        return CleanupExecutionResult(
+            performedAt: Date(),
+            completedActions: [],
+            failedActions: [:],
+            skippedItems: [])
     }
 }
 

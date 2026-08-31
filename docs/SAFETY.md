@@ -7,6 +7,7 @@ DELTREE exists to explain and safely reclaim developer storage. It should never 
 - Never clean booted or active simulators.
 - Never permanently delete regular files or folders in v1; move them to Trash.
 - Never silently clean anything.
+- Never overlap cleanup executions.
 - Always revalidate cleanup plans before execution.
 - Check non-simulator cleanup candidates with `lsof` before labeling them safe.
 - Always use Trash for file and folder cleanup.
@@ -57,6 +58,8 @@ Cleanup plans are advisory until execution. Immediately before each action, DELT
 - a non-simulator path no longer exists, cannot be checked for open files, or is currently open
 - a simulator device is booted, no longer exists, is no longer unavailable, or cannot be safely erased
 - the action is not an approved Trash, `simctl delete`, or `simctl erase` operation
+
+If cleanup execution is canceled, DELTREE stops before the next mutation and records the remaining items as skipped instead of retrying or treating cancellation as a filesystem failure.
 
 ## Verification
 
