@@ -22,6 +22,9 @@ final class DashboardViewModel {
     var isScanning = false {
         didSet { onStateChange?() }
     }
+    var isCleaning = false {
+        didSet { onStateChange?() }
+    }
     var searchText = ""
     var selectedSection: DashboardSection = .overview
     var selectedDomain: StorageDomain?
@@ -74,6 +77,7 @@ final class DashboardViewModel {
     @ObservationIgnored private var pendingFilesystemChangePaths = Set<String>()
     @ObservationIgnored private var scanGeneration: UInt64 = 0
     @ObservationIgnored private var isRunning = false
+    @ObservationIgnored private var hasVerifiedDocumentsCodexAccess = false
 
     init(
         scanner: any StorageScanning,
@@ -271,6 +275,18 @@ final class DashboardViewModel {
                 return
             }
 
+            let documentsCodexPath = self.rootCatalog.documentsCodexRoot.standardizedFileURL.path
+            if configuration.scanDocumentsCodex {
+                let accessUnavailable = snapshot.missingPaths.contains(documentsCodexPath) ||
+                    snapshot.unreadablePaths.contains(documentsCodexPath)
+                self.hasVerifiedDocumentsCodexAccess = accessUnavailable == false
+                if snapshot.unreadablePaths.contains(documentsCodexPath) {
+                    self.settings.scanDocumentsCodex = false
+                }
+            } else {
+                self.hasVerifiedDocumentsCodexAccess = false
+            }
+
             let delta = mainThreadHangWatchdog.withBreadcrumb("scan.apply") {
                 self.previousSnapshot = previousSnapshot
                 self.availableDiskBytes = diskSpaceProvider.availableBytes(for: URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true))
@@ -318,15 +334,24 @@ final class DashboardViewModel {
     }
 
     func prepareSafeCleanup() {
+        guard isCleaning == false else {
+            return
+        }
         let plan = cleanupPlanner.planSafeCleanup(from: snapshot)
         pendingCleanupPlan = plan
     }
 
     func prepareCleanup(for item: StorageItem, action: StorageAction) {
+        guard isCleaning == false else {
+            return
+        }
         pendingCleanupPlan = cleanupPlanner.planCleanup(for: item, action: action, in: snapshot)
     }
 
     func settingsDidChange() {
+        if settings.scanDocumentsCodex == false {
+            hasVerifiedDocumentsCodexAccess = false
+        }
         if settings.notificationsEnabled {
             Task {
                 _ = await notificationService.requestAuthorization()
@@ -338,7 +363,11 @@ final class DashboardViewModel {
     }
 
     func performCleanup(_ plan: CleanupPlan) {
-        cleanupTask?.cancel()
+        guard isCleaning == false else {
+            return
+        }
+        isCleaning = true
+        pendingCleanupPlan = nil
         cleanupTask = Task {
             mainThreadHangWatchdog.recordBreadcrumb("cleanup.execute.begin")
             let result = await cleanupExecutor.execute(plan)
@@ -363,10 +392,13 @@ final class DashboardViewModel {
                 message += " Could not save cleanup history: \(error.localizedDescription)"
             }
             cleanupMessage = message
-            pendingCleanupPlan = nil
             refreshHistory()
             await notifyCleanupComplete(result)
-            scan(force: true)
+            cleanupTask = nil
+            isCleaning = false
+            if isRunning {
+                scan(force: true)
+            }
         }
     }
 
@@ -427,7 +459,9 @@ final class DashboardViewModel {
                 self?.queueFilesystemChange(paths: paths)
             }
         }
-        watcher.start(paths: rootCatalog.watchRoots(configuration: settings.scanConfiguration))
+        var configuration = settings.scanConfiguration
+        configuration.scanDocumentsCodex = configuration.scanDocumentsCodex && hasVerifiedDocumentsCodexAccess
+        watcher.start(paths: rootCatalog.watchRoots(configuration: configuration))
     }
 
     private func activeScanIsStale() -> Bool {
@@ -636,10 +670,17 @@ final class DashboardViewModel {
 
     private func cleanupMessage(for result: CleanupExecutionResult) -> String {
         let actionCount = result.completedActions.count
-        if result.failedActions.isEmpty {
+        let skippedCount = result.skippedItems.count
+        if result.failedActions.isEmpty && skippedCount == 0 {
             return "Completed \(actionCount) cleanup action(s), reclaiming \(StorageFormatters.byteCount(result.reclaimedBytes))."
         }
-        return "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed."
+        if result.failedActions.isEmpty {
+            return "Completed \(actionCount) cleanup action(s); \(skippedCount) skipped."
+        }
+        if skippedCount == 0 {
+            return "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed."
+        }
+        return "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed; \(skippedCount) skipped."
     }
 
     private func writeCleanupReport(plan: CleanupPlan, to url: URL) {

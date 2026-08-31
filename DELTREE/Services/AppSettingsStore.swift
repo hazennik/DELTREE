@@ -14,6 +14,7 @@ final class AppSettingsStore {
         static let keepLastTestRuns = "keepLastTestRuns"
         static let keepSimulatorsUsedWithinDays = "keepSimulatorsUsedWithinDays"
         static let neverTouchArchives = "neverTouchArchives"
+        static let scanDocumentsCodex = "scanDocumentsCodex"
         static let notifyOnlyByDefault = "notifyOnlyByDefault"
         static let autoScanAfterActivity = "autoScanAfterActivity"
         static let notificationsEnabled = "notificationsEnabled"
@@ -63,6 +64,10 @@ final class AppSettingsStore {
 
     var neverTouchArchives: Bool {
         didSet { defaults.set(neverTouchArchives, forKey: Key.neverTouchArchives) }
+    }
+
+    var scanDocumentsCodex: Bool {
+        didSet { defaults.set(scanDocumentsCodex, forKey: Key.scanDocumentsCodex) }
     }
 
     var notifyOnlyByDefault: Bool {
@@ -117,6 +122,7 @@ final class AppSettingsStore {
         keepLastTestRuns = defaults.object(forKey: Key.keepLastTestRuns) as? Int ?? 5
         keepSimulatorsUsedWithinDays = defaults.object(forKey: Key.keepSimulatorsUsedWithinDays) as? Int ?? 14
         neverTouchArchives = defaults.object(forKey: Key.neverTouchArchives) as? Bool ?? true
+        scanDocumentsCodex = defaults.object(forKey: Key.scanDocumentsCodex) as? Bool ?? true
         notifyOnlyByDefault = defaults.object(forKey: Key.notifyOnlyByDefault) as? Bool ?? true
         autoScanAfterActivity = defaults.object(forKey: Key.autoScanAfterActivity) as? Bool ?? true
         notificationsEnabled = defaults.object(forKey: Key.notificationsEnabled) as? Bool ?? false
@@ -137,6 +143,7 @@ final class AppSettingsStore {
             keepLastTestRuns: max(0, keepLastTestRuns),
             keepSimulatorsUsedWithinDays: max(1, keepSimulatorsUsedWithinDays),
             neverTouchArchives: neverTouchArchives,
+            scanDocumentsCodex: scanDocumentsCodex,
             excludedPaths: Set(excludedPathsText
                 .split(whereSeparator: \.isNewline)
                 .map { URL(fileURLWithPath: String($0)).standardizedFileURL.path }),
@@ -170,6 +177,7 @@ final class AppSettingsStore {
             keepLastTestRuns.description,
             keepSimulatorsUsedWithinDays.description,
             neverTouchArchives.description,
+            scanDocumentsCodex.description,
             notifyOnlyByDefault.description,
             notificationsEnabled.description,
             lowDiskThresholdGB.description,

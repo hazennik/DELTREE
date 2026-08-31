@@ -8,6 +8,8 @@ DELTREE scans local developer storage and prepares cleanup plans on-device. It d
 
 macOS may ask for file access when DELTREE scans folders outside its default sandbox reach, such as custom Codex workspaces, Xcode archives, or external volumes. Grant access only for locations you want DELTREE to inspect.
 
+DELTREE checks `~/Documents/Codex` once before including it in a scan. If access is not granted, DELTREE turns off that scan root so background scans do not keep presenting the same macOS prompt. Turn on **Scan ~/Documents/Codex** in Settings to retry intentionally.
+
 Full Disk Access is not required for the standard scan paths. If a custom location remains unreadable after a normal file-access prompt, you can either remove that location from DELTREE's scan roots or grant broader access in System Settings.
 
 Notifications are optional. They are used for scan and cleanup completion notices, not for background tracking.
@@ -32,6 +34,8 @@ An entitlements file would not grant Full Disk Access. That access is controlled
 ![Cleanup preflight](assets/screenshots/modern-cleanup-preflight.png)
 
 DELTREE separates scanning from cleanup. A scan inventories candidate storage; cleanup requires a reviewed plan and explicit confirmation.
+
+Only one cleanup can execute at a time. Starting cleanup closes the preflight immediately, and any work canceled during app shutdown is recorded as skipped rather than failed.
 
 Regular files and folders are moved through macOS Trash when possible. Simulator device cleanup uses Apple's simulator tooling rather than directly removing device directories. Simulator delete and erase actions permanently remove the affected simulator data, are identified in preflight, and cannot be recovered from Trash. DELTREE records skipped items when it cannot safely classify or access a candidate.
 

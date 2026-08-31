@@ -25,6 +25,9 @@ struct CleanupExecutionResult: Hashable, Sendable {
         if failedActions.isEmpty && skippedItems.isEmpty {
             return "completed"
         }
+        if completedActions.isEmpty && failedActions.isEmpty {
+            return "skipped"
+        }
         if completedActions.isEmpty {
             return "failed"
         }

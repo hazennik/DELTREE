@@ -10,6 +10,7 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
     private let attributionTracker: any AttributionTracking
     private let safetyPolicy: any SafetyClassifying
     private let rootCatalog: StorageRootCatalog
+    private let protectedRootAccessChecker: any ProtectedRootAccessChecking
 
     init(
         rootCatalog: StorageRootCatalog = .live(),
@@ -20,7 +21,8 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
         processSampler: any ProcessSampling = LiveProcessSampler(),
         openFileChecker: any OpenFileChecking = LiveLsofOpenFileChecker(),
         attributionTracker: any AttributionTracking = LiveAttributionTracker(),
-        safetyPolicy: any SafetyClassifying = DefaultSafetyPolicy())
+        safetyPolicy: any SafetyClassifying = DefaultSafetyPolicy(),
+        protectedRootAccessChecker: any ProtectedRootAccessChecking = LiveProtectedRootAccessChecker())
     {
         self.fileManager = fileManager
         self.fileSizeScanner = fileSizeScanner
@@ -31,6 +33,7 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
         self.attributionTracker = attributionTracker
         self.safetyPolicy = safetyPolicy
         self.rootCatalog = rootCatalog
+        self.protectedRootAccessChecker = protectedRootAccessChecker
     }
 
     @concurrent func scan(configuration: StorageScanConfiguration, now: Date = Date()) async -> StorageSnapshot {
@@ -48,10 +51,26 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
             configuration: configuration,
             now: now)
 
-        let domainScanners = makeDomainScanners(configuration: configuration)
         var items: [StorageItem] = []
         var missingPaths: [String] = []
         var unreadablePaths: [String] = []
+        var roots = rootCatalog.roots(configuration: configuration)
+
+        if configuration.scanDocumentsCodex {
+            let documentsRoot = rootCatalog.documentsCodexRoot.standardizedFileURL
+            switch protectedRootAccessChecker.checkAccess(to: documentsRoot) {
+            case .available:
+                break
+            case .missing:
+                missingPaths.append(documentsRoot.path)
+                remove(documentsRoot, from: &roots)
+            case .unreadable:
+                unreadablePaths.append(documentsRoot.path)
+                remove(documentsRoot, from: &roots)
+            }
+        }
+
+        let domainScanners = makeDomainScanners(roots: roots)
 
         for scanner in domainScanners {
             if Task.isCancelled {
@@ -77,8 +96,7 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
             unreadablePaths: unique(unreadablePaths))
     }
 
-    private func makeDomainScanners(configuration: StorageScanConfiguration) -> [any DomainScanning] {
-        let roots = rootCatalog.roots(configuration: configuration)
+    private func makeDomainScanners(roots: [StorageDomain: [URL]]) -> [any DomainScanning] {
         return [
             CodexWorkspaceDomainScanner(
                 domain: .codexHome,
@@ -198,5 +216,12 @@ struct DefaultStorageScanner: StorageScanning, @unchecked Sendable {
 
     private func unique(_ paths: [String]) -> [String] {
         Array(Set(paths.map { URL(fileURLWithPath: $0).standardizedFileURL.path })).sorted()
+    }
+
+    private func remove(_ root: URL, from roots: inout [StorageDomain: [URL]]) {
+        let path = root.standardizedFileURL.path
+        for domain in roots.keys {
+            roots[domain]?.removeAll { $0.standardizedFileURL.path == path }
+        }
     }
 }

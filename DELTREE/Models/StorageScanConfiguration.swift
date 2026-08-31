@@ -8,6 +8,7 @@ struct StorageScanConfiguration: Equatable, Sendable {
     var keepLastTestRuns: Int
     var keepSimulatorsUsedWithinDays: Int
     var neverTouchArchives: Bool
+    var scanDocumentsCodex: Bool
     var excludedPaths: Set<String>
     var customScanRoots: [String]
     var manualOverrides: [String: ManualStorageOverride]
@@ -20,6 +21,7 @@ struct StorageScanConfiguration: Equatable, Sendable {
         keepLastTestRuns: 5,
         keepSimulatorsUsedWithinDays: 14,
         neverTouchArchives: true,
+        scanDocumentsCodex: true,
         excludedPaths: [],
         customScanRoots: [],
         manualOverrides: [:])

@@ -147,6 +147,33 @@ struct CleanupExecutorTests {
         #expect(await simctl.erasedUDIDs().isEmpty)
     }
 
+    @Test @MainActor func executorTreatsCancellationAsSkippedInsteadOfFailed() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent("DELTREE-cleanup-cancellation-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        let resultBundle = root.appendingPathComponent("result.xcresult")
+        try Data("fixture".utf8).write(to: resultBundle)
+        let trash = RecordingTrashService()
+        let executor = DefaultCleanupExecutor(
+            fileManager: fileManager,
+            trashService: trash,
+            openFileChecker: CancellingOpenFileChecker())
+        let item = Self.item(path: resultBundle.path, metadata: [:])
+        let action = CleanupPlanAction(item: item, action: .removeXCResult, reason: "Trash result bundle.")
+        let plan = CleanupPlan(actions: [action], blockedItems: [])
+
+        let execution = Task { await executor.execute(plan) }
+        let result = await execution.value
+
+        #expect(result.completedActions.isEmpty)
+        #expect(result.failedActions.isEmpty)
+        #expect(result.skippedItems == [item])
+        #expect(result.status == "skipped")
+        #expect(await trash.trashedPaths().isEmpty)
+    }
+
     private static func item(
         path: String,
         domain: StorageDomain = .xcResults,
@@ -236,5 +263,14 @@ private struct RecordingOpenFileChecker: OpenFileChecking {
 
     func checkOpenFiles(under url: URL) async -> OpenFileCheckResult {
         result
+    }
+}
+
+private struct CancellingOpenFileChecker: OpenFileChecking {
+    func checkOpenFiles(under url: URL) async -> OpenFileCheckResult {
+        withUnsafeCurrentTask { task in
+            task?.cancel()
+        }
+        return .unavailable("Cancelled")
     }
 }

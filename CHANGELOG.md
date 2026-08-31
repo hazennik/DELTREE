@@ -6,6 +6,11 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 ## Unreleased
 
+### Fixed
+
+- Prevented repeated Documents access prompts after `~/Documents/Codex` access is denied; users can explicitly retry from Settings.
+- Prevented duplicate cleanup submissions from canceling an in-progress cleanup and reporting cancellation as per-item failures.
+
 ## [1.0.0-rc.2] - 2026-08-31
 
 ### Fixed

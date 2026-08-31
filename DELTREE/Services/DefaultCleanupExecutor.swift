@@ -24,13 +24,19 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
     func execute(_ plan: CleanupPlan) async -> CleanupExecutionResult {
         var completed: [CleanupPlanAction] = []
         var failed: [CleanupPlanAction: String] = [:]
+        var skippedItems = plan.blockedItems
         let currentSimctlDevices = await currentSimctlDevicesIfNeeded(for: plan)
 
-        for action in plan.actions {
+        for (index, action) in plan.actions.enumerated() {
             do {
+                try Task.checkCancellation()
                 try await revalidate(action, currentSimctlDevices: currentSimctlDevices)
+                try Task.checkCancellation()
                 try await execute(action)
                 completed.append(action)
+            } catch is CancellationError {
+                skippedItems.append(contentsOf: plan.actions[index...].map(\.item))
+                break
             } catch {
                 failed[action] = error.localizedDescription
             }
@@ -40,7 +46,7 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
             performedAt: Date(),
             completedActions: completed,
             failedActions: failed,
-            skippedItems: plan.blockedItems)
+            skippedItems: skippedItems)
     }
 
     private func execute(_ planAction: CleanupPlanAction) async throws {
@@ -106,7 +112,10 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
             throw CleanupExecutionError.pathMissing(path)
         }
 
-        switch await openFileChecker.checkOpenFiles(under: URL(fileURLWithPath: path, isDirectory: isDirectory.boolValue)) {
+        let result = await openFileChecker.checkOpenFiles(
+            under: URL(fileURLWithPath: path, isDirectory: isDirectory.boolValue))
+        try Task.checkCancellation()
+        switch result {
         case .clear:
             return
         case .openFilesFound:

@@ -3,6 +3,10 @@ import Foundation
 struct StorageRootCatalog: Sendable {
     var homeDirectory: URL
 
+    var documentsCodexRoot: URL {
+        homeDirectory.appendingPathComponent("Documents/Codex", isDirectory: true)
+    }
+
     static func live(fileManager: FileManager = .default) -> StorageRootCatalog {
         StorageRootCatalog(homeDirectory: fileManager.homeDirectoryForCurrentUser)
     }
@@ -12,9 +16,7 @@ struct StorageRootCatalog: Sendable {
             .codexHome: [
                 homeDirectory.appendingPathComponent(".codex", isDirectory: true),
             ],
-            .codexWorkspaces: [
-                homeDirectory.appendingPathComponent("Documents/Codex", isDirectory: true),
-            ],
+            .codexWorkspaces: [],
             .coreSimulatorDevices: [
                 homeDirectory.appendingPathComponent("Library/Developer/CoreSimulator/Devices", isDirectory: true),
             ],
@@ -26,7 +28,6 @@ struct StorageRootCatalog: Sendable {
             ],
             .xcResults: [
                 homeDirectory.appendingPathComponent("Library/Developer/Xcode/Products", isDirectory: true),
-                homeDirectory.appendingPathComponent("Documents/Codex", isDirectory: true),
             ],
             .xcodeProducts: [
                 homeDirectory.appendingPathComponent("Library/Developer/Xcode/Products", isDirectory: true),
@@ -55,6 +56,11 @@ struct StorageRootCatalog: Sendable {
             ],
         ]
 
+        if configuration.scanDocumentsCodex {
+            roots[.codexWorkspaces, default: []].append(documentsCodexRoot)
+            roots[.xcResults, default: []].append(documentsCodexRoot)
+        }
+
         let customRoots = configuration.customScanRoots.map { URL(fileURLWithPath: $0, isDirectory: true) }
         if customRoots.isEmpty == false {
             roots[.codexWorkspaces, default: []].append(contentsOf: customRoots)
@@ -64,6 +70,9 @@ struct StorageRootCatalog: Sendable {
     }
 
     func watchRoots(configuration: StorageScanConfiguration = .standard) -> [String] {
-        roots(configuration: configuration).values.flatMap { $0 }.map { $0.standardizedFileURL.path }
+        Array(Set(roots(configuration: configuration).values
+            .flatMap { $0 }
+            .map { $0.standardizedFileURL.path }))
+            .sorted()
     }
 }
