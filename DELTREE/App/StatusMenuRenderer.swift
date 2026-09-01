@@ -43,6 +43,12 @@ enum StatusMenuRenderer {
                 menu.addItem(hostedItem(StatusMenuSafetyChartView(
                     footprint: footprint,
                     safeItemCount: safeItemCount), visualMode: visualMode))
+            case let .reviewItems(items, totalBytes):
+                menu.addItem(reviewItemsMenuItem(
+                    items: items,
+                    totalBytes: totalBytes,
+                    target: target,
+                    actionSelector: actionSelector))
             case .separator:
                 if visualMode == .classic {
                     menu.addItem(hostedItem(StatusMenuDividerView(), visualMode: visualMode))
@@ -62,7 +68,7 @@ enum StatusMenuRenderer {
                 } else {
                     let item = NSMenuItem(title: title, action: actionSelector, keyEquivalent: keyEquivalent)
                     item.target = target
-                    item.representedObject = command.rawValue
+                    item.representedObject = StatusMenuAction.command(command)
                     item.isEnabled = isEnabled
                     item.image = NSImage(systemSymbolName: command.systemImage, accessibilityDescription: title)
                     menu.addItem(item)
@@ -95,7 +101,7 @@ enum StatusMenuRenderer {
         let theme = AppTheme(mode: visualMode)
         let item = NSMenuItem(title: title, action: actionSelector, keyEquivalent: keyEquivalent)
         item.target = target
-        item.representedObject = command.rawValue
+        item.representedObject = StatusMenuAction.command(command)
         item.isEnabled = isEnabled
 
         let hostingView = NSHostingView(rootView: StatusMenuCommandRowView(
@@ -114,6 +120,35 @@ enum StatusMenuRenderer {
         hostingView.setFrameSize(hostingView.fittingSize)
         item.view = hostingView
 
+        return item
+    }
+
+    private static func reviewItemsMenuItem(
+        items: [StatusMenuReviewItem],
+        totalBytes: Int64,
+        target: AnyObject,
+        actionSelector: Selector) -> NSMenuItem
+    {
+        let count = items.count
+        let title = "Review Items (\(count))"
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.image = NSImage(systemSymbolName: "exclamationmark.triangle", accessibilityDescription: title)
+        item.toolTip = "\(count) items totaling \(StorageFormatters.byteCount(totalBytes)) need review."
+
+        let submenu = NSMenu(title: "Needs Review")
+        submenu.autoenablesItems = false
+        for reviewItem in items {
+            let childTitle = "\(reviewItem.title) (\(StorageFormatters.byteCount(reviewItem.bytes)))"
+            let child = NSMenuItem(title: childTitle, action: actionSelector, keyEquivalent: "")
+            child.target = target
+            child.representedObject = StatusMenuAction.reviewItem(reviewItem.id)
+            child.image = NSImage(
+                systemSymbolName: reviewItem.domain.symbolName,
+                accessibilityDescription: reviewItem.title)
+            child.toolTip = reviewItem.path
+            submenu.addItem(child)
+        }
+        item.submenu = submenu
         return item
     }
 }

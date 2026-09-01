@@ -31,6 +31,18 @@ struct AppUpdateServiceTests {
         #expect(updater.startCallCount == 1)
     }
 
+    @Test func manualCheckInvokesUpdater() {
+        let updater = RecordingAppUpdater(canCheckForUpdates: true)
+        let service = AppUpdateService(
+            distributionChannel: .developerID,
+            configuration: .complete,
+            makeUpdater: { updater })
+
+        service.checkForUpdates()
+
+        #expect(updater.checkCallCount == 1)
+    }
+
     @Test func homebrewNeverStartsUpdater() {
         let updater = RecordingAppUpdater(canCheckForUpdates: true)
         let service = AppUpdateService(

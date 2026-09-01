@@ -51,6 +51,8 @@ Unreadable or missing paths are reported instead of hidden.
 - `Do Not Remove`: active, pinned, ignored, runtime, image, or protected data.
 - `Unknown`: not enough evidence to recommend cleanup.
 
+The menu-bar mini menu shows a `Review Items` submenu under Cleanup Readiness when non-ignored items are classified as `Probably Safe` or `Review First`. Hover over it to see the complete size-sorted list. Selecting an item opens the dashboard with that item ready for inspection; it does not clean or reclassify the item.
+
 ## Cleanup
 
 DELTREE always shows a cleanup preflight before action. The preflight lists:
@@ -78,7 +80,7 @@ Overrides persist across scans.
 
 ## Updates
 
-Direct Developer ID installs use `Check for Updates...` from the app menu when Sparkle is configured for the build.
+Direct Developer ID installs use `Check for Updates...` from the menu-bar mini menu when Sparkle is configured for the build. Sparkle offers to relaunch DELTREE after it downloads and validates an update.
 
 Homebrew installs should update with:
 

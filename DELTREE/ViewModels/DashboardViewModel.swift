@@ -191,6 +191,24 @@ final class DashboardViewModel {
         return visibleItems.first { $0.id == selectedItemID } ?? visibleItems.first
     }
 
+    func showReviewItem(id: StorageItem.ID) {
+        guard let item = snapshot.items.first(where: { item in
+            item.id == id &&
+                item.isIgnored == false &&
+                (item.safety == .probablySafe || item.safety == .reviewRecommended)
+        }) else {
+            return
+        }
+
+        searchText = ""
+        selectedSection = .overview
+        selectedDomain = nil
+        selectedSafety = nil
+        selectedOwner = nil
+        includeIgnoredItems = false
+        selectedItemID = item.id
+    }
+
     func start() {
         guard hasStarted == false else {
             return
