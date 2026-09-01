@@ -52,6 +52,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItemController = StatusItemController(
             viewModel: container.dashboardViewModel,
             settings: container.settings,
+            updateService: container.updateService,
             openDashboard: { dashboardWindowController.show() },
             openSettings: { settingsWindowController.show() },
             onAppearanceChange: { [weak container] in

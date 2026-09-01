@@ -5,6 +5,7 @@ enum StatusMenuCommand: String, Hashable, Sendable {
     case scanNow
     case cleanSafe
     case openSettings
+    case checkForUpdates
     case quit
 
     var systemImage: String {
@@ -17,10 +18,17 @@ enum StatusMenuCommand: String, Hashable, Sendable {
             "trash"
         case .openSettings:
             "gearshape"
+        case .checkForUpdates:
+            "arrow.down.circle"
         case .quit:
             "power"
         }
     }
+}
+
+enum StatusMenuAction: Hashable, Sendable {
+    case command(StatusMenuCommand)
+    case reviewItem(StorageItem.ID)
 }
 
 enum StatusMenuItemDescriptor: Hashable, Sendable {
@@ -36,6 +44,7 @@ enum StatusMenuItemDescriptor: Hashable, Sendable {
     case breakdown(StorageFootprint)
     case cleanupSuggestions(suggestions: [StatusMenuCleanupSuggestion], totalCount: Int, totalBytes: Int64)
     case safety(footprint: StorageFootprint, safeItemCount: Int)
+    case reviewItems(items: [StatusMenuReviewItem], totalBytes: Int64)
     case separator
     case command(title: String, command: StatusMenuCommand, keyEquivalent: String, isEnabled: Bool)
 }
@@ -54,6 +63,9 @@ enum StatusMenuDescriptorBuilder {
         isScanning: Bool,
         safeItemCount: Int,
         allowsMenuCleanup: Bool = true,
+        showsUpdateCheck: Bool = false,
+        canCheckForUpdates: Bool = false,
+        reviewItems: [StatusMenuReviewItem] = [],
         cleanupSuggestions: [StatusMenuCleanupSuggestion] = []) -> StatusMenuDescriptor
     {
         var items: [StatusMenuItemDescriptor] = [
@@ -74,12 +86,22 @@ enum StatusMenuDescriptorBuilder {
             items.append(.breakdown(footprint))
         }
 
-        let safeCount = footprint.topComponents.filter { $0.safety == .safeToTrash }.count
-        let reviewCount = footprint.topComponents.filter { $0.safety == .probablySafe || $0.safety == .reviewRecommended }.count
-        if safeCount > 0 || reviewCount > 0 || footprint.activeBytes > 0 {
+        if footprint.reclaimableBytes > 0 || footprint.reviewBytes > 0 || footprint.activeBytes > 0 || reviewItems.isEmpty == false {
             items.append(.separator)
             items.append(.section(title: "Cleanup Readiness"))
             items.append(.safety(footprint: footprint, safeItemCount: safeItemCount))
+        }
+
+        let sortedReviewItems = reviewItems.sorted { lhs, rhs in
+            if lhs.bytes == rhs.bytes {
+                return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+            }
+            return lhs.bytes > rhs.bytes
+        }
+        if sortedReviewItems.isEmpty == false {
+            items.append(.reviewItems(
+                items: sortedReviewItems,
+                totalBytes: sortedReviewItems.reduce(0) { $0 + max(0, $1.bytes) }))
         }
 
         let visibleCleanupSuggestions = (allowsMenuCleanup ? cleanupSuggestions : [])
@@ -121,8 +143,17 @@ enum StatusMenuDescriptorBuilder {
                 isEnabled: allowsMenuCleanup && footprint.reclaimableBytes > 0),
             .separator,
             .command(title: "Settings...", command: .openSettings, keyEquivalent: ",", isEnabled: true),
-            .command(title: "Quit DELTREE", command: .quit, keyEquivalent: "q", isEnabled: true),
         ])
+
+        if showsUpdateCheck {
+            items.append(.command(
+                title: "Check for Updates...",
+                command: .checkForUpdates,
+                keyEquivalent: "",
+                isEnabled: canCheckForUpdates))
+        }
+
+        items.append(.command(title: "Quit DELTREE", command: .quit, keyEquivalent: "q", isEnabled: true))
 
         return StatusMenuDescriptor(title: title, isWarning: footprint.hasLowDiskSpace, items: items)
     }

@@ -100,6 +100,10 @@ enum ScreenshotExportService {
     fileprivate static func previewStatusMenuDescriptor(mode: AppVisualMode) -> StatusMenuDescriptor {
         let viewModel = previewViewModel(mode: mode)
         let safeItems = viewModel.snapshot.items.filter(\.isCleanupEligible)
+        let reviewItems = viewModel.snapshot.items.filter { item in
+            item.isIgnored == false &&
+                (item.safety == .probablySafe || item.safety == .reviewRecommended)
+        }
         let footprint = viewModel.footprint
         return StatusMenuDescriptor(title: viewModel.menuBarTitle, isWarning: false, items: [
             .overview(
@@ -114,6 +118,9 @@ enum ScreenshotExportService {
             .separator,
             .section(title: "Cleanup Readiness"),
             .safety(footprint: footprint, safeItemCount: safeItems.count),
+            .reviewItems(
+                items: reviewItems.map(StatusMenuReviewItem.make),
+                totalBytes: reviewItems.reduce(0) { $0 + max(0, $1.bytes) }),
             .separator,
             .section(title: "Suggested Cleanup"),
             .cleanupSuggestions(
@@ -288,6 +295,12 @@ private struct StatusMenuPanel: View {
                 .frame(width: theme.isClassic ? 342 : 358)
         case let .safety(footprint, safeItemCount):
             StatusMenuSafetyChartView(footprint: footprint, safeItemCount: safeItemCount)
+                .frame(width: theme.isClassic ? 342 : 358)
+        case let .reviewItems(items, totalBytes):
+            StatusMenuSummaryRowView(
+                title: "Review Items (\(items.count))",
+                value: StorageFormatters.byteCount(totalBytes),
+                systemImage: "exclamationmark.triangle")
                 .frame(width: theme.isClassic ? 342 : 358)
         case .separator:
             if theme.isClassic {

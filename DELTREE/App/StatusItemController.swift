@@ -5,6 +5,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let viewModel: DashboardViewModel
     private let settings: AppSettingsStore
+    private let updateService: AppUpdateService
     private let openDashboard: () -> Void
     private let openSettings: () -> Void
     private var lastIconState: StatusItemIconState?
@@ -13,6 +14,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     init(
         viewModel: DashboardViewModel,
         settings: AppSettingsStore,
+        updateService: AppUpdateService,
         openDashboard: @escaping () -> Void,
         openSettings: @escaping () -> Void,
         onAppearanceChange: @escaping () -> Void = {})
@@ -20,6 +22,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         self.viewModel = viewModel
         self.settings = settings
+        self.updateService = updateService
         self.openDashboard = openDashboard
         self.openSettings = openSettings
         super.init()
@@ -75,6 +78,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func descriptor() -> StatusMenuDescriptor {
         let cleanupEligibleItems = viewModel.snapshot.items.filter(\.isCleanupEligible)
+        let reviewItems = viewModel.snapshot.items.filter { item in
+            item.isIgnored == false &&
+                (item.safety == .probablySafe || item.safety == .reviewRecommended)
+        }
         return StatusMenuDescriptorBuilder.make(
             title: viewModel.menuBarTitle,
             footprint: viewModel.footprint,
@@ -82,16 +89,27 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             isScanning: viewModel.isScanning,
             safeItemCount: cleanupEligibleItems.count,
             allowsMenuCleanup: settings.notifyOnlyByDefault == false,
+            showsUpdateCheck: updateService.isVisible,
+            canCheckForUpdates: updateService.canCheckForUpdates,
+            reviewItems: reviewItems.map(StatusMenuReviewItem.make),
             cleanupSuggestions: cleanupEligibleItems.map(StatusMenuCleanupSuggestion.make))
     }
 
     @objc private func performMenuCommand(_ item: NSMenuItem) {
-        guard let rawCommand = item.representedObject as? String,
-              let command = StatusMenuCommand(rawValue: rawCommand)
-        else {
+        guard let action = item.representedObject as? StatusMenuAction else {
             return
         }
 
+        switch action {
+        case let .command(command):
+            perform(command)
+        case let .reviewItem(itemID):
+            viewModel.showReviewItem(id: itemID)
+            openDashboard()
+        }
+    }
+
+    private func perform(_ command: StatusMenuCommand) {
         switch command {
         case .openDashboard:
             openDashboard()
@@ -102,6 +120,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             openDashboard()
         case .openSettings:
             openSettings()
+        case .checkForUpdates:
+            updateService.checkForUpdates()
         case .quit:
             NSApp.terminate(nil)
         }

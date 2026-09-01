@@ -6,6 +6,11 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 ## Unreleased
 
+### Added
+
+- Added `Check for Updates...` to the menu-bar mini menu for Sparkle-enabled builds.
+- Added a `Review Items` hover submenu that lists every non-ignored item needing review and opens the selected item in the dashboard.
+
 ### Fixed
 
 - Prevented repeated Documents access prompts after `~/Documents/Codex` access is denied; users can explicitly retry from Settings.

@@ -148,6 +148,31 @@ struct DashboardViewModelPresentationTests {
         #expect(viewModel.selectedItem == nil)
     }
 
+    @Test func showReviewItemClearsFiltersAndSelectsRequestedItem() {
+        let viewModel = DashboardViewModel.preview
+        viewModel.snapshot = snapshot([
+            item(id: "review", domain: .derivedData, bytes: 300, safety: .probablySafe),
+            item(id: "other", domain: .xcResults, bytes: 100, safety: .safeToTrash),
+        ])
+        viewModel.searchText = "missing"
+        viewModel.selectedSection = .testArtifacts
+        viewModel.selectedDomain = .xcResults
+        viewModel.selectedSafety = .safeToTrash
+        viewModel.selectedOwner = .codex
+        viewModel.includeIgnoredItems = true
+        viewModel.selectedItemID = "other"
+
+        viewModel.showReviewItem(id: "review")
+
+        #expect(viewModel.searchText.isEmpty)
+        #expect(viewModel.selectedSection == .overview)
+        #expect(viewModel.selectedDomain == nil)
+        #expect(viewModel.selectedSafety == nil)
+        #expect(viewModel.selectedOwner == nil)
+        #expect(viewModel.includeIgnoredItems == false)
+        #expect(viewModel.selectedItem?.id == "review")
+    }
+
     private func snapshot(_ items: [StorageItem]) -> StorageSnapshot {
         StorageSnapshot(
             capturedAt: Date(timeIntervalSince1970: 1_788_048_000),
