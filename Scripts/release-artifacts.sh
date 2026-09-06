@@ -215,11 +215,11 @@ deltree_verify_binary_compatibility() {
   fi
 
   build_info="$("$vtool_bin" -show-build "$binary")"
-  if ! print -r -- "$build_info" | grep -Eq '^[[:space:]]*platform[[:space:]]+MACOS$'; then
+  if ! printf '%s\n' "$build_info" | grep -Eq '^[[:space:]]*platform[[:space:]]+MACOS$'; then
     echo "App binary does not declare the macOS platform." >&2
     return 1
   fi
-  minimum_os="$(print -r -- "$build_info" | awk '$1 == "minos" { print $2; exit }')"
+  minimum_os="$(printf '%s\n' "$build_info" | awk '$1 == "minos" { print $2; exit }')"
   if [[ "$minimum_os" != "14" && "$minimum_os" != 14.0* ]]; then
     echo "App binary must support macOS 14; found minimum OS ${minimum_os:-unknown}." >&2
     return 1
