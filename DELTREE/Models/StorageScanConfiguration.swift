@@ -21,7 +21,7 @@ struct StorageScanConfiguration: Equatable, Sendable {
         keepLastTestRuns: 5,
         keepSimulatorsUsedWithinDays: 14,
         neverTouchArchives: true,
-        scanDocumentsCodex: true,
+        scanDocumentsCodex: false,
         excludedPaths: [],
         customScanRoots: [],
         manualOverrides: [:])
@@ -29,7 +29,7 @@ struct StorageScanConfiguration: Equatable, Sendable {
     func isExcluded(_ path: String) -> Bool {
         let standardizedPath = URL(fileURLWithPath: path).standardizedFileURL.path
         return excludedPaths.contains { excludedPath in
-            standardizedPath == excludedPath || standardizedPath.hasPrefix(excludedPath + "/")
+            excludedPath == "/" || standardizedPath == excludedPath || standardizedPath.hasPrefix(excludedPath + "/")
         }
     }
 

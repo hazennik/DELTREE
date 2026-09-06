@@ -121,7 +121,8 @@ esac
 mock_tool ditto '
 print -r -- "ditto $*" >>"$log_file"
 destination="${@: -1}"
-mkdir -p "$destination/DELTREE.app/Contents/Resources"
+mkdir -p "$destination/DELTREE.app/Contents/MacOS" "$destination/DELTREE.app/Contents/Resources"
+print -r -- "mock universal binary" >"$destination/DELTREE.app/Contents/MacOS/DELTREE"
 print -r -- "MIT License" >"$destination/DELTREE.app/Contents/Resources/DELTREE-LICENSE.txt"
 print -r -- "Copyright (c) 2026 DELTREE contributors" >>"$destination/DELTREE.app/Contents/Resources/DELTREE-LICENSE.txt"
 print -r -- "Copyright (c) 2006-2013 Andy Matuschak." >"$destination/DELTREE.app/Contents/Resources/Sparkle-LICENSE.txt"
@@ -131,6 +132,13 @@ mock_tool xattr 'print -r -- "xattr $*" >>"$log_file"; exit 1'
 mock_tool codesign 'print -r -- "codesign $*" >>"$log_file"; exit 0'
 mock_tool syspolicy_check 'print -r -- "syspolicy_check $*" >>"$log_file"; exit 0'
 mock_tool stapler 'print -r -- "stapler $*" >>"$log_file"; exit 0'
+mock_tool lipo 'print -r -- "lipo $*" >>"$log_file"; print -r -- "arm64 x86_64"'
+mock_tool vtool '
+print -r -- "vtool $*" >>"$log_file"
+print -r -- "Load command 0"
+print -r -- "      platform MACOS"
+print -r -- "         minos 14.0"
+'
 
 ZIPINFO_BIN="$bin_dir/zipinfo" \
 DITTO_BIN="$bin_dir/ditto" \
@@ -138,6 +146,8 @@ XATTR_BIN="$bin_dir/xattr" \
 CODESIGN_BIN="$bin_dir/codesign" \
 SYSPOLICY_CHECK_BIN="$bin_dir/syspolicy_check" \
 STAPLER_BIN="$bin_dir/stapler" \
+LIPO_BIN="$bin_dir/lipo" \
+VTOOL_BIN="$bin_dir/vtool" \
 zsh "$root/Scripts/check-release-assets.sh" v1.0.0-rc.1 \
   --repo hazennik/DELTREE \
   --local-dir "$asset_dir" \
@@ -152,6 +162,8 @@ XATTR_BIN="$bin_dir/xattr" \
 CODESIGN_BIN="$bin_dir/codesign" \
 SYSPOLICY_CHECK_BIN="$bin_dir/syspolicy_check" \
 STAPLER_BIN="$bin_dir/stapler" \
+LIPO_BIN="$bin_dir/lipo" \
+VTOOL_BIN="$bin_dir/vtool" \
 zsh "$root/Scripts/stage-prerelease-feed.sh" v1.0.0-rc.1 \
   --repo hazennik/DELTREE \
   --local-dir "$asset_dir" \

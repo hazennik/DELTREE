@@ -6,9 +6,9 @@ DELTREE scans local developer storage and prepares cleanup plans on-device. It d
 
 ## macOS Permissions
 
-macOS may ask for file access when DELTREE scans folders outside its default sandbox reach, such as custom Codex workspaces, Xcode archives, or external volumes. Grant access only for locations you want DELTREE to inspect.
+macOS may ask for file access when DELTREE scans a location you explicitly added, such as `~/Documents/Codex`, a custom Codex workspace, or an external volume. Grant access only for locations you want DELTREE to inspect.
 
-DELTREE checks `~/Documents/Codex` once before including it in a scan. If access is not granted, DELTREE turns off that scan root so background scans do not keep presenting the same macOS prompt. Turn on **Scan ~/Documents/Codex** in Settings to retry intentionally.
+`~/Documents/Codex` is off by default. Turn on **Scan ~/Documents/Codex** in Settings and choose **Scan Now** to request access intentionally. DELTREE checks that location once before including it. If access is not granted, DELTREE turns the setting off so background scans do not keep presenting the same macOS prompt.
 
 Full Disk Access is not required for the standard scan paths. If a custom location remains unreadable after a normal file-access prompt, you can either remove that location from DELTREE's scan roots or grant broader access in System Settings.
 
@@ -49,7 +49,7 @@ If a previously granted custom root becomes unreadable after rebuilding from sou
 
 ### Cleanup Skips an Item
 
-Skipped cleanup usually means the item changed after the scan, is still active, or no longer matches the safety policy. Run a fresh scan before retrying.
+Skipped cleanup usually means the item changed after the scan, is still active, could not be re-scanned completely, or no longer matches the safety policy. Expand the Cleanup History record for the exact path and reason, then run a fresh scan before retrying.
 
 ### Trash Move Fails
 

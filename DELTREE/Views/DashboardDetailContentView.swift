@@ -22,7 +22,7 @@ struct DashboardDetailContentView: View {
                     footprint: viewModel.footprint,
                     lastDelta: viewModel.lastDelta,
                     isScanning: viewModel.isScanning,
-                    scanAction: { viewModel.scan(force: true) },
+                    scanAction: { viewModel.scan(force: true, allowsProtectedRootAccess: true) },
                     cleanupAction: viewModel.prepareSafeCleanup)
 
                 StorageBreakdownPanelView(footprint: viewModel.footprint)

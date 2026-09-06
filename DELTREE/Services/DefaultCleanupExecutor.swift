@@ -6,31 +6,32 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
     private let simctlCommandClient: any SimctlCommanding
     private let simctlDeviceClient: any SimctlClient
     private let openFileChecker: any OpenFileChecking
+    private let fileSizeScanner: any FileSizeScanning
 
     init(
         fileManager: FileManager = .default,
         trashService: any TrashServicing = FileManagerTrashService(),
         simctlClient: any SimctlCommanding = LiveSimctlCommandClient(),
         simctlDeviceClient: any SimctlClient = LiveSimctlClient(),
-        openFileChecker: any OpenFileChecking = LiveLsofOpenFileChecker())
+        openFileChecker: any OpenFileChecking = LiveLsofOpenFileChecker(),
+        fileSizeScanner: (any FileSizeScanning)? = nil)
     {
         self.fileManager = fileManager
         self.trashService = trashService
         self.simctlCommandClient = simctlClient
         self.simctlDeviceClient = simctlDeviceClient
         self.openFileChecker = openFileChecker
+        self.fileSizeScanner = fileSizeScanner ?? LiveFileSizeScanner(fileManager: fileManager)
     }
 
     func execute(_ plan: CleanupPlan) async -> CleanupExecutionResult {
         var completed: [CleanupPlanAction] = []
         var failed: [CleanupPlanAction: String] = [:]
         var skippedItems = plan.blockedItems
-        let currentSimctlDevices = await currentSimctlDevicesIfNeeded(for: plan)
-
         for (index, action) in plan.actions.enumerated() {
             do {
                 try Task.checkCancellation()
-                try await revalidate(action, currentSimctlDevices: currentSimctlDevices)
+                try await revalidate(action)
                 try Task.checkCancellation()
                 try await execute(action)
                 completed.append(action)
@@ -64,10 +65,7 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
         }
     }
 
-    private func revalidate(
-        _ planAction: CleanupPlanAction,
-        currentSimctlDevices: [SimctlDevice]?) async throws
-    {
+    private func revalidate(_ planAction: CleanupPlanAction) async throws {
         let item = planAction.item
         let action = planAction.action
         guard action.isCleanupExecutionAction else {
@@ -97,7 +95,9 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
         }
 
         if item.domain == .coreSimulatorDevices || action == .deleteUnavailableSimulator || action == .eraseSimulator {
-            try validateSimulatorState(for: planAction, currentSimctlDevices: currentSimctlDevices ?? [])
+            let currentSimctlDevices = await simctlDeviceClient.devices()
+            try Task.checkCancellation()
+            try validateSimulatorState(for: planAction, currentSimctlDevices: currentSimctlDevices)
         }
 
         if action.usesTrash {
@@ -110,6 +110,29 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: path, isDirectory: &isDirectory) else {
             throw CleanupExecutionError.pathMissing(path)
+        }
+        guard item.metadata["scanComplete"] != "false" else {
+            throw CleanupExecutionError.incompleteScan(path)
+        }
+        guard let plannedIdentity = item.fileSystemIdentity else {
+            throw CleanupExecutionError.missingFileSystemIdentity(path)
+        }
+        guard let currentIdentity = FileSystemIdentityReader.identity(
+            for: URL(fileURLWithPath: path),
+            fileManager: fileManager)
+        else {
+            throw CleanupExecutionError.fileSystemIdentityChanged(path)
+        }
+        guard currentIdentity == plannedIdentity else {
+            throw CleanupExecutionError.fileSystemIdentityChanged(path)
+        }
+
+        let currentSize = fileSizeScanner.size(of: URL(fileURLWithPath: path, isDirectory: isDirectory.boolValue))
+        guard currentSize.isComplete, currentSize.unreadablePaths.isEmpty else {
+            throw CleanupExecutionError.incompleteRevalidation(path)
+        }
+        guard currentSize.bytes == item.bytes else {
+            throw CleanupExecutionError.itemContentsChanged(path)
         }
 
         let result = await openFileChecker.checkOpenFiles(
@@ -171,17 +194,6 @@ struct DefaultCleanupExecutor: CleanupExecuting, @unchecked Sendable {
         }
     }
 
-    private func currentSimctlDevicesIfNeeded(for plan: CleanupPlan) async -> [SimctlDevice]? {
-        guard plan.actions.contains(where: { action in
-            action.item.domain == .coreSimulatorDevices ||
-                action.action == .deleteUnavailableSimulator ||
-                action.action == .eraseSimulator
-        }) else {
-            return nil
-        }
-        return await simctlDeviceClient.devices()
-    }
-
     private func safetyAllowsExecution(item: StorageItem, action: StorageAction) -> Bool {
         item.safety == .safeToTrash ||
             item.safety == .probablySafe ||
@@ -215,6 +227,11 @@ enum CleanupExecutionError: LocalizedError, Equatable {
     case itemIgnored(String)
     case blockedDomain(StorageDomain)
     case pathMissing(String)
+    case incompleteScan(String)
+    case missingFileSystemIdentity(String)
+    case fileSystemIdentityChanged(String)
+    case incompleteRevalidation(String)
+    case itemContentsChanged(String)
     case pathHasOpenFiles(String)
     case openFileCheckUnavailable(path: String, reason: String)
     case unsafeClassification(SafetyClassification)
@@ -240,6 +257,16 @@ enum CleanupExecutionError: LocalizedError, Equatable {
             "\(domain.displayName) is excluded from cleanup."
         case let .pathMissing(path):
             "\(path) no longer exists."
+        case let .incompleteScan(path):
+            "\(path) was not scanned completely and was skipped."
+        case let .missingFileSystemIdentity(path):
+            "\(path) has no recorded filesystem identity. Scan again before cleaning it."
+        case let .fileSystemIdentityChanged(path):
+            "\(path) is no longer the same filesystem object that was scanned."
+        case let .incompleteRevalidation(path):
+            "\(path) could not be re-scanned completely during final cleanup validation."
+        case let .itemContentsChanged(path):
+            "\(path) changed after it was scanned. Scan again before cleaning it."
         case let .pathHasOpenFiles(path):
             "\(path) has open files and was skipped."
         case let .openFileCheckUnavailable(path, reason):

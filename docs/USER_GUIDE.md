@@ -13,13 +13,15 @@ The app does not open a Dock icon or a window by default.
 
 ## Appearance
 
-DELTREE Classic is the default visual mode. It uses terminal-style panels, monospaced metrics, block storage meters, and explicit safety tags such as `[SAFE]`, `[REVIEW]`, `[KEEP]`, and `[UNKNOWN]`.
+DELTREE Modern is the default visual mode. It uses macOS-native controls and a compact interface intended for repeated day-to-day use.
 
-To restore the previous macOS-native look:
+To use the retro terminal-style interface:
 
 1. Open the menu-bar item.
 2. Choose `Settings...`.
-3. Set `Visual Mode` to `Modern`.
+3. Set `Visual Mode` to `Classic`.
+
+Classic uses monospaced metrics, block storage meters, and explicit safety tags such as `[SAFE]`, `[REVIEW]`, `[KEEP]`, and `[UNKNOWN]`.
 
 Changing visual mode only changes presentation. It does not start a scan, alter safety classifications, or change cleanup behavior.
 
@@ -28,7 +30,6 @@ Changing visual mode only changes presentation. It does not start a scan, alter 
 DELTREE scans bounded developer paths by default:
 
 - `~/.codex`
-- `~/Documents/Codex`
 - `~/Library/Developer/CoreSimulator/Devices`
 - `~/Library/Developer/XCTestDevices`
 - `~/Library/Developer/Xcode/DerivedData`
@@ -42,6 +43,8 @@ DELTREE scans bounded developer paths by default:
 - SwiftPM cache locations
 
 Unreadable or missing paths are reported instead of hidden.
+
+`~/Documents/Codex` is off by default. Enable it in Settings, then run a user-initiated scan if you want DELTREE to inspect that location. macOS may ask for Documents access once. Custom scan roots and exclusions are added with the system file picker; DELTREE rejects relative, overlapping, home-level, and broad system roots.
 
 ## Understanding Safety Labels
 
@@ -65,6 +68,8 @@ DELTREE always shows a cleanup preflight before action. The preflight lists:
 
 File and folder cleanup moves items to Trash. Simulator cleanup uses explicit `simctl` actions when appropriate. `simctl delete` and `simctl erase` permanently remove the affected simulator data and cannot be recovered from Trash; the preflight identifies these actions before confirmation.
 
+Immediately before a Trash action, DELTREE confirms that the path is still the same filesystem object, re-scans its size completely, and checks for open files. Items that changed or cannot be fully revalidated are skipped. Expand a record in Cleanup History to see completed, skipped, and failed paths with their failure reasons.
+
 ## Manual Overrides
 
 Use the detail inspector to:
@@ -80,7 +85,9 @@ Overrides persist across scans.
 
 ## Updates
 
-Direct Developer ID installs use `Check for Updates...` from the menu-bar mini menu when Sparkle is configured for the build. Sparkle offers to relaunch DELTREE after it downloads and validates an update.
+Direct Developer ID installs can configure automatic checks and downloads in Settings. Use `Check for Updates...` from the menu-bar mini menu or Settings. After Sparkle downloads and validates an update, use `Install Update and Relaunch` from either location.
+
+Settings also provides `Launch DELTREE at login`. macOS may require approval in System Settings after it is enabled.
 
 Homebrew installs should update with:
 

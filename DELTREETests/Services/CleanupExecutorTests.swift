@@ -147,6 +147,87 @@ struct CleanupExecutorTests {
         #expect(await simctl.erasedUDIDs().isEmpty)
     }
 
+    @Test @MainActor func executorRechecksSimulatorStateBeforeEveryMutation() async {
+        let trash = RecordingTrashService()
+        let simctl = RecordingSimctlCommandClient()
+        let simulatorClient = SequencedSimctlClient(responses: [
+            [Self.simulatorDevice(udid: "SIM-123", state: "Shutdown", isAvailable: false)],
+            [Self.simulatorDevice(udid: "SIM-456", state: "Booted", isAvailable: false)],
+        ])
+        let executor = DefaultCleanupExecutor(
+            trashService: trash,
+            simctlClient: simctl,
+            simctlDeviceClient: simulatorClient,
+            openFileChecker: RecordingOpenFileChecker(result: .clear))
+        let first = Self.item(
+            path: "/tmp/device",
+            domain: .coreSimulatorDevices,
+            kind: .simulatorDevice,
+            metadata: ["udid": "SIM-123"])
+        let second = Self.item(
+            path: "/tmp/device-2",
+            domain: .coreSimulatorDevices,
+            kind: .simulatorDevice,
+            metadata: ["udid": "SIM-456"])
+        let firstAction = CleanupPlanAction(item: first, action: .deleteUnavailableSimulator, reason: "Delete unavailable simulator.")
+        let secondAction = CleanupPlanAction(item: second, action: .deleteUnavailableSimulator, reason: "Delete unavailable simulator.")
+
+        let result = await executor.execute(CleanupPlan(actions: [firstAction, secondAction], blockedItems: []))
+
+        #expect(result.completedActions == [firstAction])
+        #expect(result.failedActions[secondAction] == CleanupExecutionError.simulatorBooted("SIM-456").localizedDescription)
+        #expect(await simulatorClient.requestCount() == 2)
+        #expect(await simctl.deletedUDIDs() == ["SIM-123"])
+    }
+
+    @Test @MainActor func executorBlocksAPathThatChangedAfterScanning() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent("DELTREE-cleanup-changed-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        let resultBundle = root.appendingPathComponent("result.xcresult")
+        try Data("fixture".utf8).write(to: resultBundle)
+        let original = Self.item(path: resultBundle.path, metadata: [:])
+        try Data(repeating: 1, count: 32_768).write(to: resultBundle)
+        let action = CleanupPlanAction(item: original, action: .removeXCResult, reason: "Trash result bundle.")
+        let trash = RecordingTrashService()
+        let executor = DefaultCleanupExecutor(
+            fileManager: fileManager,
+            trashService: trash,
+            openFileChecker: RecordingOpenFileChecker(result: .clear))
+
+        let result = await executor.execute(CleanupPlan(actions: [action], blockedItems: []))
+
+        #expect(result.completedActions.isEmpty)
+        #expect(result.failedActions[action] != nil)
+        #expect(await trash.trashedPaths().isEmpty)
+    }
+
+    @Test @MainActor func executorBlocksIncompleteFinalSizeValidation() async throws {
+        let fileManager = FileManager.default
+        let root = fileManager.temporaryDirectory
+            .appendingPathComponent("DELTREE-cleanup-incomplete-\(UUID().uuidString)", isDirectory: true)
+        defer { try? fileManager.removeItem(at: root) }
+        try fileManager.createDirectory(at: root, withIntermediateDirectories: true)
+        let resultBundle = root.appendingPathComponent("result.xcresult")
+        try Data("fixture".utf8).write(to: resultBundle)
+        let item = Self.item(path: resultBundle.path, metadata: [:])
+        let action = CleanupPlanAction(item: item, action: .removeXCResult, reason: "Trash result bundle.")
+        let trash = RecordingTrashService()
+        let executor = DefaultCleanupExecutor(
+            fileManager: fileManager,
+            trashService: trash,
+            openFileChecker: RecordingOpenFileChecker(result: .clear),
+            fileSizeScanner: IncompleteFileSizeScanner())
+
+        let result = await executor.execute(CleanupPlan(actions: [action], blockedItems: []))
+
+        #expect(result.completedActions.isEmpty)
+        #expect(result.failedActions[action] == CleanupExecutionError.incompleteRevalidation(resultBundle.path).localizedDescription)
+        #expect(await trash.trashedPaths().isEmpty)
+    }
+
     @Test @MainActor func executorTreatsCancellationAsSkippedInsteadOfFailed() async throws {
         let fileManager = FileManager.default
         let root = fileManager.temporaryDirectory
@@ -180,15 +261,18 @@ struct CleanupExecutorTests {
         kind: StorageKind = .xcResult,
         metadata: [String: String]) -> StorageItem
     {
-        StorageItem(
+        let url = URL(fileURLWithPath: path)
+        let scannedSize = LiveFileSizeScanner().size(of: url)
+        return StorageItem(
             id: path,
             domain: domain,
             kind: kind,
             path: path,
             displayName: URL(fileURLWithPath: path).lastPathComponent,
-            bytes: 1_000,
+            bytes: scannedSize.bytes > 0 ? scannedSize.bytes : 1_000,
             createdAt: Date(),
             modifiedAt: Date(),
+            fileSystemIdentity: FileSystemIdentityReader.identity(for: url),
             lastUsedAt: Date(),
             attribution: .xcodeViaCodex,
             attributionConfidence: 0.8,
@@ -255,6 +339,37 @@ private struct StaticSimctlClient: SimctlClient {
 
     func devices() async -> [SimctlDevice] {
         storedDevices
+    }
+}
+
+private actor SequencedSimctlClient: SimctlClient {
+    private var responses: [[SimctlDevice]]
+    private var requests = 0
+
+    init(responses: [[SimctlDevice]]) {
+        self.responses = responses
+    }
+
+    func devices() async -> [SimctlDevice] {
+        defer { requests += 1 }
+        guard responses.isEmpty == false else {
+            return []
+        }
+        return responses.removeFirst()
+    }
+
+    func requestCount() -> Int {
+        requests
+    }
+}
+
+private struct IncompleteFileSizeScanner: FileSizeScanning {
+    func size(of url: URL) -> FileSizeResult {
+        FileSizeResult(
+            bytes: 0,
+            unreadablePaths: [url.path],
+            isComplete: false,
+            incompleteReason: "Fixture is unreadable.")
     }
 }
 

@@ -146,14 +146,14 @@ struct DashboardViewModelScanPolicyTests {
             items: [],
             missingPaths: [],
             unreadablePaths: [harness.documentsCodexPath]))
+        harness.viewModel.settings.scanDocumentsCodex = true
 
-        harness.viewModel.start()
+        harness.viewModel.scan(force: true, allowsProtectedRootAccess: true)
         try await harness.waitForScanCompletion(count: 1)
 
         #expect(harness.viewModel.settings.scanDocumentsCodex == false)
         #expect(harness.viewModel.settings.scanConfiguration.scanDocumentsCodex == false)
         #expect(harness.watcher.startedPaths.contains(harness.documentsCodexPath) == false)
-        harness.viewModel.stop()
     }
 
     @Test func verifiedDocumentsAccessEnablesFilesystemWatching() async throws {
@@ -161,11 +161,39 @@ struct DashboardViewModelScanPolicyTests {
             scanIntervalMinutes: 1,
             powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false))
 
-        harness.viewModel.start()
+        harness.viewModel.settings.scanDocumentsCodex = true
+        harness.viewModel.scan(force: true, allowsProtectedRootAccess: true)
         try await harness.waitForScanCompletion(count: 1)
 
         #expect(harness.viewModel.settings.scanDocumentsCodex)
-        #expect(harness.watcher.startedPaths.contains(harness.documentsCodexPath))
+        #expect(await harness.scanner.configurations().last?.scanDocumentsCodex == true)
+    }
+
+    @Test func automaticScanDoesNotRequestUnverifiedDocumentsAccess() async throws {
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false))
+        harness.viewModel.settings.scanDocumentsCodex = true
+
+        harness.viewModel.start()
+        try await harness.waitForScanCompletion(count: 1)
+
+        #expect(await harness.scanner.configurations().last?.scanDocumentsCodex == false)
+        #expect(harness.watcher.startedPaths.contains(harness.documentsCodexPath) == false)
+        harness.viewModel.stop()
+    }
+
+    @Test func automaticScanUsesPreviouslyVerifiedDocumentsAccess() async throws {
+        let harness = try await DashboardViewModelHarness(
+            scanIntervalMinutes: 1,
+            powerState: PowerState(isOnBatteryPower: false, isLowPowerModeEnabled: false),
+            documentsOptIn: true,
+            documentsAccessVerified: true)
+
+        harness.viewModel.start()
+        try await harness.waitForScanCompletion(count: 1)
+
+        #expect(await harness.scanner.configurations().last?.scanDocumentsCodex == true)
         harness.viewModel.stop()
     }
 
@@ -282,7 +310,9 @@ private final class DashboardViewModelHarness {
         scanIntervalMinutes: Double,
         powerState: PowerState,
         persistedSnapshots: [StorageSnapshot] = [],
-        cleanupExecutor: any CleanupExecuting = NoopCleanupExecutor()) async throws
+        cleanupExecutor: any CleanupExecuting = NoopCleanupExecutor(),
+        documentsOptIn: Bool = false,
+        documentsAccessVerified: Bool = false) async throws
     {
         let scanner = RecordingStorageScanner()
         let scheduler = RecordingScanDelayScheduler()
@@ -301,6 +331,8 @@ private final class DashboardViewModelHarness {
         settings.scanIntervalMinutes = scanIntervalMinutes
         settings.notificationsEnabled = false
         settings.autoScanAfterActivity = true
+        settings.scanDocumentsCodex = documentsOptIn
+        settings.documentsCodexAccessVerified = documentsAccessVerified
 
         let homeDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("DELTREE-scan-policy-\(UUID().uuidString)", isDirectory: true)
@@ -402,7 +434,7 @@ private final class RecordingStorageScanner: StorageScanning, @unchecked Sendabl
     private let state = RecordingStorageScannerState()
 
     @concurrent func scan(configuration: StorageScanConfiguration, now: Date) async -> StorageSnapshot {
-        await state.scan(now: now)
+        await state.scan(configuration: configuration, now: now)
     }
 
     func scanCount() async -> Int {
@@ -420,15 +452,21 @@ private final class RecordingStorageScanner: StorageScanning, @unchecked Sendabl
     func resumeBlockedScan() async {
         await state.resumeBlockedScan()
     }
+
+    func configurations() async -> [StorageScanConfiguration] {
+        await state.configurations
+    }
 }
 
 private actor RecordingStorageScannerState {
     var scanCount = 0
+    var configurations: [StorageScanConfiguration] = []
     private var blocksScans = false
     private var snapshot: StorageSnapshot?
 
-    func scan(now: Date) async -> StorageSnapshot {
+    func scan(configuration: StorageScanConfiguration, now: Date) async -> StorageSnapshot {
         scanCount += 1
+        configurations.append(configuration)
         while blocksScans {
             if Task.isCancelled {
                 break

@@ -167,6 +167,28 @@ struct StatusMenuDescriptorTests {
             isEnabled: false)))
     }
 
+    @Test func descriptorOffersInstallAndRelaunchForDownloadedUpdate() {
+        let descriptor = StatusMenuDescriptorBuilder.make(
+            title: "DELTREE",
+            footprint: StorageFootprint.make(
+                snapshot: .empty,
+                previousSnapshot: nil,
+                availableDiskBytes: nil,
+                lowDiskThresholdBytes: 0),
+            lastDelta: .empty,
+            isScanning: false,
+            safeItemCount: 0,
+            showsUpdateCheck: true,
+            canCheckForUpdates: true,
+            isUpdateReady: true)
+
+        #expect(descriptor.items.contains(.command(
+            title: "Install Update and Relaunch",
+            command: .installUpdate,
+            keyEquivalent: "",
+            isEnabled: true)))
+    }
+
     @Test func descriptorSortsReviewItemsBySize() {
         let smaller = StatusMenuReviewItem(
             id: "smaller",

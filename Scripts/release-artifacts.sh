@@ -194,6 +194,38 @@ deltree_verify_codesign() {
   "$codesign_bin" --verify --deep --strict --verbose=2 "$bundle"
 }
 
+deltree_verify_binary_compatibility() {
+  local bundle="$1"
+  local binary="$bundle/Contents/MacOS/DELTREE"
+  local lipo_bin="${LIPO_BIN:-/usr/bin/lipo}"
+  local vtool_bin="${VTOOL_BIN:-/usr/bin/vtool}"
+  local architectures
+  local build_info
+  local minimum_os
+
+  if [[ ! -f "$binary" ]]; then
+    echo "App binary not found at $binary." >&2
+    return 1
+  fi
+
+  architectures="$("$lipo_bin" -archs "$binary")"
+  if [[ " $architectures " != *" arm64 "* || " $architectures " != *" x86_64 "* ]]; then
+    echo "App binary must contain arm64 and x86_64; found: $architectures" >&2
+    return 1
+  fi
+
+  build_info="$("$vtool_bin" -show-build "$binary")"
+  if ! print -r -- "$build_info" | grep -Eq '^[[:space:]]*platform[[:space:]]+MACOS$'; then
+    echo "App binary does not declare the macOS platform." >&2
+    return 1
+  fi
+  minimum_os="$(print -r -- "$build_info" | awk '$1 == "minos" { print $2; exit }')"
+  if [[ "$minimum_os" != "14" && "$minimum_os" != 14.0* ]]; then
+    echo "App binary must support macOS 14; found minimum OS ${minimum_os:-unknown}." >&2
+    return 1
+  fi
+}
+
 deltree_verify_license_notices() {
   local bundle="$1"
   local deltree_license="$bundle/Contents/Resources/DELTREE-LICENSE.txt"
@@ -303,6 +335,7 @@ deltree_verify_stapled_notarization() {
 deltree_verify_packaged_app() {
   local bundle="$1"
 
+  deltree_verify_binary_compatibility "$bundle" || return 1
   deltree_verify_license_notices "$bundle" || return 1
   deltree_verify_no_quarantine_attribute "$bundle" || return 1
   deltree_verify_codesign "$bundle" || return 1

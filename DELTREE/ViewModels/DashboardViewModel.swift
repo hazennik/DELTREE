@@ -73,6 +73,7 @@ final class DashboardViewModel {
     @ObservationIgnored private var lastScanFinishedAt: Date?
     @ObservationIgnored private var pendingScanAfterCurrent = false
     @ObservationIgnored private var pendingScanAfterCurrentIsForced = false
+    @ObservationIgnored private var pendingScanAllowsProtectedRootAccess = false
     @ObservationIgnored private var lastNotificationFingerprint = ""
     @ObservationIgnored private var pendingFilesystemChangePaths = Set<String>()
     @ObservationIgnored private var scanGeneration: UInt64 = 0
@@ -113,6 +114,7 @@ final class DashboardViewModel {
         self.backgroundScanPolicy = backgroundScanPolicy
         self.now = now
         self.scheduleScanDelay = scheduleScanDelay
+        hasVerifiedDocumentsCodexAccess = settings.documentsCodexAccessVerified
     }
 
     var menuBarTitle: String {
@@ -252,13 +254,14 @@ final class DashboardViewModel {
             diagnosticsTrimmedCount: 0)
     }
 
-    func scan(force: Bool = true) {
+    func scan(force: Bool = true, allowsProtectedRootAccess: Bool = false) {
         if isScanning {
             if force, activeScanIsStale() {
                 recoverFromStaleScan()
             } else {
                 pendingScanAfterCurrent = true
                 pendingScanAfterCurrentIsForced = pendingScanAfterCurrentIsForced || force
+                pendingScanAllowsProtectedRootAccess = pendingScanAllowsProtectedRootAccess || allowsProtectedRootAccess
                 return
             }
         }
@@ -277,6 +280,8 @@ final class DashboardViewModel {
         isScanning = true
         errorMessage = nil
         var configuration = settings.scanConfiguration
+        configuration.scanDocumentsCodex = configuration.scanDocumentsCodex &&
+            (hasVerifiedDocumentsCodexAccess || allowsProtectedRootAccess)
         configuration.manualOverrides = persistence.manualOverrides()
         let scanner = scanner
         let diskSpaceProvider = diskSpaceProvider
@@ -298,11 +303,13 @@ final class DashboardViewModel {
                 let accessUnavailable = snapshot.missingPaths.contains(documentsCodexPath) ||
                     snapshot.unreadablePaths.contains(documentsCodexPath)
                 self.hasVerifiedDocumentsCodexAccess = accessUnavailable == false
+                self.settings.documentsCodexAccessVerified = accessUnavailable == false
                 if snapshot.unreadablePaths.contains(documentsCodexPath) {
                     self.settings.scanDocumentsCodex = false
                 }
-            } else {
+            } else if self.settings.scanDocumentsCodex == false {
                 self.hasVerifiedDocumentsCodexAccess = false
+                self.settings.documentsCodexAccessVerified = false
             }
 
             let delta = mainThreadHangWatchdog.withBreadcrumb("scan.apply") {
@@ -340,10 +347,12 @@ final class DashboardViewModel {
 
             if self.pendingScanAfterCurrent {
                 let forcePendingScan = self.pendingScanAfterCurrentIsForced
+                let allowProtectedRootAccess = self.pendingScanAllowsProtectedRootAccess
                 self.pendingScanAfterCurrent = false
                 self.pendingScanAfterCurrentIsForced = false
+                self.pendingScanAllowsProtectedRootAccess = false
                 if forcePendingScan {
-                    self.scan(force: true)
+                    self.scan(force: true, allowsProtectedRootAccess: allowProtectedRootAccess)
                 } else {
                     self.scheduleDebouncedScan(after: self.backgroundScanInterval())
                 }
@@ -369,6 +378,7 @@ final class DashboardViewModel {
     func settingsDidChange() {
         if settings.scanDocumentsCodex == false {
             hasVerifiedDocumentsCodexAccess = false
+            settings.documentsCodexAccessVerified = false
         }
         if settings.notificationsEnabled {
             Task {
@@ -495,6 +505,7 @@ final class DashboardViewModel {
         scanTask = nil
         pendingScanAfterCurrent = false
         pendingScanAfterCurrentIsForced = false
+        pendingScanAllowsProtectedRootAccess = false
         isScanning = false
     }
 
@@ -695,10 +706,17 @@ final class DashboardViewModel {
         if result.failedActions.isEmpty {
             return "Completed \(actionCount) cleanup action(s); \(skippedCount) skipped."
         }
+        let summary: String
         if skippedCount == 0 {
-            return "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed."
+            summary = "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed."
+        } else {
+            summary = "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed; \(skippedCount) skipped."
         }
-        return "Completed \(actionCount) cleanup action(s); \(result.failedActions.count) failed; \(skippedCount) skipped."
+        guard let firstFailure = result.failedActions.min(by: { $0.key.item.path < $1.key.item.path }) else {
+            return summary
+        }
+        let name = firstFailure.key.item.displayName
+        return "\(summary) \(name): \(firstFailure.value) Review Cleanup History for all details."
     }
 
     private func writeCleanupReport(plan: CleanupPlan, to url: URL) {

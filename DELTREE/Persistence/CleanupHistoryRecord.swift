@@ -38,4 +38,23 @@ final class CleanupHistoryRecord {
         encodedSkippedPaths = try? JSONEncoder.storage.encode(skippedPaths)
         encodedErrors = try? JSONEncoder.storage.encode(errors)
     }
+
+    var completedPaths: [String] {
+        decode([String].self, from: encodedPaths) ?? []
+    }
+
+    var skippedPaths: [String] {
+        decode([String].self, from: encodedSkippedPaths) ?? []
+    }
+
+    var errors: [String: String] {
+        decode([String: String].self, from: encodedErrors) ?? [:]
+    }
+
+    private func decode<Value: Decodable>(_ type: Value.Type, from data: Data?) -> Value? {
+        guard let data else {
+            return nil
+        }
+        return try? JSONDecoder.storage.decode(type, from: data)
+    }
 }
