@@ -201,20 +201,26 @@ jobs:
         include:
           - name: macOS 14 Apple Silicon
             runner: macos-14
+            xcode_path: /Applications/Xcode_16.2.app/Contents/Developer
             destination: platform=macOS,arch=arm64
           - name: macOS 15 Intel
             runner: macos-15-intel
+            xcode_path: /Applications/Xcode_16.4.app/Contents/Developer
             destination: platform=macOS,arch=x86_64
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Show toolchain
+        env:
+          DEVELOPER_DIR: ${{ matrix.xcode_path }}
         run: |
           sw_vers
           xcodebuild -version
 
       - name: Build and test
+        env:
+          DEVELOPER_DIR: ${{ matrix.xcode_path }}
         run: >-
           xcodebuild test -quiet
           -scheme DELTREE
