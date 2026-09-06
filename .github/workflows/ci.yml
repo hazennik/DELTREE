@@ -266,7 +266,7 @@ jobs:
         run: |
           sw_vers
           test "$(uname -m)" = "${{ matrix.architecture }}"
-          lipo -verify_arch "${{ matrix.architecture }}" build/CompatibilityApp/DELTREE.app/Contents/MacOS/DELTREE
+          lipo build/CompatibilityApp/DELTREE.app/Contents/MacOS/DELTREE -verify_arch "${{ matrix.architecture }}"
           source Scripts/release-artifacts.sh
           deltree_verify_binary_compatibility build/CompatibilityApp/DELTREE.app
 
