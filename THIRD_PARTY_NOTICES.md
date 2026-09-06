@@ -10,8 +10,10 @@ DELTREE intentionally follows selected product and architecture patterns from Co
 - storage breakdown presentation
 - async refresh throttling/fingerprinting principles
 - local Codex session attribution concepts
+- launch-at-login service state handling
+- downloaded-update install-and-relaunch handling
 
-No CodexBar source file is vendored wholesale in this repository. If future changes copy or adapt MIT-licensed CodexBar source directly, keep the original copyright/license notice with the derived file and update this notice.
+No CodexBar source file is vendored wholesale in this repository. The two lifecycle patterns above adapt small portions of CodexBar's MIT-licensed implementation.
 
 CodexBar repository: https://github.com/steipete/CodexBar
 

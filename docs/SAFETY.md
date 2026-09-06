@@ -13,6 +13,7 @@ DELTREE exists to explain and safely reclaim developer storage. It should never 
 - Always use Trash for file and folder cleanup.
 - Only use `simctl delete` or `simctl erase` for explicit simulator actions, and identify those actions as irreversible before confirmation.
 - Never include archives, dSYMs, runtimes, DeviceSupport, or simulator images in one-click safe cleanup.
+- Never clean an item whose size scan or final revalidation is incomplete.
 
 ## One-Click Safe Cleanup
 
@@ -55,8 +56,8 @@ These stay out of one-click cleanup:
 Cleanup plans are advisory until execution. Immediately before each action, DELTREE rechecks the current item state and blocks the action when anything has become less safe:
 
 - the item is now active, pinned, ignored, in a blocked domain, or no longer classified as `Safe to Remove`
-- a non-simulator path no longer exists, cannot be checked for open files, or is currently open
-- a simulator device is booted, no longer exists, is no longer unavailable, or cannot be safely erased
+- a non-simulator path no longer exists, is not the same filesystem object that was scanned, changed size, cannot be re-scanned completely, cannot be checked for open files, or is currently open
+- a simulator device is booted, no longer exists, is no longer unavailable, or cannot be safely erased; simulator state is fetched again immediately before every simulator mutation
 - the action is not an approved Trash, `simctl delete`, or `simctl erase` operation
 
 If cleanup execution is canceled, DELTREE stops before the next mutation and records the remaining items as skipped instead of retrying or treating cancellation as a filesystem failure.

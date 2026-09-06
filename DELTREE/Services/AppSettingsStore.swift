@@ -15,6 +15,7 @@ final class AppSettingsStore {
         static let keepSimulatorsUsedWithinDays = "keepSimulatorsUsedWithinDays"
         static let neverTouchArchives = "neverTouchArchives"
         static let scanDocumentsCodex = "scanDocumentsCodex"
+        static let documentsCodexAccessVerified = "documentsCodexAccessVerified"
         static let notifyOnlyByDefault = "notifyOnlyByDefault"
         static let autoScanAfterActivity = "autoScanAfterActivity"
         static let notificationsEnabled = "notificationsEnabled"
@@ -24,6 +25,7 @@ final class AppSettingsStore {
         static let excludedPathsText = "excludedPathsText"
         static let customScanRootsText = "customScanRootsText"
         static let visualMode = "visualMode"
+        static let launchAtLogin = "launchAtLogin"
     }
 
     private let defaults: UserDefaults
@@ -70,6 +72,10 @@ final class AppSettingsStore {
         didSet { defaults.set(scanDocumentsCodex, forKey: Key.scanDocumentsCodex) }
     }
 
+    var documentsCodexAccessVerified: Bool {
+        didSet { defaults.set(documentsCodexAccessVerified, forKey: Key.documentsCodexAccessVerified) }
+    }
+
     var notifyOnlyByDefault: Bool {
         didSet { defaults.set(notifyOnlyByDefault, forKey: Key.notifyOnlyByDefault) }
     }
@@ -111,6 +117,15 @@ final class AppSettingsStore {
         }
     }
 
+    var launchAtLogin: Bool {
+        didSet {
+            defaults.set(launchAtLogin, forKey: Key.launchAtLogin)
+            if oldValue != launchAtLogin {
+                LaunchAtLoginManager.setEnabled(launchAtLogin)
+            }
+        }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         watcherEnabled = defaults.object(forKey: Key.watcherEnabled) as? Bool ?? true
@@ -122,7 +137,8 @@ final class AppSettingsStore {
         keepLastTestRuns = defaults.object(forKey: Key.keepLastTestRuns) as? Int ?? 5
         keepSimulatorsUsedWithinDays = defaults.object(forKey: Key.keepSimulatorsUsedWithinDays) as? Int ?? 14
         neverTouchArchives = defaults.object(forKey: Key.neverTouchArchives) as? Bool ?? true
-        scanDocumentsCodex = defaults.object(forKey: Key.scanDocumentsCodex) as? Bool ?? true
+        scanDocumentsCodex = defaults.object(forKey: Key.scanDocumentsCodex) as? Bool ?? false
+        documentsCodexAccessVerified = defaults.object(forKey: Key.documentsCodexAccessVerified) as? Bool ?? false
         notifyOnlyByDefault = defaults.object(forKey: Key.notifyOnlyByDefault) as? Bool ?? true
         autoScanAfterActivity = defaults.object(forKey: Key.autoScanAfterActivity) as? Bool ?? true
         notificationsEnabled = defaults.object(forKey: Key.notificationsEnabled) as? Bool ?? false
@@ -131,7 +147,34 @@ final class AppSettingsStore {
         requireConfirmationAboveGB = defaults.object(forKey: Key.requireConfirmationAboveGB) as? Double ?? 1
         excludedPathsText = defaults.string(forKey: Key.excludedPathsText) ?? ""
         customScanRootsText = defaults.string(forKey: Key.customScanRootsText) ?? ""
-        visualMode = AppVisualMode(rawValue: defaults.string(forKey: Key.visualMode) ?? "") ?? .classic
+        visualMode = AppVisualMode(rawValue: defaults.string(forKey: Key.visualMode) ?? "") ?? .modern
+        launchAtLogin = defaults.object(forKey: Key.launchAtLogin) as? Bool ?? false
+    }
+
+    var excludedPaths: [String] {
+        ScanPathValidator.validatedPaths(from: excludedPathsText)
+    }
+
+    var customScanRoots: [String] {
+        ScanPathValidator.validatedPaths(from: customScanRootsText)
+    }
+
+    func addExcludedPath(_ url: URL) throws {
+        let path = try ScanPathValidator.validatedPath(url.path, existingPaths: excludedPaths)
+        excludedPathsText = (excludedPaths + [path]).joined(separator: "\n")
+    }
+
+    func removeExcludedPath(_ path: String) {
+        excludedPathsText = excludedPaths.filter { $0 != path }.joined(separator: "\n")
+    }
+
+    func addCustomScanRoot(_ url: URL) throws {
+        let path = try ScanPathValidator.validatedPath(url.path, existingPaths: customScanRoots)
+        customScanRootsText = (customScanRoots + [path]).joined(separator: "\n")
+    }
+
+    func removeCustomScanRoot(_ path: String) {
+        customScanRootsText = customScanRoots.filter { $0 != path }.joined(separator: "\n")
     }
 
     var scanConfiguration: StorageScanConfiguration {
@@ -144,12 +187,8 @@ final class AppSettingsStore {
             keepSimulatorsUsedWithinDays: max(1, keepSimulatorsUsedWithinDays),
             neverTouchArchives: neverTouchArchives,
             scanDocumentsCodex: scanDocumentsCodex,
-            excludedPaths: Set(excludedPathsText
-                .split(whereSeparator: \.isNewline)
-                .map { URL(fileURLWithPath: String($0)).standardizedFileURL.path }),
-            customScanRoots: customScanRootsText
-                .split(whereSeparator: \.isNewline)
-                .map { URL(fileURLWithPath: String($0)).standardizedFileURL.path },
+            excludedPaths: Set(excludedPaths),
+            customScanRoots: customScanRoots,
             manualOverrides: [:])
     }
 

@@ -9,7 +9,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let openDashboard: () -> Void
     private let openSettings: () -> Void
     private var lastIconState: StatusItemIconState?
-    private var lastIconVisualMode: AppVisualMode?
 
     init(
         viewModel: DashboardViewModel,
@@ -54,10 +53,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             lastDelta: viewModel.lastDelta,
             isScanning: viewModel.isScanning)
 
-        if iconState != lastIconState || settings.visualMode != lastIconVisualMode {
+        if iconState != lastIconState {
             statusItem.button?.image = StatusItemIconRenderer.image(for: iconState, visualMode: settings.visualMode)
             lastIconState = iconState
-            lastIconVisualMode = settings.visualMode
         }
 
         statusItem.button?.title = ""
@@ -91,6 +89,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             allowsMenuCleanup: settings.notifyOnlyByDefault == false,
             showsUpdateCheck: updateService.isVisible,
             canCheckForUpdates: updateService.canCheckForUpdates,
+            isUpdateReady: updateService.isUpdateReady,
             reviewItems: reviewItems.map(StatusMenuReviewItem.make),
             cleanupSuggestions: cleanupEligibleItems.map(StatusMenuCleanupSuggestion.make))
     }
@@ -114,7 +113,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         case .openDashboard:
             openDashboard()
         case .scanNow:
-            viewModel.scan(force: true)
+            viewModel.scan(force: true, allowsProtectedRootAccess: true)
         case .cleanSafe:
             viewModel.prepareSafeCleanup()
             openDashboard()
@@ -122,6 +121,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             openSettings()
         case .checkForUpdates:
             updateService.checkForUpdates()
+        case .installUpdate:
+            updateService.installUpdate()
         case .quit:
             NSApp.terminate(nil)
         }

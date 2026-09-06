@@ -175,6 +175,10 @@ jobs:
         name: Run analyzer
         run: make analyze
 
+      - id: ui-test
+        name: Run menu-bar and rendered UI smoke tests
+        run: make ui-test
+
       - name: Write job summary
         if: always()
         run: |
@@ -184,7 +188,93 @@ jobs:
             echo "- Tests: ${{ steps.test.outcome }}"
             echo "- Release build: ${{ steps.release-build.outcome }}"
             echo "- Analyzer: ${{ steps.analyze.outcome }}"
+            echo "- UI smoke tests: ${{ steps.ui-test.outcome }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  compatibility-build:
+    name: Compatibility Build
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build universal macOS 14 app
+        run: >-
+          xcodebuild build -quiet
+          -scheme DELTREE
+          -project DELTREE.xcodeproj
+          -configuration Release
+          -destination 'generic/platform=macOS'
+          -derivedDataPath build/CompatibilityBuild
+          ARCHS='arm64 x86_64'
+          ONLY_ACTIVE_ARCH=NO
+          MACOSX_DEPLOYMENT_TARGET=14.0
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Verify compatibility metadata
+        run: |
+          source Scripts/release-artifacts.sh
+          deltree_verify_binary_compatibility build/CompatibilityBuild/Build/Products/Release/DELTREE.app
+
+      - name: Package compatibility app
+        run: >-
+          ditto -c -k --keepParent
+          build/CompatibilityBuild/Build/Products/Release/DELTREE.app
+          build/DELTREE-compatibility.zip
+
+      - name: Upload compatibility app
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: DELTREE-compatibility-app
+          path: build/DELTREE-compatibility.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  compatibility:
+    name: Compatibility (${{ matrix.name }})
+    needs: compatibility-build
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS 14 Apple Silicon
+            runner: macos-14
+            architecture: arm64
+          - name: macOS 15 Intel
+            runner: macos-15-intel
+            architecture: x86_64
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Download compatibility app
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: DELTREE-compatibility-app
+          path: build/CompatibilityDownload
+
+      - name: Unpack compatibility app
+        run: >-
+          ditto -x -k
+          build/CompatibilityDownload/DELTREE-compatibility.zip
+          build/CompatibilityApp
+
+      - name: Verify host and app architecture
+        run: |
+          sw_vers
+          test "$(uname -m)" = "${{ matrix.architecture }}"
+          lipo build/CompatibilityApp/DELTREE.app/Contents/MacOS/DELTREE -verify_arch "${{ matrix.architecture }}"
+          source Scripts/release-artifacts.sh
+          deltree_verify_binary_compatibility build/CompatibilityApp/DELTREE.app
+
+      - name: Launch app
+        run: |
+          DELTREE_DISABLE_INITIAL_SCAN=1 \
+          DELTREE_EXIT_AFTER_LAUNCH=1 \
+          ruby Scripts/run-with-timeout.rb 60 -- build/CompatibilityApp/DELTREE.app/Contents/MacOS/DELTREE
 
   release-dry-run:
     name: Release Dry Run

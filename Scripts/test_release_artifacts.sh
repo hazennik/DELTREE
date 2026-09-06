@@ -70,6 +70,20 @@ case "$*" in
     ;;
 esac
 '
+mock_tool lipo 'print -r -- "lipo $*" >>"$log_file"; print -r -- "arm64 x86_64"'
+mock_tool lipo_arm_only 'print -r -- "lipo_arm_only $*" >>"$log_file"; print -r -- "arm64"'
+mock_tool vtool '
+print -r -- "vtool $*" >>"$log_file"
+print -r -- "Load command 0"
+print -r -- "      platform MACOS"
+print -r -- "         minos 14.0"
+'
+mock_tool vtool_newer '
+print -r -- "vtool_newer $*" >>"$log_file"
+print -r -- "Load command 0"
+print -r -- "      platform MACOS"
+print -r -- "         minos 15.0"
+'
 
 export DITTO_BIN="$bin_dir/ditto"
 export CODESIGN_BIN="$bin_dir/codesign"
@@ -79,6 +93,8 @@ export SPCTL_BIN="$bin_dir/spctl"
 export STAPLER_BIN="$bin_dir/stapler"
 export DWARFDUMP_BIN="$bin_dir/dwarfdump"
 export ZIPINFO_BIN="$bin_dir/zipinfo"
+export LIPO_BIN="$bin_dir/lipo"
+export VTOOL_BIN="$bin_dir/vtool"
 
 [[ "$(deltree_app_zip_path "$temp_dir")" == "$temp_dir/DELTREE.zip" ]]
 [[ "$(deltree_app_zip_path "$temp_dir" homebrew)" == "$temp_dir/DELTREE-homebrew.zip" ]]
@@ -118,6 +134,22 @@ fi
 
 deltree_verify_packaged_app "$app"
 grep -Fq -- 'codesign --verify --deep --strict --verbose=2' "$log"
+grep -Fq -- 'lipo -archs' "$log"
+grep -Fq -- 'vtool -show-build' "$log"
+
+export LIPO_BIN="$bin_dir/lipo_arm_only"
+if deltree_verify_packaged_app "$app" 2>/dev/null; then
+  echo "Single-architecture app unexpectedly passed verification." >&2
+  exit 1
+fi
+export LIPO_BIN="$bin_dir/lipo"
+
+export VTOOL_BIN="$bin_dir/vtool_newer"
+if deltree_verify_packaged_app "$app" 2>/dev/null; then
+  echo "App requiring newer than macOS 14 unexpectedly passed verification." >&2
+  exit 1
+fi
+export VTOOL_BIN="$bin_dir/vtool"
 
 mv "$app/Contents/Resources/Sparkle-LICENSE.txt" "$app/Contents/Resources/Sparkle-LICENSE.missing"
 if deltree_verify_packaged_app "$app" 2>/dev/null; then

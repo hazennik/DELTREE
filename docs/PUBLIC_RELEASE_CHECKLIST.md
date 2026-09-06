@@ -5,7 +5,7 @@ This checklist records completed public-source work and the remaining evidence r
 ## Already Ready In The Repo
 
 - MIT license, code of conduct, contributing, support, security, privacy, and release docs are present.
-- CI runs lint, docs, scripts, SwiftPM tests, Xcode tests, Release build, analyzer, CLI dry run, package dry run, appcast dry run, and Sparkle signing dry run.
+- CI runs lint, docs, scripts, SwiftPM tests, Xcode tests, Release build, analyzer, rendered UI smoke tests, CLI dry run, package dry run, appcast dry run, Sparkle signing dry run, and Apple Silicon/Intel compatibility jobs.
 - README screenshots, social-preview image, app icon, issue templates, and release scripts are present.
 - Signed, notarized RC.1 install instructions and source-build instructions are both available.
 - Simulator filesystem cleanup is blocked in the scanner, planner, and executor; simulator delete/erase preflight identifies irreversible data removal.
@@ -44,7 +44,7 @@ The first downloadable release should use the notarized `DELTREE.zip`; do not pu
 
 ## Do Before Public GA
 
-The first candidate cannot update from itself. After RC.1 passes clean-machine QA, publish a second signed candidate through the same Developer ID and Sparkle channel, then complete the RC.1-to-RC.2 update test in [Release QA](RELEASE_QA.md). Verify discovery, release notes, download, EdDSA validation, installation, and relaunch before describing Sparkle as release-tested or DELTREE as public GA.
+Install the latest previous candidate, publish a newer signed candidate through the same Developer ID and Sparkle channel, then complete the update test in [Release QA](RELEASE_QA.md). Verify discovery, release notes, download, EdDSA validation, the explicit install-and-relaunch action, and the final version before describing Sparkle as release-tested or DELTREE as public GA.
 
 ## Optional GitHub-Hosted Signing
 

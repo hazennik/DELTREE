@@ -23,8 +23,8 @@ struct SwiftDataSnapshotStoreTests {
             itemCount: 1,
             status: "movedToTrash",
             paths: ["/tmp/item"],
-            skippedPaths: [],
-            errors: [:],
+            skippedPaths: ["/tmp/skipped"],
+            errors: ["/tmp/failed": "Permission denied"],
             initiator: "User")
 
         try store.saveManualOverride(ManualStorageOverride(path: "/tmp/item", owner: .user, isPinned: true))
@@ -37,6 +37,9 @@ struct SwiftDataSnapshotStoreTests {
         #expect(cleanup.totalBytes == 42)
         #expect(cleanup.itemCount == 1)
         #expect(cleanup.initiator == "User")
+        #expect(cleanup.completedPaths == ["/tmp/item"])
+        #expect(cleanup.skippedPaths == ["/tmp/skipped"])
+        #expect(cleanup.errors == ["/tmp/failed": "Permission denied"])
         #expect(store.manualOverrides()["/tmp/item"]?.owner == .user)
         #expect(store.manualOverrides()["/tmp/item"]?.isPinned == true)
     }

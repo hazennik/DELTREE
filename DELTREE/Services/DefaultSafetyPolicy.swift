@@ -11,6 +11,12 @@ protocol SafetyClassifying: Sendable {
 
 struct DefaultSafetyPolicy: SafetyClassifying {
     func classify(item: StorageItem, configuration: StorageScanConfiguration, now: Date) -> SafetyDecision {
+        if item.metadata["scanComplete"] == "false" {
+            return SafetyDecision(
+                classification: .unknown,
+                reason: "The item could not be scanned completely and is excluded from cleanup.")
+        }
+
         if item.isPinned {
             return SafetyDecision(
                 classification: .keep,

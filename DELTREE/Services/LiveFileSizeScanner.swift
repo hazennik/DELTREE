@@ -97,9 +97,15 @@ struct LiveFileSizeScanner: FileSizeScanning, @unchecked Sendable {
             }
         }
 
+        let unreadablePaths = unreadableCollector.paths
+        if unreadablePaths.isEmpty == false {
+            isComplete = false
+            incompleteReason = incompleteReason ?? "One or more entries could not be read."
+        }
+
         return FileSizeResult(
             bytes: bytes,
-            unreadablePaths: unreadableCollector.paths,
+            unreadablePaths: unreadablePaths,
             scannedEntryCount: scannedEntryCount,
             isComplete: isComplete,
             incompleteReason: incompleteReason)

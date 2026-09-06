@@ -33,7 +33,8 @@ enum ScreenshotExportService {
         try write(
             SettingsView(
                 settings: modernSettingsViewModel.settings,
-                viewModel: modernSettingsViewModel)
+                viewModel: modernSettingsViewModel,
+                updateService: .preview())
                 .frame(width: 680, height: 620),
             size: CGSize(width: 680, height: 620),
             to: directory.appendingPathComponent("modern-settings.png"))
@@ -46,7 +47,7 @@ enum ScreenshotExportService {
 
         try write(
             StatusMenuScreenshotView(mode: .classic),
-            size: CGSize(width: 620, height: 900),
+            size: CGSize(width: 620, height: 1_040),
             to: directory.appendingPathComponent("classic-menu-bar-dropdown.png"))
 
         try write(
@@ -105,7 +106,7 @@ enum ScreenshotExportService {
                 (item.safety == .probablySafe || item.safety == .reviewRecommended)
         }
         let footprint = viewModel.footprint
-        return StatusMenuDescriptor(title: viewModel.menuBarTitle, isWarning: false, items: [
+        let items: [StatusMenuItemDescriptor] = [
             .overview(
                 footprint: footprint,
                 lastCodexImpactBytes: viewModel.lastDelta.codexImpactBytes,
@@ -134,8 +135,19 @@ enum ScreenshotExportService {
             .command(title: "Clean Safe Items...", command: .cleanSafe, keyEquivalent: "", isEnabled: true),
             .separator,
             .command(title: "Settings...", command: .openSettings, keyEquivalent: ",", isEnabled: true),
+            .command(
+                title: "Install Update and Relaunch",
+                command: .installUpdate,
+                keyEquivalent: "",
+                isEnabled: true),
+            .command(
+                title: "Check for Updates...",
+                command: .checkForUpdates,
+                keyEquivalent: "",
+                isEnabled: true),
             .command(title: "Quit DELTREE", command: .quit, keyEquivalent: "q", isEnabled: true),
-        ])
+        ]
+        return StatusMenuDescriptor(title: viewModel.menuBarTitle, isWarning: false, items: items)
     }
 
     private static func write<Content: View>(_ content: Content, size: CGSize, to url: URL) throws {

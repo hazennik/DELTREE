@@ -21,13 +21,19 @@ struct DELTREEApp: App {
         Settings {
             SettingsView(
                 settings: container.settings,
-                viewModel: container.dashboardViewModel)
+                viewModel: container.dashboardViewModel,
+                updateService: container.updateService)
                 .frame(width: 520, height: 420)
         }
         .modelContainer(container.modelContainer)
         .commands {
             if container.updateService.isVisible {
                 CommandGroup(after: .appInfo) {
+                    if container.updateService.isUpdateReady {
+                        Button("Install Update and Relaunch") {
+                            container.updateService.installUpdate()
+                        }
+                    }
                     Button("Check for Updates...") {
                         container.updateService.checkForUpdates()
                     }

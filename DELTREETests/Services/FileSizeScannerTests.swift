@@ -94,7 +94,7 @@ struct FileSizeScannerTests {
         #expect(result.unreadablePaths.isEmpty)
     }
 
-    @Test(.timeLimit(.minutes(1))) func unreadableDirectoryIsReportedWithoutFailingScan() throws {
+    @Test(.timeLimit(.minutes(1))) func unreadableDirectoryMakesScanIncomplete() throws {
         let fileManager = FileManager.default
         let root = try Self.makeTemporaryDirectory()
         let unreadable = root.appendingPathComponent("Unreadable", isDirectory: true)
@@ -107,7 +107,9 @@ struct FileSizeScannerTests {
 
         let result = LiveFileSizeScanner(fileManager: fileManager).size(of: root)
 
-        #expect(result.isComplete)
+        #expect(result.isComplete == false)
+        #expect(result.unreadablePaths.isEmpty == false)
+        #expect(result.incompleteReason == "One or more entries could not be read.")
         #expect(result.bytes >= 0)
     }
 
@@ -145,6 +147,39 @@ struct FileSizeScannerTests {
         #expect(item.metadata["scanComplete"] == "false")
         #expect(item.metadata["scannedEntryCount"] == "3")
         #expect(item.metadata["scanIncompleteReason"] == "Entry budget exceeded after 3 entries.")
+    }
+
+    @Test(.timeLimit(.minutes(1))) func unreadablePathsMakeItemMetadataIncomplete() async throws {
+        let fileManager = FileManager.default
+        let root = try Self.makeTemporaryDirectory()
+        defer { try? fileManager.removeItem(at: root) }
+        let result = FileSizeResult(
+            bytes: 128,
+            unreadablePaths: [root.appendingPathComponent("Unreadable").path],
+            scannedEntryCount: 3)
+        let now = Date()
+        let context = DomainScanContext(
+            fileManager: fileManager,
+            fileSizeScanner: LiveFileSizeScanner(fileManager: fileManager),
+            simctlDevices: [],
+            codexSessions: [],
+            processSnapshot: ProcessSnapshot(sampledAt: now, processes: []),
+            attributionTracker: LiveAttributionTracker(),
+            configuration: .standard,
+            now: now)
+
+        let item = await StorageItemFactory.makeItem(
+            url: root,
+            domain: .derivedData,
+            kind: .derivedData,
+            size: result,
+            metadata: [:],
+            isActive: false,
+            explicitLastUsedAt: nil,
+            context: context)
+
+        #expect(item.metadata["scanComplete"] == "false")
+        #expect(item.metadata["scanIncompleteReason"] == "One or more entries could not be read.")
     }
 
     private static func makeTemporaryDirectory() throws -> URL {

@@ -12,7 +12,8 @@ final class SettingsWindowController {
     init(container: AppContainer) {
         let contentView = SettingsView(
             settings: container.settings,
-            viewModel: container.dashboardViewModel)
+            viewModel: container.dashboardViewModel,
+            updateService: container.updateService)
             .frame(
                 minWidth: Self.minimumContentSize.width,
                 idealWidth: Self.preferredContentSize.width,

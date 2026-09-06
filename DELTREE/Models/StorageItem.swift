@@ -9,6 +9,9 @@ struct StorageItem: Identifiable, Hashable, Codable, Sendable {
     var bytes: Int64
     var createdAt: Date?
     var modifiedAt: Date?
+    // Keep source compatibility for test/report fixtures created without a filesystem snapshot.
+    // swiftlint:disable:next implicit_optional_initialization
+    var fileSystemIdentity: FileSystemIdentity? = nil
     var lastUsedAt: Date?
     var attribution: OwnerAttribution
     var attributionConfidence: Double

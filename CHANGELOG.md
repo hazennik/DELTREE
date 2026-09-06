@@ -9,12 +9,27 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 ### Added
 
 - Added `Check for Updates...` to the menu-bar mini menu for Sparkle-enabled builds.
+- Added automatic update preferences and an explicit `Install Update and Relaunch` action to Settings and the menu-bar mini menu.
+- Added launch-at-login support through macOS `SMAppService`.
 - Added a `Review Items` hover submenu that lists every non-ignored item needing review and opens the selected item in the dashboard.
+- Added expandable cleanup-history details for completed, skipped, and failed paths.
+- Added macOS 14 Apple Silicon and macOS 15 Intel compatibility lanes to CI.
 
 ### Fixed
 
 - Prevented repeated Documents access prompts after `~/Documents/Codex` access is denied; users can explicitly retry from Settings.
 - Prevented duplicate cleanup submissions from canceling an in-progress cleanup and reporting cancellation as per-item failures.
+- Made `~/Documents/Codex` opt-in so first launch and background scans do not request Documents access.
+- Excluded incomplete or unreadable scans from cleanup and revalidated filesystem identity, complete size, and open files immediately before every Trash action.
+- Refreshed `simctl` device state immediately before every simulator mutation.
+- Replaced free-text custom-root and exclusion editing with validated macOS file pickers.
+- Restored one theme-independent menu-bar status icon while preserving theme-specific application icons.
+- Fixed Settings unit labels so values such as `Minutes` do not wrap inside numeric fields.
+
+### Changed
+
+- Made Modern the default visual mode; Classic remains available as the retro theme.
+- Expanded UI smoke tests to render and validate all documented app surfaces.
 
 ## [1.0.0-rc.2] - 2026-08-31
 

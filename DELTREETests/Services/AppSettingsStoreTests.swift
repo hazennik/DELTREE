@@ -4,31 +4,31 @@ import Testing
 
 @MainActor
 struct AppSettingsStoreTests {
-    @Test func visualModeDefaultsToClassic() throws {
+    @Test func visualModeDefaultsToModern() throws {
         let defaults = try Self.makeDefaults()
 
         let store = AppSettingsStore(defaults: defaults)
 
-        #expect(store.visualMode == .classic)
+        #expect(store.visualMode == .modern)
     }
 
-    @Test func visualModePersistsModernSelection() throws {
+    @Test func visualModePersistsClassicSelection() throws {
         let defaults = try Self.makeDefaults()
         let store = AppSettingsStore(defaults: defaults)
 
-        store.visualMode = .modern
+        store.visualMode = .classic
         let restored = AppSettingsStore(defaults: defaults)
 
-        #expect(restored.visualMode == .modern)
+        #expect(restored.visualMode == .classic)
     }
 
-    @Test func unknownVisualModeFallsBackToClassic() throws {
+    @Test func unknownVisualModeFallsBackToModern() throws {
         let defaults = try Self.makeDefaults()
         defaults.set("unknown-mode", forKey: "visualMode")
 
         let store = AppSettingsStore(defaults: defaults)
 
-        #expect(store.visualMode == .classic)
+        #expect(store.visualMode == .modern)
     }
 
     @Test func visualModeDoesNotTriggerScanSettingsChangeToken() throws {
@@ -36,7 +36,7 @@ struct AppSettingsStoreTests {
         let store = AppSettingsStore(defaults: defaults)
         let before = store.changeToken
 
-        store.visualMode = .modern
+        store.visualMode = .classic
 
         #expect(store.changeToken == before)
     }
@@ -49,23 +49,46 @@ struct AppSettingsStoreTests {
             changeCount += 1
         }
 
-        store.visualMode = .modern
-        store.visualMode = .modern
+        store.visualMode = .classic
+        store.visualMode = .classic
 
         #expect(changeCount == 1)
     }
 
-    @Test func documentsCodexAccessDefaultsOnAndPersistsDenial() throws {
+    @Test func documentsCodexAccessDefaultsOffAndPersistsOptIn() throws {
         let defaults = try Self.makeDefaults()
         let store = AppSettingsStore(defaults: defaults)
 
-        #expect(store.scanDocumentsCodex)
+        #expect(store.scanDocumentsCodex == false)
 
-        store.scanDocumentsCodex = false
+        store.scanDocumentsCodex = true
+        store.documentsCodexAccessVerified = true
         let restored = AppSettingsStore(defaults: defaults)
 
-        #expect(restored.scanDocumentsCodex == false)
-        #expect(restored.scanConfiguration.scanDocumentsCodex == false)
+        #expect(restored.scanDocumentsCodex)
+        #expect(restored.documentsCodexAccessVerified)
+        #expect(restored.scanConfiguration.scanDocumentsCodex)
+    }
+
+    @Test func scanConfigurationDropsInvalidAndOverlappingPersistedPaths() throws {
+        let defaults = try Self.makeDefaults()
+        defaults.set("relative/path\n/\n/tmp/project\n/tmp/project/nested", forKey: "customScanRootsText")
+        defaults.set("/System\n/tmp/excluded", forKey: "excludedPathsText")
+
+        let configuration = AppSettingsStore(defaults: defaults).scanConfiguration
+
+        #expect(configuration.customScanRoots == ["/tmp/project"])
+        #expect(configuration.excludedPaths == ["/tmp/excluded"])
+    }
+
+    @Test func launchAtLoginDefaultsOffAndPersists() throws {
+        let defaults = try Self.makeDefaults()
+        let store = AppSettingsStore(defaults: defaults)
+
+        #expect(store.launchAtLogin == false)
+
+        store.launchAtLogin = true
+        #expect(AppSettingsStore(defaults: defaults).launchAtLogin)
     }
 
     private static func makeDefaults() throws -> UserDefaults {

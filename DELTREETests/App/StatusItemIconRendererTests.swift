@@ -4,44 +4,29 @@ import Testing
 
 @MainActor
 struct StatusItemIconRendererTests {
-    @Test func classicAndModernIconsShareBaseSilhouette() throws {
-        let state = StatusItemIconState(isFilled: false, badge: .none)
+    @Test func menuBarIconDoesNotChangeWithVisualMode() throws {
+        let states = [
+            StatusItemIconState(isFilled: false, badge: .none),
+            StatusItemIconState(isFilled: true, badge: .reclaimable),
+            StatusItemIconState(isFilled: false, badge: .warning),
+        ]
 
-        let classicMask = try Self.alphaMask(for: StatusItemIconRenderer.image(for: state, visualMode: .classic))
-        let modernMask = try Self.alphaMask(for: StatusItemIconRenderer.image(for: state, visualMode: .modern))
+        for state in states {
+            let classicPixels = try Self.pixelColors(for: StatusItemIconRenderer.image(for: state, visualMode: .classic))
+            let modernPixels = try Self.pixelColors(for: StatusItemIconRenderer.image(for: state, visualMode: .modern))
 
-        #expect(classicMask == modernMask)
-    }
-
-    @Test func classicReclaimableBadgeUsesNeutralGray() throws {
-        let state = StatusItemIconState(isFilled: false, badge: .reclaimable)
-        let rep = try Self.bitmapRep(for: StatusItemIconRenderer.image(for: state, visualMode: .classic))
-
-        let coloredPixels = (0..<rep.pixelsHigh).flatMap { y in
-            (0..<rep.pixelsWide).compactMap { x -> NSColor? in
-                guard let color = rep.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
-                      color.alphaComponent > 0.5
-                else {
-                    return nil
-                }
-                return color
-            }
-        }
-
-        #expect(coloredPixels.isEmpty == false)
-        for color in coloredPixels {
-            let spread = max(color.redComponent, color.greenComponent, color.blueComponent)
-                - min(color.redComponent, color.greenComponent, color.blueComponent)
-            #expect(spread < 0.08)
+            #expect(classicPixels == modernPixels)
         }
     }
 
-    private static func alphaMask(for image: NSImage) throws -> [Bool] {
+    private static func pixelColors(for image: NSImage) throws -> [[CGFloat]] {
         let rep = try bitmapRep(for: image)
-
         return (0..<rep.pixelsHigh).flatMap { y in
             (0..<rep.pixelsWide).map { x in
-                (rep.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.01
+                guard let color = rep.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else {
+                    return [0, 0, 0, 0]
+                }
+                return [color.redComponent, color.greenComponent, color.blueComponent, color.alphaComponent]
             }
         }
     }

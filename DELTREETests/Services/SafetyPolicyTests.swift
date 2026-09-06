@@ -65,6 +65,16 @@ struct SafetyPolicyTests {
         #expect(policy.classify(item: ignored, configuration: .standard, now: Date()).classification == .keep)
     }
 
+    @Test func incompleteScansAreNeverCleanupEligible() {
+        var item = Self.item(domain: .derivedData, kind: .derivedData)
+        item.metadata["scanComplete"] = "false"
+
+        let decision = policy.classify(item: item, configuration: .standard, now: Date())
+
+        #expect(decision.classification == .unknown)
+        #expect(decision.reason.contains("scanned completely"))
+    }
+
     private static func item(domain: StorageDomain, kind: StorageKind) -> StorageItem {
         StorageItem(
             id: UUID().uuidString,

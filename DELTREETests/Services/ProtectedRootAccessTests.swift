@@ -18,7 +18,10 @@ struct ProtectedRootAccessTests {
             attributionTracker: EmptyAttributionTracker(),
             protectedRootAccessChecker: accessChecker)
 
-        let snapshot = await scanner.scan(configuration: .standard)
+        var configuration = StorageScanConfiguration.standard
+        configuration.scanDocumentsCodex = true
+
+        let snapshot = await scanner.scan(configuration: configuration)
 
         #expect(accessChecker.checkCount == 1)
         #expect(snapshot.unreadablePaths.contains(rootCatalog.documentsCodexRoot.path))

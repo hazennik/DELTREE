@@ -43,6 +43,36 @@ struct AppUpdateServiceTests {
         #expect(updater.checkCallCount == 1)
     }
 
+    @Test func downloadedUpdateCanBeInstalledAndRelaunched() {
+        let updater = RecordingAppUpdater(canCheckForUpdates: true)
+        let service = AppUpdateService(
+            distributionChannel: .developerID,
+            configuration: .complete,
+            makeUpdater: { updater })
+
+        updater.emitUpdateReady(true)
+        service.installUpdate()
+
+        #expect(service.isUpdateReady)
+        #expect(updater.installCallCount == 1)
+    }
+
+    @Test func automaticUpdatePreferencesAreForwardedToUpdater() {
+        let updater = RecordingAppUpdater(canCheckForUpdates: true)
+        let service = AppUpdateService(
+            distributionChannel: .developerID,
+            configuration: .complete,
+            makeUpdater: { updater })
+
+        service.automaticallyChecksForUpdates = true
+        service.automaticallyDownloadsUpdates = true
+        service.automaticallyChecksForUpdates = false
+
+        #expect(updater.automaticallyChecksForUpdates == false)
+        #expect(updater.automaticallyDownloadsUpdates == false)
+        #expect(service.automaticallyDownloadsUpdates == false)
+    }
+
     @Test func homebrewNeverStartsUpdater() {
         let updater = RecordingAppUpdater(canCheckForUpdates: true)
         let service = AppUpdateService(
@@ -87,10 +117,15 @@ private extension AppUpdateConfiguration {
 @MainActor
 private final class RecordingAppUpdater: AppUpdating {
     private var handler: (@MainActor (Bool) -> Void)?
+    private var updateReadyHandler: (@MainActor (Bool) -> Void)?
 
     var canCheckForUpdates: Bool
+    var automaticallyChecksForUpdates = false
+    var automaticallyDownloadsUpdates = false
+    var isUpdateReady = false
     var startCallCount = 0
     var checkCallCount = 0
+    var installCallCount = 0
 
     init(canCheckForUpdates: Bool) {
         self.canCheckForUpdates = canCheckForUpdates
@@ -104,6 +139,10 @@ private final class RecordingAppUpdater: AppUpdating {
         checkCallCount += 1
     }
 
+    func installUpdate() {
+        installCallCount += 1
+    }
+
     func observeCanCheckForUpdates(_ handler: @escaping @MainActor (Bool) -> Void) -> AnyObject? {
         self.handler = handler
         return ObservationToken()
@@ -112,6 +151,16 @@ private final class RecordingAppUpdater: AppUpdating {
     func emitCanCheckForUpdates(_ value: Bool) {
         canCheckForUpdates = value
         handler?(value)
+    }
+
+    func observeUpdateReady(_ handler: @escaping @MainActor (Bool) -> Void) -> AnyObject? {
+        updateReadyHandler = handler
+        return ObservationToken()
+    }
+
+    func emitUpdateReady(_ value: Bool) {
+        isUpdateReady = value
+        updateReadyHandler?(value)
     }
 }
 

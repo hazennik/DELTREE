@@ -13,12 +13,10 @@ enum StorageItemFactory {
     {
         let fileMetadata = FileMetadataReader.metadata(for: url)
         var metadata = metadata
-        if size.isComplete == false {
+        if size.isComplete == false || size.unreadablePaths.isEmpty == false {
             metadata["scanComplete"] = "false"
             metadata["scannedEntryCount"] = "\(size.scannedEntryCount)"
-            if let incompleteReason = size.incompleteReason {
-                metadata["scanIncompleteReason"] = incompleteReason
-            }
+            metadata["scanIncompleteReason"] = size.incompleteReason ?? "One or more entries could not be read."
         }
         let override = context.configuration.manualOverride(for: url.path)
         let suggestedAction = StorageAction(rawValue: metadata["suggestedAction"] ?? "") ?? .none
@@ -44,6 +42,7 @@ enum StorageItemFactory {
             bytes: size.bytes,
             createdAt: fileMetadata.createdAt,
             modifiedAt: fileMetadata.modifiedAt,
+            fileSystemIdentity: FileSystemIdentityReader.identity(for: url, fileManager: context.fileManager),
             lastUsedAt: explicitLastUsedAt ?? fileMetadata.accessedAt ?? fileMetadata.modifiedAt,
             attribution: owner,
             attributionConfidence: confidence,

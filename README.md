@@ -66,7 +66,7 @@ make analyze
 make cli-dry-run
 ```
 
-`make test` runs the unit test bundle. `make ui-test` performs a deterministic signed menu-bar launch smoke test. The legacy Xcode UI automation runner remains available as `make xcode-ui-test` for local investigation.
+`make test` runs the unit test bundle. `make ui-test` launches the menu-bar app and renders every documented UI surface, validating the resulting images. The legacy Xcode UI automation runner remains available as `make xcode-ui-test` for local investigation.
 
 Formatting and linting use SwiftFormat and SwiftLint:
 
@@ -144,14 +144,16 @@ Classic keeps the retro command-prompt identity available as a smaller secondary
 
 - Correlates filesystem changes with local Codex tasks and Codex, Xcode, `xcodebuild`, `simctl`, Simulator, and CoreSimulatorService activity.
 - Shows Codex/Xcode storage impact from a quiet menu-bar icon.
-- Uses DELTREE Classic by default: terminal-style panels, monospaced scan output, block storage meters, and explicit `[SAFE]` / `[REVIEW]` / `[KEEP]` labels.
-- Keeps the previous macOS-native visual system available as `Modern` from Settings.
+- Uses the macOS-native `Modern` interface by default for repeated day-to-day use.
+- Keeps the terminal-style `Classic` interface available from Settings, with monospaced output, block storage meters, and explicit `[SAFE]` / `[REVIEW]` / `[KEEP]` labels.
 - Scans CoreSimulator devices, XCTest devices, DerivedData, result bundles, archives, DeviceSupport, simulator runtimes/images, SwiftPM caches, `~/.codex`, and Codex workspaces.
 - Enriches simulator rows with `simctl` metadata.
 - Labels items as `Safe to Remove`, `Probably Safe`, `Review First`, `Do Not Remove`, or `Unknown`.
 - Moves approved files to Trash instead of hard-deleting them.
 - Uses explicit `simctl delete` and `simctl erase` commands for simulator-specific actions and identifies them as irreversible in cleanup preflight.
 - Persists scan history, recent growth, manual overrides, and cleanup records with SwiftData.
+- Keeps detailed completed, skipped, and failed paths in expandable cleanup history records.
+- Supports launch at login plus automatic update checks, downloads, and an explicit install-and-relaunch action for Developer ID builds.
 
 ## Menu Bar States
 

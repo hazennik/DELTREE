@@ -6,6 +6,7 @@ enum StatusMenuCommand: String, Hashable, Sendable {
     case cleanSafe
     case openSettings
     case checkForUpdates
+    case installUpdate
     case quit
 
     var systemImage: String {
@@ -20,6 +21,8 @@ enum StatusMenuCommand: String, Hashable, Sendable {
             "gearshape"
         case .checkForUpdates:
             "arrow.down.circle"
+        case .installUpdate:
+            "arrow.triangle.2.circlepath.circle"
         case .quit:
             "power"
         }
@@ -65,6 +68,7 @@ enum StatusMenuDescriptorBuilder {
         allowsMenuCleanup: Bool = true,
         showsUpdateCheck: Bool = false,
         canCheckForUpdates: Bool = false,
+        isUpdateReady: Bool = false,
         reviewItems: [StatusMenuReviewItem] = [],
         cleanupSuggestions: [StatusMenuCleanupSuggestion] = []) -> StatusMenuDescriptor
     {
@@ -146,6 +150,13 @@ enum StatusMenuDescriptorBuilder {
         ])
 
         if showsUpdateCheck {
+            if isUpdateReady {
+                items.append(.command(
+                    title: "Install Update and Relaunch",
+                    command: .installUpdate,
+                    keyEquivalent: "",
+                    isEnabled: true))
+            }
             items.append(.command(
                 title: "Check for Updates...",
                 command: .checkForUpdates,
