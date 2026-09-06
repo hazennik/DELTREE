@@ -6,6 +6,8 @@ The format follows Keep a Changelog-style sections, and versions should use sema
 
 ## Unreleased
 
+## [1.0.0-rc.3] - 2026-09-06
+
 ### Added
 
 - Added `Check for Updates...` to the menu-bar mini menu for Sparkle-enabled builds.
